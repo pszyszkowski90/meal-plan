@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": ".bootstrap-scaffold",
-    "slug": ".bootstrap-scaffold",
+    "name": "meal-plan",
+    "slug": "meal-plan",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "bootstrapscaffold",
+    "scheme": "mealplan",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
