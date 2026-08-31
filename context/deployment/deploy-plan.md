@@ -105,11 +105,32 @@ Agent może: `expo export`, `wrangler deploy`, `versions upload`, `tail`, `rollb
 `d1 execute` na zapytaniach odczytowych. **Wyłącznie człowiek, ręcznie:** `wrangler d1 delete`,
 `wrangler delete`, rotacja sekretu produkcyjnego, zmiana planu, cokolwiek dotykającego DNS.
 
-Zawężony token API **istnieje** (`Workers Scripts: Edit`, `D1: Edit`, `Workers Builds: Read`, bez
-DNS i rozliczeń) — powstał, żeby odczytać log nieudanego builda, bo token OAuth z `wrangler login`
-nie ma uprawnień do `accounts/{acc}/builds/*`. Wrangler nadal jednak jedzie na sesji OAuth z pełnymi
-uprawnieniami konta. **Do zrobienia:** przełożyć wrangler na ten token przez zmienną
-`CLOUDFLARE_API_TOKEN` i wycofać sesję OAuth. Token nigdy nie trafia do commitowanego pliku.
+Zawężony token API **istnieje i wystarcza wranglerowi** — sprawdzone komendą po komendzie:
+
+| Komenda | Na zawężonym tokenie |
+| --- | --- |
+| `wrangler versions list` | działa |
+| `wrangler versions upload` | działa, razem z uploadem assetów (wersja `03ebb0ed`) |
+| `wrangler deploy` | ta sama ścieżka zapisu co `versions upload` |
+| `wrangler d1 list` | działa |
+| `wrangler d1 execute --remote` | działa (zapytanie odczytowe) |
+| `wrangler tail` | działa — „Successfully created tail, Connected to meal-plan" |
+| `wrangler whoami` | działa **częściowo**: pokazuje konto, ale nie e-mail (brak `User → User Details → Read`) |
+
+Dwa ustalenia, które oszczędzają zgadywania:
+
+- **`CLOUDFLARE_ACCOUNT_ID` nie jest potrzebne.** Wrangler sam wykrywa konto z tokenu; zmienna
+  byłaby konieczna tylko przy tokenie obejmującym wiele kont.
+- **Token ma uprawnienie do zapisu w Workers Builds**, nie tylko odczytu — `PATCH` na triggerze
+  przeszedł. To szersze, niż zamierzano; przy odtwarzaniu wystarczy `Workers Builds: Read`, jeśli
+  trigger konfigurujesz w panelu.
+
+Brak e-maila w `whoami` jest kosmetyczny i **nie** warto go łatać: `User Details: Read` poszerza
+token o dane konta bez żadnego zysku operacyjnego.
+
+**Do zrobienia:** ustawić `CLOUDFLARE_API_TOKEN` na stałe w środowisku, wycofać sesję OAuth
+(`wrangler logout`) i usunąć token z pliku tekstowego, w którym dziś leży. Token nigdy nie trafia
+do commitowanego pliku.
 
 ## Auto-deploy z `main` — Workers Builds
 
@@ -204,9 +225,8 @@ Trzy konsekwencje:
 2. **Każdy deploy unieważnia stare adresy assetów.** Klient, który trzyma otwartą stronę z przed
    deployu, dostanie 404 na swoim bundlu JS do czasu odświeżenia. Przy jednoosobowym MVP to
    nieistotne; przy realnym ruchu to okno błędu przy każdym wdrożeniu.
-3. **Commit dotykający wyłącznie dokumentacji przebudowuje i redeployuje produkcję.** Trigger nie ma
-   `path_excludes`. Warto tam dodać `context/**`, `notes/**` i `*.md`, żeby zmiany w dokumentach nie
-   ruszały produkcji — to ustawienie w panelu, nie w repo.
+3. **Commit dotykający wyłącznie dokumentacji przebudowywał i redeployował produkcję.** Naprawione
+   przez `path_excludes` — patrz niżej.
 
 ### Kroki podłączenia (dla odtworzenia)
 
@@ -224,6 +244,26 @@ build padnie.
 
 Przed każdym pushem, jeśli ruszałeś zależności: `npm run check-lock`. Nigdy `npm install` w tym
 repo — tylko `npm ci`.
+
+### Watch paths — dokumentacja nie rusza produkcji
+
+Ustawione przez API, nie przez panel: `PATCH /accounts/{account_id}/builds/triggers/{trigger_uuid}`
+z ciałem `{"path_excludes": [...]}`. (Pojedynczego triggera **nie da się** odczytać przez `GET` na
+tej ścieżce — zwraca `Not found`; publiczne są tylko `list` i `patch`.)
+
+| Pole | Wartość |
+| --- | --- |
+| `path_includes` | `["*"]` (domyślne) |
+| `path_excludes` | `["context/*", "notes/*", ".claude/*", "*.md", "LICENSE"]` |
+
+Semantyka, która decyduje o poprawności tej listy: **wykluczenia stosują się pierwsze**, a build
+rusza, jeśli po ich odjęciu **cokolwiek** pasuje do włączeń. Commit ruszający i dokumentację,
+i `src/` nadal się zbuduje — wykluczona zostaje tylko dokumentacja. `*` dopasowuje zero lub więcej
+znaków; `**` nie jest udokumentowane, więc nie jest używane.
+
+Trzy przypadki, w których Cloudflare **pomija** dopasowywanie ścieżek i buduje zawsze: 0 zmian
+plików, 3000+ zmian plików, 20+ commitów w pushu. Pierwszy z nich wyjaśnia retrospektywnie, dlaczego
+pusty commit `703b474` wywołał build, mimo że nie ruszał niczego.
 
 ## Czego to wdrożenie NIE rozstrzyga
 
