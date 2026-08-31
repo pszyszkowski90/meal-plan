@@ -48,6 +48,12 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
   Workers Sites, Cloudflare Pages oraz paczki `expo-adapter-workers` i `expo-workers` są **zakazane**
   w tym repo — uczą `[site] bucket`, zdeprecjonowanego w wrangler v4. Nie kopiuj konfiguracji
   z poradników o Pages.
+- **Nie uruchamiaj `npm install` w tym repo — używaj `npm ci`.** `npm install` na Windowsie psuje
+  `package-lock.json` w sposób niewidoczny lokalnie: zapisuje wpisy pakietów `*-wasm32*`
+  (`@img/sharp-wasm32`, `@unrs/resolver-binding-wasm32-wasi`) bez ich zależności `@emnapi/*`, bo
+  `cpu: ["wasm32"]` nie pasuje do hosta. `npm ci` na Linuksie przerywa wtedy z EUSAGE i build
+  w Workers Builds nie dochodzi nawet do `expo export`. Po każdej zmianie zależności uruchom
+  `npm run check-lock` — instrukcja naprawy jest w [check-lockfile.js](scripts/check-lockfile.js).
 - **Nie ruszaj `rules` w [wrangler.jsonc](wrangler.jsonc) bez przeczytania komentarzy w pliku.**
   Każda z czterech reguł zapobiega konkretnej awarii: `CommonJS` (Metro emituje trasy API jako
   CommonJS — ESModule daje 500), `Text` (manifest i HTML), a `Data` / `CompiledWasm` istnieją **tylko**
@@ -118,6 +124,8 @@ Skrypty (`start`, `android`, `ios`, `web`, `lint`) są w [package.json](package.
 `expo lint` z flat configiem w [eslint.config.js](eslint.config.js).
 
 - `npx tsc --noEmit` — jedyne realne sprawdzenie poprawności w tym repo. Nie jest skryptem npm.
+- `npm run check-lock` — przed każdym pushem, jeśli ruszałeś zależności. Odtwarza sprawdzenie
+  spójności robione przez `npm ci`, więc łapie zepsuty lock lokalnie, zamiast na czerwonym buildzie.
 - Nie ma runnera testów. „Przetestowane" znaczy: `npx tsc --noEmit` przechodzi i ekran został
   otwarty na realnej platformie.
 - Tematy commitów: tryb rozkazujący, zdaniowa wielkość liter, bez prefiksu.

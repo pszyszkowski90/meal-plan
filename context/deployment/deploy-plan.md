@@ -6,7 +6,7 @@ worker_name: meal-plan
 production_url: https://meal-plan.kurs-ai-szysza.workers.dev
 context_type: mvp
 status: live
-auto_deploy: cloudflare-workers-builds — podłączone, ale build pada w pre-flight (diagnoza w toku)
+auto_deploy: cloudflare-workers-builds
 ---
 
 # Pierwsze wdrożenie — plan i przebieg
@@ -114,26 +114,56 @@ token API zawężony do `Workers Scripts: Edit` + `D1: Edit`, bez DNS i rozlicze
 Gałąź przemianowana `master` → `main`. Repozytorium prywatne na GitHubie, `origin` podłączony,
 historia wypchnięta.
 
-**Stan na 31.08.2026: podłączone, ale niedziałające.** Trigger działa — na commitach `703b474`
-i `776fefe` pojawił się check-run `Workers Builds: meal-plan` od aplikacji
-`cloudflare-workers-and-pages`, z własnym Build ID i `details_url` wskazującym Workera `meal-plan`.
-Oba buildy zakończyły się **porażką po ~10 sekundach**, czyli przed instalacją zależności (806 paczek
-zajmuje znacznie więcej), więc `expo export` nigdy nie ruszył. Awaria jest w pre-flight, nie w kodzie.
+Konfiguracja triggera (odczytana z API, poprawna od pierwszego podejścia): build command
+`npx expo export -p web`, deploy command `npx wrangler deploy`, root `/`, gałąź `main`, repo
+`pszyszkowski90/meal-plan`, cache buildów wyłączony.
 
-Zfalsyfikowane hipotezy:
+### Dwa pierwsze buildy padły — i to nie na konfiguracji
 
-| Hipoteza | Jak odrzucona |
-| --- | --- |
-| Pusty commit nie wywołuje builda | Commit `776fefe` zmienia `README.md` i pada identycznie |
-| Builds podłączone do innego Workera (`dieta` / `running-training-planner`) | `details_url` wskazuje `.../services/view/meal-plan/production/builds/...` |
-| Workers Builds wymaga planu płatnego | Dokumentacja: Free ma 3000 min/mc i 1 build równolegle |
+Buildy `c8dd6896` (commit `703b474`) i `89e7768a` (commit `776fefe`) zakończyły się porażką po ~10
+sekundach, przed instalacją zależności. Trzy hipotezy odpadły po drodze: pusty commit (realna zmiana
+pliku padła identycznie), podłączenie do innego Workera (`details_url` wskazywał `meal-plan`) oraz
+wymóg planu płatnego (Workers Builds jest na Free: 3000 min/mc, 1 build równolegle).
 
-Log buildu jest nieczytelny z CLI: token OAuth z `wrangler login` nie ma uprawnień do API
-`accounts/{acc}/builds/*` (kod 10000, `Authentication error`), przy tym że `workers/scripts` działa
-normalnie. Odczyt wymaga tokenu API z uprawnieniem do Workers Builds.
+Log był nieczytelny z CLI, bo token OAuth z `wrangler login` nie ma uprawnień do
+`accounts/{acc}/builds/*` — zwraca `Authentication error` (10000), przy działającym `workers/scripts`.
+Odczyt wymagał tokenu API z uprawnieniem do Workers Builds; przy okazji domknęło to zaległy krok
+z Fazy 0.
 
-Auto-deploy jest więc **niesprawny**; wdrożenia idą ręcznie przez runbook wyżej i to jest w pełni
-wystarczające dla MVP. Kroki podłączenia — dla odtworzenia i weryfikacji konfiguracji:
+**Przyczyna: `package-lock.json` był niespójny.**
+
+```
+npm error `npm ci` can only install packages when your package.json and package-lock.json
+npm error   or npm-shrinkwrap.json are in sync.
+npm error Missing: @emnapi/runtime@1.11.3 from lock file
+npm error Missing: @emnapi/core@1.11.3 from lock file
+```
+
+`npm install` na Windowsie zapisuje wpisy pakietów `*-wasm32*` (`@img/sharp-wasm32` z `sharp`,
+`@unrs/resolver-binding-wasm32-wasi` z eslinta), ale **pomija ich zależności `@emnapi/*`**, bo
+`cpu: ["wasm32"]` nie pasuje do hosta. Lock przechodzi na Windowsie i pada na Linuksie. Defekt
+**istniał już w commicie `e17887d`** (wtedy dotyczył `@unrs/...`) — moje instalacje tylko zmieniły
+winowajcę, więc `npm ci` w CI padłby od pierwszego dnia niezależnie od tego wdrożenia.
+
+Naprawa i weryfikacja:
+
+1. `scripts/check-lockfile.js` — odtwarza sprawdzenie spójności robione przez `npm ci`, więc błąd
+   jest łapalny lokalnie. Podpięty jako `npm run check-lock`.
+2. Trzy warianty naprawy na Windowsie **nie zadziałały**: `npm install`, regeneracja od zera oraz
+   `--os=linux --cpu=x64` dają ten sam niespójny wynik; `overrides` + `optionalDependencies`
+   pogorszyły sprawę. npm konsekwentnie odmawia zapisu tych zależności.
+3. Zadziałało wygenerowanie locka **na Linuksie** (`node:24` w Dockerze), zasianego obecnym lockiem —
+   bez zasiewu npm gubi `resolved` i `integrity` dla 835 z 927 pakietów, co jest utratą weryfikacji
+   łańcucha dostaw i zostało odrzucone.
+4. Wynik: **+2 wpisy** (`@emnapi/core`, `@emnapi/runtime`, oba z sumą kontrolną), **zero zmian
+   wersji**, metadane platformowe (`os`, `cpu`) zachowane, 929 pakietów, 0 bez `integrity`.
+5. Zweryfikowane przed pushem: `npm clean-install` z npm 10.9.2 na Linuksie — 841 pakietów, exit 0
+   (dokładnie krok, który padał); `npm ci` na Windowsie — 836 pakietów; `tsc`, `expo lint`,
+   `expo export` i `wrangler deploy --dry-run` (nadal 6 modułów, 98 KiB) czyste.
+
+Środowisko buildu: `npm@10.9.2`, `nodejs@24.18.0` — wersji Node nie trzeba przypinać.
+
+### Kroki podłączenia (dla odtworzenia)
 
 1. Workers & Pages → `meal-plan` → **Settings → Builds → Connect**
 2. Repozytorium: `pszyszkowski90/meal-plan`, gałąź produkcyjna: `main`
@@ -146,6 +176,9 @@ wystarczające dla MVP. Kroki podłączenia — dla odtworzenia i weryfikacji ko
 
 **Nazwa Workera w panelu musi być identyczna z `name` w `wrangler.jsonc`** (`meal-plan`), inaczej
 build padnie.
+
+Przed każdym pushem, jeśli ruszałeś zależności: `npm run check-lock`. Nigdy `npm install` w tym
+repo — tylko `npm ci`.
 
 ## Czego to wdrożenie NIE rozstrzyga
 
