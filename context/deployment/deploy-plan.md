@@ -116,6 +116,7 @@ Zawężony token API **istnieje i wystarcza wranglerowi** — sprawdzone komend�
 | `wrangler d1 execute --remote` | działa (zapytanie odczytowe) |
 | `wrangler tail` | działa — „Successfully created tail, Connected to meal-plan" |
 | `wrangler whoami` | działa **częściowo**: pokazuje konto, ale nie e-mail (brak `User → User Details → Read`) |
+| `wrangler logout` | wykonane — OAuth nie jest już alternatywną ścieżką |
 
 Dwa ustalenia, które oszczędzają zgadywania:
 
@@ -128,9 +129,25 @@ Dwa ustalenia, które oszczędzają zgadywania:
 Brak e-maila w `whoami` jest kosmetyczny i **nie** warto go łatać: `User Details: Read` poszerza
 token o dane konta bez żadnego zysku operacyjnego.
 
-**Do zrobienia:** ustawić `CLOUDFLARE_API_TOKEN` na stałe w środowisku, wycofać sesję OAuth
-(`wrangler logout`) i usunąć token z pliku tekstowego, w którym dziś leży. Token nigdy nie trafia
-do commitowanego pliku.
+**Zrobione — token jest jedyną ścieżką uwierzytelnienia.** `CLOUDFLARE_API_TOKEN` siedzi trwale
+w zmiennej środowiskowej użytkownika (nie maszyny), sesja OAuth została wycofana — `wrangler logout`
+usunął `default.toml` z `.wrangler/config/` w profilu — a plik tekstowy z tokenem został nadpisany
+losowymi danymi i usunięty.
+
+Weryfikacja: bez zmiennej wrangler wprost odmawia („it's necessary to set a CLOUDFLARE_API_TOKEN
+environment variable"); w procesie ze środowiskiem budowanym od zera z rejestru (`Start-Process
+-UseNewEnvironment`, żeby nie dziedziczyć zmiennych po sesji) przechodzą `versions list`,
+`d1 execute --remote` oraz `versions upload` (wersja `52e68f32`, startup 6 ms, bindingi obecne).
+Token nie występuje w historii gita ani w plikach roboczych — sprawdzone `git grep
+--fixed-strings` i skanem katalogów tymczasowych.
+
+Kolejność miała znaczenie: token API jest w panelu pokazywany raz, więc plik został usunięty
+**po** potwierdzeniu, że wrangler działa bez niego, nie przed.
+
+Świadomy koszt: zmienna środowiskowa użytkownika to jawny tekst w rejestrze, czytelny dla każdego
+procesu tego użytkownika. To standard dla narzędzi CLI i to zakładał
+[infrastructure.md](../foundation/infrastructure.md), ale nie jest to sejf. Rotacja: nowy token
+w panelu, ponowne ustawienie zmiennej, unieważnienie starego.
 
 ## Auto-deploy z `main` — Workers Builds
 
