@@ -6,7 +6,7 @@ worker_name: meal-plan
 production_url: https://meal-plan.kurs-ai-szysza.workers.dev
 context_type: mvp
 status: live
-auto_deploy: cloudflare-workers-builds (podłączenie w panelu — krok ręczny)
+auto_deploy: cloudflare-workers-builds — podłączone, ale build pada w pre-flight (diagnoza w toku)
 ---
 
 # Pierwsze wdrożenie — plan i przebieg
@@ -114,8 +114,26 @@ token API zawężony do `Workers Scripts: Edit` + `D1: Edit`, bez DNS i rozlicze
 Gałąź przemianowana `master` → `main`. Repozytorium prywatne na GitHubie, `origin` podłączony,
 historia wypchnięta.
 
-**Podłączenie wymaga panelu** — nie ma na to polecenia w wranglerze (Cloudflare instaluje swoją
-aplikację GitHuba przez OAuth w przeglądarce). Kroki:
+**Stan na 31.08.2026: podłączone, ale niedziałające.** Trigger działa — na commitach `703b474`
+i `776fefe` pojawił się check-run `Workers Builds: meal-plan` od aplikacji
+`cloudflare-workers-and-pages`, z własnym Build ID i `details_url` wskazującym Workera `meal-plan`.
+Oba buildy zakończyły się **porażką po ~10 sekundach**, czyli przed instalacją zależności (806 paczek
+zajmuje znacznie więcej), więc `expo export` nigdy nie ruszył. Awaria jest w pre-flight, nie w kodzie.
+
+Zfalsyfikowane hipotezy:
+
+| Hipoteza | Jak odrzucona |
+| --- | --- |
+| Pusty commit nie wywołuje builda | Commit `776fefe` zmienia `README.md` i pada identycznie |
+| Builds podłączone do innego Workera (`dieta` / `running-training-planner`) | `details_url` wskazuje `.../services/view/meal-plan/production/builds/...` |
+| Workers Builds wymaga planu płatnego | Dokumentacja: Free ma 3000 min/mc i 1 build równolegle |
+
+Log buildu jest nieczytelny z CLI: token OAuth z `wrangler login` nie ma uprawnień do API
+`accounts/{acc}/builds/*` (kod 10000, `Authentication error`), przy tym że `workers/scripts` działa
+normalnie. Odczyt wymaga tokenu API z uprawnieniem do Workers Builds.
+
+Auto-deploy jest więc **niesprawny**; wdrożenia idą ręcznie przez runbook wyżej i to jest w pełni
+wystarczające dla MVP. Kroki podłączenia — dla odtworzenia i weryfikacji konfiguracji:
 
 1. Workers & Pages → `meal-plan` → **Settings → Builds → Connect**
 2. Repozytorium: `pszyszkowski90/meal-plan`, gałąź produkcyjna: `main`
