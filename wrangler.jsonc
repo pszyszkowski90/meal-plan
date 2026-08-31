@@ -1,0 +1,44 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "meal-plan",
+  "main": "worker.ts",
+  // Maks. data wspierana przez workerd 1.20260828.1 dostarczony z wrangler 4.127.1.
+  "compatibility_date": "2026-08-28",
+  // Adapter workerd importuje node:async_hooks (AsyncLocalStorage).
+  "compatibility_flags": ["nodejs_compat"],
+  // URL-e preview są domyślnie publiczne; wyłączone, dopóki nie stanie przed nimi Cloudflare Access.
+  "preview_urls": false,
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "dist/client",
+    // Worker jest właścicielem HTML-a (dist/server), więc router assetów nie przepisuje
+    // ani nie przekierowuje ścieżek — wszystko poza literalnym plikiem spada na Workera.
+    "html_handling": "none",
+    "not_found_handling": "none"
+  },
+  // Adapter czyta manifest, HTML i moduły tras przez import() ze ZMIENNYM prefiksem, więc
+  // esbuild nie zbundluje ich statycznie — muszą wejść jako dodatkowe, niebundlowane moduły.
+  // Zakazane w tym repo: [site], Workers Sites, Cloudflare Pages, expo-adapter-workers, expo-workers.
+  "find_additional_modules": true,
+  "base_dir": ".",
+  // Reguła bez "fallthrough": true USUWA regułę domyślną tego samego typu (parseRules
+  // w wranglerze). Dlatego Data i CompiledWasm są tu zadeklarowane wąsko, mimo że dist/server
+  // nie zawiera .bin ani .wasm: bez nich domyślne "**/*.bin" i "**/*.wasm" zamiatają
+  // node_modules (46 modułów, 8.9 MB — ponad limit skryptu na planie darmowym).
+  "rules": [
+    // Metro emituje trasy API jako CommonJS (`module.exports = __r(...)` na końcu bundla),
+    // nie jako ESM — typ ESModule daje w runtime "ReferenceError: module is not defined".
+    { "type": "CommonJS", "globs": ["dist/server/**/*.js"] },
+    { "type": "Text", "globs": ["dist/server/**/*.html", "dist/server/**/*.json"] },
+    { "type": "Data", "globs": ["dist/server/**/*.bin"] },
+    { "type": "CompiledWasm", "globs": ["dist/server/**/*.wasm"] }
+  ],
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mealplan",
+      "database_id": "5ff3f12b-dd3c-49f2-9212-ef2a85b36851"
+    }
+  ]
+}
