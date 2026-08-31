@@ -41,6 +41,29 @@ This command will move the starter code to the **app-example** directory and cre
 - If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
 - Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
 
+## Deployment
+
+Live at <https://meal-plan.kurs-ai-szysza.workers.dev> on Cloudflare Workers: static assets from
+`dist/client`, pre-rendered HTML and API routes from `dist/server` via
+`expo-server/adapter/workerd`, and a D1 database bound as `DB`.
+
+`wrangler deploy` does **not** build, so the order matters:
+
+```sh
+npx expo export -p web                                # dist/client + dist/server
+npx wrangler deploy --dry-run --outdir .wrangler-dry  # expect 6 modules, nothing from node_modules
+npx wrangler dev                                      # workerd locally - the only faithful test
+npx wrangler deploy                                   # production
+```
+
+`npx expo start --web` runs API routes in Node, not workerd, so it is not a deployment test.
+Smoke check: `/` returns HTML, an unknown path returns 404, and `/api/health` returns
+`{"ok":true,"d1":true}`.
+
+Full record in [context/deployment/deploy-plan.md](context/deployment/deploy-plan.md); the platform
+decision and its risk register are in
+[context/foundation/infrastructure.md](context/foundation/infrastructure.md).
+
 ## Learn more
 
 To learn more about developing your project with Expo, look at the following resources:
