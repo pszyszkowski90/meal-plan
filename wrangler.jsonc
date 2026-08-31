@@ -25,13 +25,16 @@
   // w wranglerze). Dlatego Data i CompiledWasm są tu zadeklarowane wąsko, mimo że dist/server
   // nie zawiera .bin ani .wasm: bez nich domyślne "**/*.bin" i "**/*.wasm" zamiatają
   // node_modules (46 modułów, 8.9 MB — ponad limit skryptu na planie darmowym).
+  // "fallthrough": false nie zmienia zachowania (parseRules traktuje brak pola i false tak samo),
+  // tylko potwierdza, że wyparcie reguły domyślnej jest zamierzone — i wycisza trzy ostrzeżenia
+  // przy każdym buildzie.
   "rules": [
     // Metro emituje trasy API jako CommonJS (`module.exports = __r(...)` na końcu bundla),
     // nie jako ESM — typ ESModule daje w runtime "ReferenceError: module is not defined".
     { "type": "CommonJS", "globs": ["dist/server/**/*.js"] },
-    { "type": "Text", "globs": ["dist/server/**/*.html", "dist/server/**/*.json"] },
-    { "type": "Data", "globs": ["dist/server/**/*.bin"] },
-    { "type": "CompiledWasm", "globs": ["dist/server/**/*.wasm"] }
+    { "type": "Text", "globs": ["dist/server/**/*.html", "dist/server/**/*.json"], "fallthrough": false },
+    { "type": "Data", "globs": ["dist/server/**/*.bin"], "fallthrough": false },
+    { "type": "CompiledWasm", "globs": ["dist/server/**/*.wasm"], "fallthrough": false }
   ],
   "observability": { "enabled": true, "head_sampling_rate": 1 },
   "d1_databases": [
