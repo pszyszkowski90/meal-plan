@@ -37,8 +37,8 @@ brak zdalnego repozytorium.
 | --- | --- |
 | Worker | `meal-plan`, konto `szysza0x@gmail.com` (`23a6bb68615f908cd929091d8ac15337`) |
 | URL produkcyjny | <https://meal-plan.kurs-ai-szysza.workers.dev> |
-| Wersja na produkcji | `f4e017e1-6511-4944-a15e-4642e1c06826` (Worker Startup Time: 4 ms) |
-| Wersja wgrana bez ruchu | `48832f6f-609e-4f71-8c5c-7db48a5a3a12` — cel dla `wrangler rollback` |
+| Wersja na produkcji | `53cab668-bde2-469c-95fc-a92039f9a982` — wdrożona **automatycznie** przez Workers Builds z commita `2cb1e5f` |
+| Poprzednie wersje | `f4e017e1` (pierwszy ręczny deploy, startup 4 ms), `48832f6f` (`versions upload`) — cele dla `wrangler rollback` |
 | Baza | D1 `mealplan`, `5ff3f12b-dd3c-49f2-9212-ef2a85b36851`, region **EEUR**, binding `DB` |
 | Assets | binding `ASSETS`, `dist/client`, 31 plików |
 | Bundel Workera | 6 modułów, 98 KiB / 25 KiB gzip |
@@ -162,6 +162,31 @@ Naprawa i weryfikacja:
    `expo export` i `wrangler deploy --dry-run` (nadal 6 modułów, 98 KiB) czyste.
 
 Środowisko buildu: `npm@10.9.2`, `nodejs@24.18.0` — wersji Node nie trzeba przypinać.
+
+### Stan końcowy: działa
+
+Build `9a6a11de` z commita `2cb1e5f` przeszedł w **148 s** i wdrożył się sam:
+
+```
+Detected the following tools from environment: npm@10.9.2, nodejs@24.18.0
+Installing project dependencies: npm clean-install --progress=false
+added 839 packages, and audited 840 packages in 33s
+Exported: dist
+✨ Success! Uploaded 1 file (30 already uploaded) (1.04 sec)
+Total Upload: 124.58 KiB / gzip: 17.93 KiB
+Current Version ID: 53cab668-bde2-469c-95fc-a92039f9a982
+✨ Success! Build completed.
+```
+
+Push na `main` → build → wdrożenie, bez udziału człowieka i bez zewnętrznego CI. Wszystkie
+sprawdzenia smoke przechodzą na wersji zbudowanej przez Cloudflare.
+
+**Buildy nie są bit-w-bit odtwarzalne między laptopem a CI.** Ten sam commit dał lokalnie
+`entry-4a4dcaed….js` (2 142 349 B), a w CI `entry-0f2504d9….js` (2 135 953 B) — inny Node
+(24.18.0 w CI, 25.1.0 lokalnie) i inne drzewo zależności (839 vs 836 pakietów). Nie jest to defekt,
+ale ma jedną praktyczną konsekwencję: **nazwę zasobu do sprawdzenia bierz z wdrożonego HTML-a, nie
+z lokalnego `dist/`** — inaczej testujesz plik, którego na produkcji nie ma i dostajesz mylące 404.
+Assety są adresowane hashem treści, więc stare nazwy przestają istnieć po deployu.
 
 ### Kroki podłączenia (dla odtworzenia)
 
