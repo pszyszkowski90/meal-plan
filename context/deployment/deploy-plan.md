@@ -105,9 +105,11 @@ Agent może: `expo export`, `wrangler deploy`, `versions upload`, `tail`, `rollb
 `d1 execute` na zapytaniach odczytowych. **Wyłącznie człowiek, ręcznie:** `wrangler d1 delete`,
 `wrangler delete`, rotacja sekretu produkcyjnego, zmiana planu, cokolwiek dotykającego DNS.
 
-Dziś wrangler działa na tokenie OAuth z `wrangler login` (pełne uprawnienia konta). **Do zrobienia:**
-token API zawężony do `Workers Scripts: Edit` + `D1: Edit`, bez DNS i rozliczeń, w zmiennej
-`CLOUDFLARE_API_TOKEN` — nigdy w commitowanym pliku.
+Zawężony token API **istnieje** (`Workers Scripts: Edit`, `D1: Edit`, `Workers Builds: Read`, bez
+DNS i rozliczeń) — powstał, żeby odczytać log nieudanego builda, bo token OAuth z `wrangler login`
+nie ma uprawnień do `accounts/{acc}/builds/*`. Wrangler nadal jednak jedzie na sesji OAuth z pełnymi
+uprawnieniami konta. **Do zrobienia:** przełożyć wrangler na ten token przez zmienną
+`CLOUDFLARE_API_TOKEN` i wycofać sesję OAuth. Token nigdy nie trafia do commitowanego pliku.
 
 ## Auto-deploy z `main` — Workers Builds
 
@@ -181,12 +183,30 @@ Current Version ID: 53cab668-bde2-469c-95fc-a92039f9a982
 Push na `main` → build → wdrożenie, bez udziału człowieka i bez zewnętrznego CI. Wszystkie
 sprawdzenia smoke przechodzą na wersji zbudowanej przez Cloudflare.
 
-**Buildy nie są bit-w-bit odtwarzalne między laptopem a CI.** Ten sam commit dał lokalnie
-`entry-4a4dcaed….js` (2 142 349 B), a w CI `entry-0f2504d9….js` (2 135 953 B) — inny Node
-(24.18.0 w CI, 25.1.0 lokalnie) i inne drzewo zależności (839 vs 836 pakietów). Nie jest to defekt,
-ale ma jedną praktyczną konsekwencję: **nazwę zasobu do sprawdzenia bierz z wdrożonego HTML-a, nie
-z lokalnego `dist/`** — inaczej testujesz plik, którego na produkcji nie ma i dostajesz mylące 404.
-Assety są adresowane hashem treści, więc stare nazwy przestają istnieć po deployu.
+**Bundel webowy nie jest odtwarzalny — nawet przy identycznym wejściu.** Trzy buildy, trzy hashe:
+
+| Build | Nazwa bundla | Rozmiar |
+| --- | --- | --- |
+| lokalny (Node 25.1.0, 836 pakietów) | `entry-4a4dcaed….js` | 2 142 349 B |
+| CI, commit `2cb1e5f` (Node 24.18.0, 839 pakietów) | `entry-0f2504d9….js` | 2 135 953 B |
+| CI, commit `54b6447` | `entry-c440558757….js` | — |
+
+Różnicę laptop ↔ CI wyjaśnia inny Node i inne drzewo zależności. Ale **oba buildy CI różnią się
+między sobą**, mimo że commit `54b6447` ruszał wyłącznie plik markdown: zero zmian w
+`package-lock.json`, `src/`, `app.json` i `worker.ts` (zweryfikowane `git diff --numstat`). Metro
+produkuje więc inny hash przy identycznym wejściu na identycznej platformie.
+
+Trzy konsekwencje:
+
+1. **Nazwę zasobu do sprawdzenia bierz z wdrożonego HTML-a, nie z lokalnego `dist/`** — inaczej
+   testujesz plik, którego na produkcji nie ma, i dostajesz 404, które wygląda jak zepsute wdrożenie.
+   Pierwszy smoke test po auto-deployu wpadł dokładnie w tę pułapkę.
+2. **Każdy deploy unieważnia stare adresy assetów.** Klient, który trzyma otwartą stronę z przed
+   deployu, dostanie 404 na swoim bundlu JS do czasu odświeżenia. Przy jednoosobowym MVP to
+   nieistotne; przy realnym ruchu to okno błędu przy każdym wdrożeniu.
+3. **Commit dotykający wyłącznie dokumentacji przebudowuje i redeployuje produkcję.** Trigger nie ma
+   `path_excludes`. Warto tam dodać `context/**`, `notes/**` i `*.md`, żeby zmiany w dokumentach nie
+   ruszały produkcji — to ustawienie w panelu, nie w repo.
 
 ### Kroki podłączenia (dla odtworzenia)
 
