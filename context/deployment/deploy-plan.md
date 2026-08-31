@@ -204,27 +204,32 @@ Current Version ID: 53cab668-bde2-469c-95fc-a92039f9a982
 Push na `main` → build → wdrożenie, bez udziału człowieka i bez zewnętrznego CI. Wszystkie
 sprawdzenia smoke przechodzą na wersji zbudowanej przez Cloudflare.
 
-**Bundel webowy nie jest odtwarzalny — nawet przy identycznym wejściu.** Trzy buildy, trzy hashe:
+**Bundel webowy nie jest w pełni odtwarzalny — ale niestabilność jest sporadyczna, nie ciągła.**
+Cztery buildy tego samego drzewa źródłowego, trzy różne hashe:
 
-| Build | Nazwa bundla | Rozmiar |
+| Build | Wersja | Nazwa bundla |
 | --- | --- | --- |
-| lokalny (Node 25.1.0, 836 pakietów) | `entry-4a4dcaed….js` | 2 142 349 B |
-| CI, commit `2cb1e5f` (Node 24.18.0, 839 pakietów) | `entry-0f2504d9….js` | 2 135 953 B |
-| CI, commit `54b6447` | `entry-c440558757….js` | — |
+| lokalny (Node 25.1.0, 836 pakietów) | — | `entry-4a4dcaed….js` (2 142 349 B) |
+| CI, commit `2cb1e5f` (Node 24.18.0, 839 pakietów) | `53cab668` | `entry-0f2504d9….js` (2 135 953 B) |
+| CI, commit `54b6447` | `b7f7b65c` | `entry-c440558757….js` |
+| CI, commit `cad3ed9` | `646c0d26` | `entry-0f2504d9….js` — **taki sam jak w pierwszym** |
 
-Różnicę laptop ↔ CI wyjaśnia inny Node i inne drzewo zależności. Ale **oba buildy CI różnią się
-między sobą**, mimo że commit `54b6447` ruszał wyłącznie plik markdown: zero zmian w
-`package-lock.json`, `src/`, `app.json` i `worker.ts` (zweryfikowane `git diff --numstat`). Metro
-produkuje więc inny hash przy identycznym wejściu na identycznej platformie.
+Różnicę laptop ↔ CI wyjaśnia inny Node i inne drzewo zależności. Nieprzewidziane jest to, co dzieje
+się **wewnątrz CI**: żaden z tych commitów nie ruszał `package-lock.json`, `src/`, `app.json` ani
+`worker.ts` (zweryfikowane `git diff --numstat`), a mimo to build drugi dał inny hash niż pierwszy
+i trzeci. Wejście identyczne, platforma identyczna, wynik w dwóch stanach — więc to nie jest
+„każdy build inny", tylko sporadyczna niedeterministyczność (prawdopodobnie kolejność modułów przy
+zrównoleglonym bundlowaniu Metro). Nie da się na niej polegać w żadną stronę.
 
 Trzy konsekwencje:
 
 1. **Nazwę zasobu do sprawdzenia bierz z wdrożonego HTML-a, nie z lokalnego `dist/`** — inaczej
    testujesz plik, którego na produkcji nie ma, i dostajesz 404, które wygląda jak zepsute wdrożenie.
    Pierwszy smoke test po auto-deployu wpadł dokładnie w tę pułapkę.
-2. **Każdy deploy unieważnia stare adresy assetów.** Klient, który trzyma otwartą stronę z przed
-   deployu, dostanie 404 na swoim bundlu JS do czasu odświeżenia. Przy jednoosobowym MVP to
-   nieistotne; przy realnym ruchu to okno błędu przy każdym wdrożeniu.
+2. **Deploy może unieważnić stare adresy assetów** — nie musi, ale nie wiadomo z góry, czy to zrobi.
+   Gdy hash się zmieni, klient trzymający otwartą stronę z przed deployu dostanie 404 na swoim
+   bundlu JS do czasu odświeżenia. Przy jednoosobowym MVP nieistotne; przy realnym ruchu to okno
+   błędu przy nieprzewidywalnej części wdrożeń, co jest gorsze diagnostycznie niż przy każdym.
 3. **Commit dotykający wyłącznie dokumentacji przebudowywał i redeployował produkcję.** Naprawione
    przez `path_excludes` — patrz niżej.
 

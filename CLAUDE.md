@@ -144,10 +144,11 @@ npx wrangler deploy                                   # produkcja
 - Smoke test po wdrożeniu: `/` zwraca HTML, nieznana ścieżka zwraca 404, a `/api/health` zwraca
   `{"ok":true,"d1":true}`. Jeśli HTML działa, a trasa API daje 500 — patrz `rules` wyżej.
 - Logi na żywo: `npx wrangler tail`. Rollback: `npx wrangler rollback` — cofa **kod, nie schemat D1**.
-- **Hash bundla webowego zmienia się przy każdym buildzie**, nawet bez zmiany w źródłach. Nazwę
-  zasobu do sprawdzenia bierz więc z wdrożonego HTML-a, nie z lokalnego `dist/` — inaczej dostaniesz
-  404, które wygląda jak zepsute wdrożenie. Uboczny skutek: każdy deploy unieważnia stare adresy
-  assetów, więc otwarta u kogoś strona z przed deployu straci swój bundel do odświeżenia.
+- **Hash bundla webowego może się zmienić bez żadnej zmiany w źródłach** (sporadyczna
+  niedeterministyczność Metro — cztery buildy tego samego drzewa dały trzy hashe). Nazwę zasobu do
+  sprawdzenia bierz więc z wdrożonego HTML-a, nie z lokalnego `dist/`, inaczej dostaniesz 404, które
+  wygląda jak zepsute wdrożenie. Uboczny skutek: część deployów unieważnia stare adresy assetów,
+  więc otwarta u kogoś strona z przed deployu może stracić swój bundel do odświeżenia.
 - CI to Cloudflare Workers Builds na gałęzi `main` (nie GitHub Actions). Typecheck i lint nadal
   uruchamiasz sam przed pushem.
 
