@@ -6,7 +6,7 @@ hints:
   language_family: js
   team_size: solo
   deployment_target: appstore-via-eas
-  ci_provider: github-actions
+  ci_provider: cloudflare-workers-builds
   ci_default_flow: auto-deploy-on-merge
   bootstrapper_confidence: verified
   path_taken: standard
