@@ -1,11 +1,12 @@
 import { useSignUp } from '@clerk/expo';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
 import { GoogleSignInButton } from '@/components/ui/google-sign-in-button';
 import { TextField } from '@/components/ui/text-field';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -16,7 +17,11 @@ export default function SignUpScreen() {
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [codeResent, setCodeResent] = useState(false);
+  // Co wiemy o wysyłce kodu. `pending` to stan po odświeżeniu strony: Clerk przywraca rozpoczętą
+  // rejestrację, ale my nie wiemy, czy poprzednia wysyłka doszła — więc nie twierdzimy, że tak.
+  const [codeDelivery, setCodeDelivery] = useState<'pending' | 'sent' | 'resent' | 'failed'>(
+    'pending',
+  );
 
   const busy = fetchStatus === 'fetching';
   // Świeży `signUp` raportuje `missing_requirements` jeszcze przed utworzeniem, więc o kroku
@@ -30,16 +35,26 @@ export default function SignUpScreen() {
       return;
     }
 
-    setCodeResent(false);
-    await signUp.verifications.sendEmailCode();
+    // Konto już istnieje, ale wysyłka kodu może paść osobno (limit Clerka, sieć). Wtedy ekran kodu
+    // i tak się pokaże — nagłówek musi powiedzieć, że kod NIE poszedł, a nie że „wysłaliśmy".
+    const { error: sendError } = await signUp.verifications.sendEmailCode();
+    setCodeDelivery(sendError ? 'failed' : 'sent');
   }
 
   // Clerk pamięta rozpoczętą rejestrację, więc po odświeżeniu strony użytkownik wraca na ekran kodu
   // — ale kod sam się nie wysyła drugi raz. Bez tej ścieżki zgubiony mail to martwy punkt.
   async function resendCode() {
     const { error } = await signUp.verifications.sendEmailCode();
-    setCodeResent(!error);
+    setCodeDelivery(error ? 'failed' : 'resent');
   }
+
+  const codeTarget = signUp.emailAddress ?? emailAddress;
+  const codeDeliveryText = {
+    pending: `Wpisz kod wysłany na ${codeTarget}.`,
+    sent: `Wysłaliśmy kod na ${codeTarget}.`,
+    resent: `Wysłaliśmy kod ponownie na ${codeTarget} — sprawdź też spam.`,
+    failed: `Nie udało się wysłać kodu na ${codeTarget} — użyj linku poniżej.`,
+  }[codeDelivery];
 
   async function submitCode() {
     const { error } = await signUp.verifications.verifyEmailCode({ code });
@@ -47,17 +62,9 @@ export default function SignUpScreen() {
       return;
     }
 
-    await signUp.finalize({
-      navigate: ({ session, decorateUrl }) => {
-        // Clerk może mieć jeszcze zadanie do domknięcia — wtedy nie przekierowujemy.
-        if (session.currentTask) {
-          return;
-        }
-        // `decorateUrl` dokłada parametr odświeżający ciasteczko przy ITP Safari; wynik jest
-        // wyliczany w runtime, więc `typedRoutes` nie może go sprawdzić.
-        router.replace(Platform.OS === 'web' ? (decorateUrl('/') as Href) : '/');
-      },
-    });
+    // Po `finalize()` sesja staje się aktywna i bramka grupy `(auth)` sama odsyła na `/`.
+    // Nawigacja po zmianie sesji ma jednego właściciela — patrz `(auth)/_layout.tsx`.
+    await signUp.finalize();
   }
 
   return (
@@ -67,8 +74,11 @@ export default function SignUpScreen() {
 
         {needsCode ? (
           <>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
-              Wysłaliśmy kod na {signUp.emailAddress ?? emailAddress}.
+            <ThemedText
+              type="small"
+              themeColor={codeDelivery === 'failed' ? 'textDanger' : 'textSecondary'}
+              style={styles.centerText}>
+              {codeDeliveryText}
             </ThemedText>
 
             <TextField
@@ -83,9 +93,7 @@ export default function SignUpScreen() {
             />
 
             <Pressable disabled={busy} onPress={resendCode}>
-              <ThemedText type="linkPrimary">
-                {codeResent ? 'Kod wysłany ponownie — sprawdź też spam' : 'Nie dostałem kodu, wyślij ponownie'}
-              </ThemedText>
+              <ThemedText type="linkPrimary">Nie dostałem kodu, wyślij ponownie</ThemedText>
             </Pressable>
           </>
         ) : (
@@ -126,16 +134,11 @@ export default function SignUpScreen() {
           </ThemedText>
         ) : null}
 
-        <Pressable
-          disabled={busy}
+        <ActionButton
+          label={needsCode ? 'Potwierdź kod' : 'Załóż konto'}
+          busy={busy}
           onPress={needsCode ? submitCode : submitAccount}
-          style={({ pressed }) => [styles.action, (pressed || busy) && styles.actionMuted]}>
-          <ThemedView type="backgroundSelected" style={styles.actionSurface}>
-            <ThemedText type="small">
-              {needsCode ? 'Potwierdź kod' : 'Załóż konto'}
-            </ThemedText>
-          </ThemedView>
-        </Pressable>
+        />
 
         {needsCode ? null : (
           <>
@@ -178,17 +181,5 @@ const styles = StyleSheet.create({
   },
   centerText: {
     textAlign: 'center',
-  },
-  action: {
-    alignSelf: 'stretch',
-  },
-  actionMuted: {
-    opacity: 0.7,
-  },
-  actionSurface: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
-    alignItems: 'center',
   },
 });

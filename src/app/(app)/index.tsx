@@ -1,12 +1,14 @@
 import { useClerk } from '@clerk/expo';
 import * as Device from 'expo-device';
-import { Platform, Pressable, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedIcon } from '@/components/animated-icon';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -31,6 +33,16 @@ function getDevMenuHint() {
 
 export default function HomeScreen() {
   const { signOut } = useClerk();
+  const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  async function handleSignOut() {
+    setSignOutError(null);
+    try {
+      await signOut();
+    } catch {
+      setSignOutError('Nie udało się wylogować. Sprawdź połączenie i spróbuj ponownie.');
+    }
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -49,26 +61,22 @@ export default function HomeScreen() {
         <ThemedView type="backgroundElement" style={styles.stepContainer}>
           <HintRow
             title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+            hint={<ThemedText type="code">src/app/(app)/index.tsx</ThemedText>}
           />
           <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
         </ThemedView>
 
         {/*
           Wylogowanie nie potrzebuje przekierowania: layout grupy `(app)` przestaje widzieć sesję
           i sam odsyła na `/sign-in`.
         */}
-        <Pressable
-          onPress={() => signOut()}
-          style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}>
-          <ThemedView type="backgroundElement" style={styles.signOutSurface}>
-            <ThemedText type="small">Wyloguj się</ThemedText>
-          </ThemedView>
-        </Pressable>
+        <ActionButton label="Wyloguj się" onPress={handleSignOut} type="backgroundElement" />
+
+        {signOutError ? (
+          <ThemedText type="small" themeColor="textDanger">
+            {signOutError}
+          </ThemedText>
+        ) : null}
 
         {Platform.OS === 'web' && <WebBadge />}
       </SafeAreaView>
@@ -102,18 +110,6 @@ const styles = StyleSheet.create({
   },
   code: {
     textTransform: 'uppercase',
-  },
-  signOut: {
-    alignSelf: 'stretch',
-  },
-  signOutPressed: {
-    opacity: 0.7,
-  },
-  signOutSurface: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
-    alignItems: 'center',
   },
   stepContainer: {
     gap: Spacing.three,

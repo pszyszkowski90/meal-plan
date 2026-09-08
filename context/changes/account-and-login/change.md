@@ -1,7 +1,7 @@
 ---
 change_id: account-and-login
 title: Konto e-mail + hasło i granica danych użytkownika
-status: implementing
+status: impl_reviewed
 created: 2026-08-31
 updated: 2026-09-08
 archived_at: null

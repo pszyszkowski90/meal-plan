@@ -1,10 +1,11 @@
+import { isClerkAPIResponseError } from '@clerk/expo';
 import { useSSO } from '@clerk/expo/experimental';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
 import { Spacing } from '@/constants/theme';
 
 /**
@@ -15,13 +16,12 @@ import { Spacing } from '@/constants/theme';
  * Core 3 (tych samych, których używa `signIn.password`). Wariant z `@clerk/expo` woła w środku
  * `@clerk/react/legacy` i wprowadziłby do aplikacji drugi, niezgodny model sesji.
  *
- * Hook domyka sesję sam (`finalize()` w środku), więc tutaj zostaje wyłącznie nawigacja. Zamknięcie
- * okna przez użytkownika to nie błąd: `authSessionResult.type` jest wtedy inny niż `success`
- * i po prostu wracamy na formularz.
+ * Hook domyka sesję sam (`finalize()` w środku), a gdy `isSignedIn` przejdzie na `true`, bramka
+ * grupy `(auth)` odsyła na `/` — tutaj nie zostaje żadna nawigacja. Zamknięcie okna przez
+ * użytkownika to nie błąd: sesja nie powstaje i po prostu zostajemy na formularzu.
  */
 export function GoogleSignInButton({ label }: { label: string }) {
   const { startSSOFlow } = useSSO();
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,15 +30,14 @@ export function GoogleSignInButton({ label }: { label: string }) {
     setError(null);
 
     try {
-      const { authSessionResult } = await startSSOFlow({ strategy: 'oauth_google' });
-
-      if (authSessionResult?.type !== 'success') {
-        return;
-      }
-
-      router.replace('/');
+      await startSSOFlow({ strategy: 'oauth_google' });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Logowanie przez Google nie powiodło się.');
+      // Błędy API Clerka mają `longMessage` pisane dla użytkownika; wszystko inne (brak zależności,
+      // brak URL przekierowania, wyjątek sieci) to komunikaty techniczne — nie pokazujemy ich.
+      const apiMessage = isClerkAPIResponseError(cause)
+        ? (cause.errors[0]?.longMessage ?? cause.errors[0]?.message)
+        : undefined;
+      setError(apiMessage ?? 'Logowanie przez Google nie powiodło się. Spróbuj ponownie.');
     } finally {
       setBusy(false);
     }
@@ -46,14 +45,13 @@ export function GoogleSignInButton({ label }: { label: string }) {
 
   return (
     <ThemedView style={styles.container}>
-      <Pressable
-        disabled={busy}
+      <ActionButton
+        label={label}
+        busyLabel="Otwieram Google…"
+        busy={busy}
         onPress={start}
-        style={({ pressed }) => [styles.action, (pressed || busy) && styles.actionMuted]}>
-        <ThemedView type="backgroundElement" style={styles.actionSurface}>
-          <ThemedText type="small">{busy ? 'Otwieram Google…' : label}</ThemedText>
-        </ThemedView>
-      </Pressable>
+        type="backgroundElement"
+      />
 
       {error ? (
         <ThemedText type="small" themeColor="textDanger">
@@ -68,17 +66,5 @@ const styles = StyleSheet.create({
   container: {
     alignSelf: 'stretch',
     gap: Spacing.one,
-  },
-  action: {
-    alignSelf: 'stretch',
-  },
-  actionMuted: {
-    opacity: 0.7,
-  },
-  actionSurface: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
-    alignItems: 'center',
   },
 });

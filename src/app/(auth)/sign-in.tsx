@@ -1,11 +1,12 @@
 import { useSignIn } from '@clerk/expo';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ActionButton } from '@/components/ui/action-button';
 import { GoogleSignInButton } from '@/components/ui/google-sign-in-button';
 import { TextField } from '@/components/ui/text-field';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -15,10 +16,15 @@ export default function SignInScreen() {
   const router = useRouter();
   const [emailAddress, setEmailAddress] = useState('');
   const [password, setPassword] = useState('');
+  // Poprawne hasło, a mimo to `status !== 'complete'`: dashboard włączył krok (MFA, weryfikacja),
+  // którego ten ekran nie obsługuje. Bez komunikatu przycisk po prostu „nic nie robi".
+  const [unsupportedStep, setUnsupportedStep] = useState(false);
 
   const busy = fetchStatus === 'fetching';
 
   async function submit() {
+    setUnsupportedStep(false);
+
     const { error } = await signIn.password({ emailAddress, password });
     if (error) {
       return;
@@ -27,20 +33,13 @@ export default function SignInScreen() {
     // Drugi czynnik i logowanie społecznościowe są wyłączone w dashboardzie, więc poprawne hasło
     // domyka logowanie od razu. Każdy inny status znaczy, że dashboard rozjechał się z kodem.
     if (signIn.status !== 'complete') {
+      setUnsupportedStep(true);
       return;
     }
 
-    await signIn.finalize({
-      navigate: ({ session, decorateUrl }) => {
-        // Clerk może mieć jeszcze zadanie do domknięcia — wtedy nie przekierowujemy.
-        if (session.currentTask) {
-          return;
-        }
-        // `decorateUrl` dokłada parametr odświeżający ciasteczko przy ITP Safari; wynik jest
-        // wyliczany w runtime, więc `typedRoutes` nie może go sprawdzić.
-        router.replace(Platform.OS === 'web' ? (decorateUrl('/') as Href) : '/');
-      },
-    });
+    // Po `finalize()` sesja staje się aktywna i bramka grupy `(auth)` sama odsyła na `/`.
+    // Nawigacja po zmianie sesji ma jednego właściciela — patrz `(auth)/_layout.tsx`.
+    await signIn.finalize();
   }
 
   return (
@@ -76,14 +75,13 @@ export default function SignInScreen() {
           </ThemedText>
         ))}
 
-        <Pressable
-          disabled={busy}
-          onPress={submit}
-          style={({ pressed }) => [styles.action, (pressed || busy) && styles.actionMuted]}>
-          <ThemedView type="backgroundSelected" style={styles.actionSurface}>
-            <ThemedText type="small">{busy ? 'Logowanie…' : 'Zaloguj się'}</ThemedText>
-          </ThemedView>
-        </Pressable>
+        {unsupportedStep ? (
+          <ThemedText type="small" themeColor="textDanger">
+            Logowanie wymaga dodatkowego kroku, którego aplikacja jeszcze nie obsługuje.
+          </ThemedText>
+        ) : null}
+
+        <ActionButton label="Zaloguj się" busyLabel="Logowanie…" busy={busy} onPress={submit} />
 
         <ThemedText type="small" themeColor="textSecondary">
           albo
@@ -112,17 +110,5 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
     maxWidth: MaxContentWidth,
-  },
-  action: {
-    alignSelf: 'stretch',
-  },
-  actionMuted: {
-    opacity: 0.7,
-  },
-  actionSurface: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Spacing.three,
-    alignItems: 'center',
   },
 });

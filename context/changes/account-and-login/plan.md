@@ -17,6 +17,13 @@
 > Wersja 2.3 (2026-09-08, w trakcie implementacji fazy 1): dwie poprawki z testów ręcznych,
 > obie na polecenie użytkownika — **bramka grupy `(auth)`** (zalogowany nie ogląda formularzy
 > logowania) i **ponowna wysyłka kodu** na ekranie rejestracji. Krok 12 fazy 1 i wiersz 1.16.
+>
+> Wersja 2.4 (2026-09-08, po `/10x-impl-review` fazy 1): **nawigacja po zmianie sesji ma jednego
+> właściciela — bramkę grupy `(auth)`**. `finalize()` w sign-in i sign-up bez `navigate`, przycisk
+> Google bez `router.replace`. Wariant `navigate` + `decorateUrl` z kroków 9–11 odrzucony:
+> `decorateUrl` zwraca absolutny URL, który Expo Router traktuje jako zewnętrzny (pełne
+> przeładowanie), a bramka i tak przekierowywała, więc guard `currentTask` był martwy
+> (`reviews/impl-review-phase-1.md`, F2).
 
 ## Przegląd
 
@@ -203,6 +210,12 @@ bez udziału naszego backendu.
 lock regeneruj na Linuksie zasianym obecnym plikiem — procedura w
 [deploy-plan.md](../../deployment/deploy-plan.md), sekcja o `@emnapi`.
 
+*(Aneks 2.4, po przeglądzie fazy 1: `npx expo install` dopisuje pluginy `@clerk/expo`
+i `expo-secure-store` do `app.json` → `plugins`. **Zostają**: konfigurują wyłącznie projekt natywny
+— iOS deployment target 17.0 i filtr intentów `clerk://…hosted-callback` na Androidzie — bez
+efektu w Expo Go i na webie, a pierwszy development build ich wymaga. `slug` i `scheme`
+nietknięte.)*
+
 #### 2. Konfiguracja instancji Clerka (krok człowieka, nie kodu)
 
 **Plik**: — (dashboard Clerka)
@@ -217,7 +230,8 @@ włączone w dashboardzie; rozjazd objawia się błędem dopiero w runtime.
 
 #### 3. Klucz publikowalny — lokalnie **i** w środowisku buildu
 
-**Plik**: `.env.local`, panel Cloudflare → Workers Builds *(bez zmian w `app.json`)*
+**Plik**: `.env.local`, panel Cloudflare → Workers Builds *(klucz nie wchodzi do `app.json`;
+jedyną zmianę w `app.json` robi krok 1 — pluginy)*
 
 **Cel**: dać klientowi klucz, który musi być wstawiony do bundla przy eksporcie — w obu miejscach,
 gdzie ten eksport się odbywa.
@@ -289,13 +303,17 @@ w efekcie — `react-hooks/set-state-in-effect` jest w tym repo błędem lintu.
 
 #### 8. Prymityw pola tekstowego
 
-**Plik**: `src/components/ui/text-field.tsx`
+**Plik**: `src/components/ui/text-field.tsx`, `src/constants/theme.ts`
 
 **Cel**: pole formularza zgodne z motywem, bo w repo nie ma żadnego, a powstanie ich teraz kilka.
 
 **Kontrakt**: opakowuje `TextInput`; kolor z `useTheme()`, odstęp i promień ze `Spacing` — **zero
 surowych kolorów i liczb**. Propsy: etykieta, komunikat błędu, `secureTextEntry`, tryb klawiatury.
 Bez `useMemo`/`useCallback`/`React.memo` — `reactCompiler` jest włączony.
+
+*(Aneks 2.4, po przeglądzie fazy 1: paleta `Colors` w `theme.ts` zyskuje `textDanger` w obu trybach
+— komunikat błędu przy zakazie surowych kolorów nie ma innego źródła barwy. Nowy wpis rozszerza typ
+`ThemeColor`, więc jest dostępny w `ThemedText` przez `themeColor="textDanger"`.)*
 
 #### 9. Rejestracja z weryfikacją kodem
 
@@ -305,7 +323,7 @@ Bez `useMemo`/`useCallback`/`React.memo` — `reactCompiler` jest włączony.
 
 **Kontrakt**: `useSignUp()` → `signUp.password({ emailAddress, password })` →
 `signUp.verifications.sendEmailCode()` → ekran kodu →
-`signUp.verifications.verifyEmailCode({ code })` → `signUp.finalize({ navigate })`. Krok kodu
+`signUp.verifications.verifyEmailCode({ code })` → `signUp.finalize()` (bez `navigate` — patrz krok 10). Krok kodu
 pokazywany, gdy `signUp.status === 'missing_requirements'`
 i `signUp.unverifiedFields` zawiera `email_address`. Błędy z `errors.fields.*` renderowane przy
 polach, nie w alercie. **Ekran musi zawierać `<View nativeID="clerk-captcha" />`** — bez niego
@@ -318,8 +336,12 @@ rejestracja na webie się nie powiedzie.
 **Cel**: wejście do aplikacji i wyjście z niej.
 
 **Kontrakt**: `useSignIn()` → `signIn.password({ emailAddress, password })`; przy
-`signIn.status === 'complete'` → `signIn.finalize({ navigate })`, gdzie `navigate` obsługuje
-`session.currentTask` (wtedy nie przekierowuje) i na webie używa `decorateUrl`. Wylogowanie:
+`signIn.status === 'complete'` → `signIn.finalize()` **bez `navigate`**. Po aktywacji sesji
+przekierowuje wyłącznie bramka grupy `(auth)` (krok 12) — nawigacja po zmianie sesji ma jednego
+właściciela, symetrycznie do wylogowania. *(Wersja 2.4: pierwotny wariant `navigate` +
+`decorateUrl` odrzucony po przeglądzie fazy 1 — `decorateUrl` zwraca absolutny URL, który Expo
+Router traktuje jako zewnętrzny i robi pełne przeładowanie; guard `currentTask` był martwy, bo
+bramka przekierowywała i tak.)* Wylogowanie:
 `signOut()` z `useClerk()` na ekranie startowym — po nim layout grupy przestaje widzieć sesję
 i router sam trafia na `/sign-in`. Reszta zawartości ekranu startera zostaje.
 
@@ -336,7 +358,7 @@ i router sam trafia na `/sign-in`. Reszta zawartości ekranu startera zostaje.
 z `@clerk/expo`: tylko wariant eksperymentalny stoi na zasobach Core 3, ten drugi woła w środku
 `@clerk/react/legacy` i wprowadziłby do aplikacji drugi, niezgodny model sesji obok
 `signIn.password`. `startSSOFlow({ strategy: 'oauth_google' })` domyka sesję sam (woła `finalize()`
-w środku), więc po stronie ekranu zostaje wyłącznie nawigacja na `/`. Metoda **rzuca wyjątkiem**
+w środku), a przekierowanie na `/` robi bramka `(auth)` — po stronie przycisku nie ma nawigacji. Metoda **rzuca wyjątkiem**
 przy błędzie, w odróżnieniu od `signIn.password`, które zwraca `{ error }` — stąd `try/catch`.
 Zamknięcie okna przez użytkownika **nie jest błędem**: `authSessionResult.type` jest wtedy inny niż
 `success` i ekran po prostu zostaje na formularzu.
@@ -362,7 +384,8 @@ formularz logowania, a zgubiony mail z kodem zostawiał rejestrację w martwym p
 
 **Kontrakt**: layout grupy `(auth)` jest odwrotnością bramki `(app)`: przy `!isLoaded` stan
 neutralny, przy `isSignedIn` `<Redirect href="/" />`, inaczej `<Stack screenOptions={{ headerShown:
-false }} />`. Bez tego Clerk odrzuca rejestrację drugiego konta w tej samej przeglądarce błędem
+false }} />`. Jest **jedynym właścicielem nawigacji po zmianie sesji** — ekrany auth nie
+nawigują same (wersja 2.4). Bez tego Clerk odrzuca rejestrację drugiego konta w tej samej przeglądarce błędem
 „You're already signed in" — poprawnie wyświetlonym, ale bezużytecznym dla użytkownika.
 
 Ekran kodu w `sign-up.tsx` ma link **„Nie dostałem kodu, wyślij ponownie"** wołający
@@ -799,25 +822,25 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 
 #### Automated
 
-- [x] 1.1 `npm run check-lock` przechodzi po dodaniu zależności
-- [x] 1.2 `npx tsc --noEmit` czyste
-- [x] 1.3 `npx expo lint` czyste, bez `react-hooks/set-state-in-effect`
-- [x] 1.4 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`
-- [x] 1.5 Bramka bundlowania: `expo export -p web` przeszedł po kroku 4, przed ekranami
-- [x] 1.12 `/sso-callback` jest w wyeksportowanych trasach i zwraca 200 na `wrangler dev`
-- [x] 1.16 Zalogowany na `/sign-in` i `/sign-up` trafia na `/`; niezalogowany widzi formularz
+- [x] 1.1 `npm run check-lock` przechodzi po dodaniu zależności — 0d1e449
+- [x] 1.2 `npx tsc --noEmit` czyste — 0d1e449
+- [x] 1.3 `npx expo lint` czyste, bez `react-hooks/set-state-in-effect` — 0d1e449
+- [x] 1.4 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules` — 0d1e449
+- [x] 1.5 Bramka bundlowania: `expo export -p web` przeszedł po kroku 4, przed ekranami — 0d1e449
+- [x] 1.12 `/sso-callback` jest w wyeksportowanych trasach i zwraca 200 na `wrangler dev` — 0d1e449
+- [x] 1.16 Zalogowany na `/sign-in` i `/sign-up` trafia na `/`; niezalogowany widzi formularz — 0d1e449
 
 #### Manual
 
-- [x] 1.6 `git check-ignore .dev.vars .wrangler/` potwierdza oba wpisy, przed pierwszym sekretem
-- [x] 1.7 `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` w Workers Builds przed commitem fazy
-- [x] 1.8 W przeglądarce: rejestracja → kod → wylogowanie → logowanie
-- [x] 1.9 W Expo Go: ten sam przepływ, sesja przetrwa zamknięcie aplikacji
-- [x] 1.10 Na `wrangler dev`: `/` i `/explore` bez sesji przekierowują na `/sign-in`, bez mignięcia zakładek
-- [x] 1.11 Zakładki działają na webie i natywnie po przeniesieniu tras do `(app)`
-- [x] 1.13 Adresy przekierowania SSO (web i Expo Go) są na białej liście w dashboardzie Clerka
-- [x] 1.14 W przeglądarce: „Zaloguj się przez Google" zakłada konto i wpuszcza do zakładek
-- [x] 1.15 W Expo Go: przepływ Google wraca do aplikacji i zachowuje sesję
+- [x] 1.6 `git check-ignore .dev.vars .wrangler/` potwierdza oba wpisy, przed pierwszym sekretem — 0d1e449
+- [x] 1.7 `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` w Workers Builds przed commitem fazy — 0d1e449
+- [x] 1.8 W przeglądarce: rejestracja → kod → wylogowanie → logowanie — 0d1e449
+- [x] 1.9 W Expo Go: ten sam przepływ, sesja przetrwa zamknięcie aplikacji — 0d1e449
+- [x] 1.10 Na `wrangler dev`: `/` i `/explore` bez sesji przekierowują na `/sign-in`, bez mignięcia zakładek — 0d1e449
+- [x] 1.11 Zakładki działają na webie i natywnie po przeniesieniu tras do `(app)` — 0d1e449
+- [x] 1.13 Adresy przekierowania SSO (web i Expo Go) są na białej liście w dashboardzie Clerka — 0d1e449
+- [x] 1.14 W przeglądarce: „Zaloguj się przez Google" zakłada konto i wpuszcza do zakładek — 0d1e449
+- [x] 1.15 W Expo Go: przepływ Google wraca do aplikacji i zachowuje sesję — 0d1e449
 
 ### Phase 2: Reset hasła
 
