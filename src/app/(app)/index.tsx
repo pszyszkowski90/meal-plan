@@ -1,5 +1,6 @@
+import { useClerk } from '@clerk/expo';
 import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedIcon } from '@/components/animated-icon';
@@ -29,6 +30,8 @@ function getDevMenuHint() {
 }
 
 export default function HomeScreen() {
+  const { signOut } = useClerk();
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -54,6 +57,18 @@ export default function HomeScreen() {
             hint={<ThemedText type="code">npm run reset-project</ThemedText>}
           />
         </ThemedView>
+
+        {/*
+          Wylogowanie nie potrzebuje przekierowania: layout grupy `(app)` przestaje widzieć sesję
+          i sam odsyła na `/sign-in`.
+        */}
+        <Pressable
+          onPress={() => signOut()}
+          style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}>
+          <ThemedView type="backgroundElement" style={styles.signOutSurface}>
+            <ThemedText type="small">Wyloguj się</ThemedText>
+          </ThemedView>
+        </Pressable>
 
         {Platform.OS === 'web' && <WebBadge />}
       </SafeAreaView>
@@ -87,6 +102,18 @@ const styles = StyleSheet.create({
   },
   code: {
     textTransform: 'uppercase',
+  },
+  signOut: {
+    alignSelf: 'stretch',
+  },
+  signOutPressed: {
+    opacity: 0.7,
+  },
+  signOutSurface: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: Spacing.three,
+    alignItems: 'center',
   },
   stepContainer: {
     gap: Spacing.three,
