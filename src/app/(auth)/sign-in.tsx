@@ -89,6 +89,10 @@ export default function SignInScreen() {
 
         <GoogleSignInButton label="Zaloguj się przez Google" />
 
+        <Pressable onPress={() => router.push('/forgot-password')}>
+          <ThemedText type="linkPrimary">Nie pamiętam hasła</ThemedText>
+        </Pressable>
+
         <Pressable onPress={() => router.push('/sign-up')}>
           <ThemedText type="linkPrimary">Nie mam jeszcze konta</ThemedText>
         </Pressable>

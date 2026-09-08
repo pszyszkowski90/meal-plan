@@ -24,6 +24,11 @@
 > `decorateUrl` zwraca absolutny URL, który Expo Router traktuje jako zewnętrzny (pełne
 > przeładowanie), a bramka i tak przekierowywała, więc guard `currentTask` był martwy
 > (`reviews/impl-review-phase-1.md`, F2).
+>
+> Wersja 2.5 (2026-09-08, wejście w fazę 2): kontrakt kroku 1 fazy 2 skorygowany wobec SDK —
+> `create({ identifier })` przed `sendCode()` (bez parametrów), `submitPassword` pod
+> `resetPasswordEmailCode`, `finalize()` bez `navigate`; maskowanie `form_identifier_not_found` po
+> stronie ekranu, bo instancja nie ma włączonej ochrony przed wyliczaniem kont.
 
 ## Przegląd
 
@@ -385,7 +390,10 @@ formularz logowania, a zgubiony mail z kodem zostawiał rejestrację w martwym p
 **Kontrakt**: layout grupy `(auth)` jest odwrotnością bramki `(app)`: przy `!isLoaded` stan
 neutralny, przy `isSignedIn` `<Redirect href="/" />`, inaczej `<Stack screenOptions={{ headerShown:
 false }} />`. Jest **jedynym właścicielem nawigacji po zmianie sesji** — ekrany auth nie
-nawigują same (wersja 2.4). Bez tego Clerk odrzuca rejestrację drugiego konta w tej samej przeglądarce błędem
+nawigują same (wersja 2.4). Skutek uboczny (zmierzony 2026-09-08): ekrany `/sign-in`, `/sign-up`
+i `/forgot-password` prerenderują się do stanu neutralnego (HTML identyczny z `/`), a formularz
+pojawia się po załadowaniu Clerka (~80 ms) — ta sama cena, którą płaci bramka `(app)`, w zamian
+za brak mignięcia formularza u zalogowanego. Bez tego Clerk odrzuca rejestrację drugiego konta w tej samej przeglądarce błędem
 „You're already signed in" — poprawnie wyświetlonym, ale bezużytecznym dla użytkownika.
 
 Ekran kodu w `sign-up.tsx` ma link **„Nie dostałem kodu, wyślij ponownie"** wołający
@@ -450,11 +458,21 @@ i bez strony pośredniej.
 
 **Cel**: jedyna ścieżka powrotu dla użytkownika, który zapomniał hasła.
 
-**Kontrakt**: `useSignIn()` → `signIn.resetPasswordEmailCode.sendCode({ emailAddress })` → ekran
-kodu i nowego hasła → `signIn.resetPasswordEmailCode.verifyCode({ code })` (status przechodzi
-w `needs_new_password`) → `signIn.submitPassword({ password })` → `signIn.finalize({ navigate })`.
+**Kontrakt** *(wersja 2.5 — skorygowany wobec zainstalowanego SDK 4.6.1)*: `useSignIn()` →
+`signIn.create({ identifier: emailAddress })` → `signIn.resetPasswordEmailCode.sendCode()`
+(**bez parametrów**; bez wcześniejszego `create` metoda rzuca „Cannot reset password without a sign
+in”) → ekran kodu i nowego hasła → `signIn.resetPasswordEmailCode.verifyCode({ code })` (status
+przechodzi w `needs_new_password`) → `signIn.resetPasswordEmailCode.submitPassword({ password })`
+(nie `signIn.submitPassword`) → `signIn.finalize()` **bez `navigate`** — na `/` odsyła bramka
+`(auth)` (v2.4). Jeśli `submitPassword` odrzuci hasło, ponowna próba pomija `verifyCode`
+(sprawdzenie `signIn.status === 'needs_new_password'`), bo kod jest już zużyty.
+
 Krok wysyłki kodu pokazuje tę samą odpowiedź niezależnie od tego, czy adres istnieje — inaczej
-ekran staje się wyszukiwarką kont.
+ekran staje się wyszukiwarką kont. Instancja ma **wyłączoną** *Enumeration protection*, więc
+Clerk zwraca dla nieznanego adresu `form_identifier_not_found`; ekran maskuje to sam: przechodzi do
+kroku kodu z tym samym tekstem, a każdy kod odrzuca komunikatem identycznym jak dla kodu błędnego.
+Docelowo ochronę włącza się w dashboardzie (Configure → Attack protection) — wtedy maska staje się
+martwa, ale nieszkodliwa.
 
 #### 2. Wejście z ekranu logowania
 
@@ -846,14 +864,14 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 
 #### Automated
 
-- [ ] 2.1 `npx tsc --noEmit` czyste
-- [ ] 2.2 `npx expo lint` czyste
+- [x] 2.1 `npx tsc --noEmit` czyste
+- [x] 2.2 `npx expo lint` czyste
 
 #### Manual
 
-- [ ] 2.3 Reset przechodzi end-to-end: kod dociera, nowe hasło działa, stare nie
-- [ ] 2.4 Po resecie użytkownik jest zalogowany i trafia do zakładek
-- [ ] 2.5 Ten sam przepływ działa w Expo Go
+- [x] 2.3 Reset przechodzi end-to-end: kod dociera, nowe hasło działa, stare nie
+- [x] 2.4 Po resecie użytkownik jest zalogowany i trafia do zakładek
+- [x] 2.5 Ten sam przepływ działa w Expo Go
 
 ### Phase 3: Granica danych na serwerze
 

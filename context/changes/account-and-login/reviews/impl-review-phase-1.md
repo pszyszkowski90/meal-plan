@@ -4,7 +4,7 @@
 - **Plan**: context/changes/account-and-login/plan.md
 - **Zakres**: Faza 1 z 4 (commit `0d1e449`)
 - **Data**: 2026-09-08
-- **Werdykt**: ODRZUCONY (do czasu naprawy F1 — potem WYMAGA UWAGI)
+- **Werdykt**: ODRZUCONY przy przeglądzie → po sortowaniu 2026-09-08 **9/9 ustaleń FIXED** (F1: `7624eb1`; F2–F9: `99b022c`). Kryteria sukcesu po `7624eb1`: 1.1 PASS.
 - **Ustalenia**: 1 krytyczne, 4 ostrzeżenia, 4 obserwacje
 
 ## Werdykty
@@ -29,6 +29,7 @@
 | 1.5 | bramka bundlowania | historyczne, przeszło 2026-09-01 |
 | 1.12 | `/sso-callback` w eksporcie | PASS — trasa w `dist/server`; 200 na `wrangler dev` (2026-09-08) |
 | 1.16 | bramka `(auth)` | PASS — Playwright: `/sign-in` i `/sign-up` zalogowanego → `/` |
+| 1.1 (po `7624eb1`) | `npm run check-lock` | **PASS** — 1123 pakiety, 0 bez sumy kontrolnej |
 
 Wiersze ręczne 1.6–1.15: wszystkie `[x]`, potwierdzone przez użytkownika 2026-09-08. Dowód
 w postaci artefaktów istnieje dla 1.6, 1.8, 1.10, 1.11 (web), 1.16 (przebiegi Playwright
@@ -135,3 +136,19 @@ z podglądem ruchu do Clerka). 1.7, 1.9, 1.13, 1.14, 1.15 to dashboard/telefon �
 - **Szczegóły**: hinty „Try editing `src/app/index.tsx`", „`src/app/_layout.tsx` sets up the tab navigator" i „Fresh start: `npm run reset-project`" są po przeniesieniu nieprawdziwe, a ostatnia reklamuje komendę zakazaną w CLAUDE.md. Plan świadomie nie przepisywał treści (krok 6).
 - **Poprawka**: usuń trzy hinty teraz albo zostaw S-02, które zastępuje cały ekran startowy.
 - **Decyzja**: FIXED — 2026-09-08: hint „Fresh start / `npm run reset-project`" usunięty; ścieżki w `index.tsx` i `explore.tsx` zaktualizowane na `src/app/(app)/…`, opis layoutu mówi o bramce sesji. `tsc` + `lint` czyste.
+
+## Sortowanie — 2026-09-08
+
+| Wynik | Ustalenia | Liczba |
+|---|---|---|
+| Naprawiono | F1 (`7624eb1`); F2 (Poprawka A), F3, F4, F5, F6, F7, F8, F9 (`99b022c`) | 9 |
+| Reguła | — | 0 |
+| Pominięto | — | 0 |
+| Zaakceptowano | — | 0 |
+
+Weryfikacja po poprawkach: `npm run check-lock`, `npx tsc --noEmit`, `npx expo lint`,
+`npx expo export -p web --clear` i `npx wrangler deploy --dry-run` (9 modułów, nic z `node_modules`)
+czyste. Przebieg Playwright na `wrangler dev`: logowanie → `/` wyłącznie przez bramkę `(auth)`
+(wpis nawigacji nadal `/sign-in`, więc bez przeładowania strony), `sign_ins` 200, wylogowanie →
+`/sign-in`, 0 błędów konsoli. Ten zapis SHA i sekcja powstają po commicie `99b022c`, więc wchodzą
+do repo z następnym commitem (faza 2).
