@@ -292,7 +292,12 @@ pusty commit `703b474` wywołał build, mimo że nie ruszał niczego.
 - **Limit 10 ms CPU na planie darmowym.** `/api/health` mieści się w nim bez wysiłku, więc nie mówi
   nic o generatorze planu (FR-008). Plan Workers Paid (5 USD/mc) zakładać od pierwszego dnia pracy
   nad generatorem.
-- **Auth i FR-001.** Better Auth + Drizzle na D1, timebox 2 wieczorów z rejestru ryzyka.
+- **Auth i FR-001.** Dostawcą tożsamości jest **Clerk** — decyzja z 1.09.2026, uzasadnienie
+  w [change.md](../changes/account-and-login/change.md), aneks w
+  [infrastructure.md](../foundation/infrastructure.md). Do wdrożenia dochodzą dwie rzeczy:
+  sekret Workera `CLERK_JWT_KEY` (klucz publiczny PEM) oraz zmienna **środowiska buildu**
+  `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` w Workers Builds — ta druga jest wstawiana do bundla przez
+  `expo export`, więc ustawiona wyłącznie lokalnie da działający `wrangler dev` i martwą produkcję.
 - **Schemat i migracje D1.** Każda migracja z migracją wstecz w tym samym commicie, wyłącznie
   addytywne — `wrangler rollback` nie cofa schematu.
 - **Izolacja danych.** D1 nie ma RLS. Cały dostęp do danych użytkownika przez jedną warstwę

@@ -36,6 +36,38 @@ miesięczny a nie dzienny budżet żądań), po których wybór padł na własne
 kupuje kontrolę i bindingi, a płaci własnoręczną konfiguracją adaptera i własnym auth —
 to świadomy koszt, nie przeoczenie.
 
+## Aneks: decyzja o uwierzytelnianiu (2026-09-01)
+
+Badanie poniżej pozostaje zapisem stanu wiedzy z 28.08.2026 i **nie jest przepisywane**. Ten aneks
+zastępuje jego rozstrzygnięcia dotyczące auth; wszędzie, gdzie niżej pada „Better Auth + Drizzle
++ D1", obowiązuje to, co tutaj.
+
+**Dostawcą tożsamości jest Clerk** (plan Hobby), a nie własna warstwa auth na D1. Decyzja zapadła
+przy planowaniu zmiany `account-and-login`, po tym jak przegląd planu opartego na Better Auth
+wykazał, że trzy z sześciu poważnych ustaleń nie dotyczyły produktu, tylko tarcia biblioteki
+z runtime'em workerd i z bundlerem Metro. Pełne uzasadnienie i lista odrzuconych opcji:
+[`context/changes/account-and-login/change.md`](../changes/account-and-login/change.md).
+
+Co to zmienia w stosunku do treści poniżej:
+
+- **Punkt 3 kontroli anty-uprzedzeniowej jest nieaktualny.** „E-mail + hasło, sesje, reset hasła
+  i izolacja danych per konto są Twoje do zbudowania" — nie są. Zostaje wyłącznie izolacja danych,
+  bo D1 nadal nie ma RLS (punkt 4 pozostaje w mocy w całości).
+- **Nadawca maili nie wchodzi.** Resend / Postmark wypada z projektu; weryfikację adresu i reset
+  hasła wysyła Clerk. Liczba dostawców nie rośnie do trzech — zostaje Cloudflare + Clerk.
+- **Plan Workers Paid przestaje być wymaganiem auth.** Był potrzebny wyłącznie dlatego, że
+  hashowanie hasła nie mieści się w 10 ms CPU planu darmowego. Bez hashowania po naszej stronie
+  darmowy plan wystarcza; pozycja o limicie CPU w rejestrze ryzyka dotyczy odtąd wyłącznie
+  generatora planu (FR-008).
+- **Worker weryfikuje podpis JWT kluczem publicznym PEM** (`@clerk/backend`, bezsieciowo, rząd
+  wielkości pojedynczych milisekund), a `userId` z tokenu jest pierwszym argumentem każdej funkcji
+  repozytorium. D1 nie przechowuje danych tożsamościowych — e-mail i hash hasła zostają u Clerka.
+
+Świadomie przyjęty koszt: tożsamość mieszka poza naszą infrastrukturą (rezydencja danych
+w wybranym regionie to funkcja planów płatnych Clerka), sesja na planie Hobby ma sztywne 7 dni,
+i powstaje uzależnienie od dostawcy. Dane objęte guardrailem prywatności z PRD — waga, wiek,
+płeć — zostają w D1 w regionie EEUR.
+
 ## Platform Comparison
 
 Ocena według pięciu kryteriów z `references/agent-friendly-criteria.md`. Twardy filtr trwałych
@@ -248,7 +280,8 @@ Zachowane, bo to te ustalenia uzasadniają zamianę:
 | Zapomniane `WHERE user_id = ?` łamie guardrail izolacji danych profilu, a D1 nie ma RLS i repo nie ma testów | Devil's advocate | M | H | Cały dostęp do danych użytkownika przez jedną warstwę repozytorium przyjmującą `userId` jako pierwszy argument; żadnego surowego SQL-a w trasach API |
 | Migracja D1 psuje produkcję, a `wrangler rollback` cofa tylko kod | Unknown unknowns | M | H | Każda migracja pisana z gotową migracją wstecz w tym samym commicie; migracje wyłącznie addytywne w MVP (bez `DROP COLUMN`, bez zmiany typu) |
 | Publiczny URL preview wystawia kopię aplikacji wpiętą w produkcyjne D1 | Research finding | M | H | Cloudflare Access na Workerze przed pierwszym `versions upload`, albo `preview_urls = false` i testowanie wyłącznie przez `wrangler dev` |
-| Better Auth konfigurowany per żądanie zjada tydzień budżetu, bo przykłady z sieci zakładają instancję na poziomie modułu | Pre-mortem | H | M | Timebox 2 wieczorów na auth; po przekroczeniu — Supabase Auth (region EU) obok D1 albo zamiast niego, świadomie przyjmując drugiego dostawcę |
+| Biblioteka auth bundlowana przez Metro do `dist/server` nie startuje na workerd (warunki eksportu, `createRequire`, czysto-JS hashowanie) | Przegląd planu 2026-08-31 | H | H | Zdezaktualizowane przez aneks: tożsamość prowadzi Clerk, więc w bundlu serwera zostaje wyłącznie weryfikacja podpisu. Ryzyko resztkowe dotyczy `@clerk/backend`; ścieżka odwrotu to `jose` przeciw temu samemu kluczowi PEM |
+| Tożsamość mieszka u zewnętrznego dostawcy — awaria, zmiana cennika lub wymóg rezydencji danych wymuszają migrację użytkowników | Aneks 2026-09-01 | L | H | Kod produktowy zna wyłącznie `userId` jako string i nie duplikuje danych tożsamościowych; wymiana dostawcy dotyka ekranów auth i jednej funkcji weryfikującej token, nie warstwy danych |
 | Przejście `web.output` ze `static` na `server` psuje hydrację schematu kolorów i inne założenia statycznego renderowania | Pre-mortem | M | M | Zmień `web.output` osobnym commitem, uruchom `npx tsc --noEmit` i otwórz web przed dołożeniem pierwszej trasy `+api.ts`; zaktualizuj sekcję o `use-color-scheme` w [CLAUDE.md](../../CLAUDE.md) |
 | Kod działa w `expo start --web`, ale pada na workerd (brak modułu Node, limit CPU) | Unknown unknowns | H | M | `npx wrangler dev` na zbudowanym `dist/` jako bramka przed każdym deployem — nie `expo start --web` |
 | Adapter `workerd` jest świeży (SDK 57) i ma otwarte zgłoszenia; blokujący bug zatrzymuje projekt | Devil's advocate | M | H | Ścieżka odwrotu: ten sam `npx expo export -p web` deployuje się przez `eas deploy` na EAS Hosting (ten sam runtime) — trzymaj ją jako plan B, nie przepisuj kodu pod Cloudflare |

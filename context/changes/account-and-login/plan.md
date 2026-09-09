@@ -928,7 +928,7 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 
 - [x] 2.1 `npx tsc --noEmit` czyste — 529c9db
 - [x] 2.2 `npx expo lint` czyste — 529c9db
-- [x] 2.7 Logowanie na świeżym kliencie przechodzi etap kodu urządzenia i kończy się sesją
+- [x] 2.7 Logowanie na świeżym kliencie przechodzi etap kodu urządzenia i kończy się sesją — c2fb6a5
 
 #### Manual
 
@@ -936,7 +936,7 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 - [x] 2.4 Po resecie użytkownik jest zalogowany i trafia do zakładek — 529c9db
 - [x] 2.5 Ten sam przepływ działa w Expo Go — 529c9db
 - [x] 2.6 *User enumeration protection* w trybie **bulk** włączone (Protect → Rules → Manage) — potwierdzone 2026-09-09, było włączone wcześniej; tryb *strict* niedostępny, bo hasło jest pierwszą strategią logowania
-- [x] 2.8 Logowanie w Expo Go na konto z przeglądarki domyka `needs_client_trust` kodem z maila
+- [x] 2.8 Logowanie w Expo Go na konto z przeglądarki domyka `needs_client_trust` kodem z maila — c2fb6a5
 
 ### Phase 3: Granica danych na serwerze
 

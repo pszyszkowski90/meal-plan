@@ -13,8 +13,14 @@
  */
 const ENV_KEY = '__MEALPLAN_WORKER_ENV__';
 
+/**
+ * Typy D1 deklarowane ręcznie i wyłącznie w zakresie, którego repo faktycznie używa. `@cloudflare/
+ * workers-types` nie wchodzi: wciągnęłoby drugi zestaw typów globalnych obok React Native.
+ */
 interface D1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement;
   first<T = unknown>(): Promise<T | null>;
+  run(): Promise<unknown>;
 }
 
 interface D1Database {
@@ -23,6 +29,8 @@ interface D1Database {
 
 export interface WorkerEnv {
   DB: D1Database;
+  /** Klucz publiczny PEM z dashboardu Clerka — weryfikacja podpisu JWT bez rundy sieciowej. */
+  CLERK_JWT_KEY: string;
 }
 
 export function setWorkerEnv(env: unknown): void {

@@ -1,6 +1,6 @@
 import { useClerk } from '@clerk/expo';
 import * as Device from 'expo-device';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { NotSignedInError, OfflineError, useAuthedFetch } from '@/lib/api';
 
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
@@ -31,9 +32,90 @@ function getDevMenuHint() {
   );
 }
 
+/**
+ * Stan granicy danych na tym ekranie. `offline` jest osobnym przypadkiem, a nie odmianą błędu:
+ * brak sieci NIE oznacza braku sesji i nie wolno go zamieniać na wylogowanie.
+ */
+type AccountState =
+  | { kind: 'loading' }
+  | { kind: 'ready'; userId: string }
+  | { kind: 'offline' }
+  | { kind: 'error'; message: string };
+
+function AccountRow({ state }: { state: AccountState }) {
+  if (state.kind === 'loading') {
+    return (
+      <ThemedText type="small" themeColor="textSecondary">
+        Pobieram konto…
+      </ThemedText>
+    );
+  }
+
+  if (state.kind === 'ready') {
+    return (
+      <ThemedText type="small" themeColor="textSecondary">
+        userId: <ThemedText type="code">{state.userId}</ThemedText>
+      </ThemedText>
+    );
+  }
+
+  if (state.kind === 'offline') {
+    return (
+      <ThemedText type="small" themeColor="textDanger">
+        Brak połączenia — konto pobierzemy, gdy sieć wróci. Sesja jest zachowana.
+      </ThemedText>
+    );
+  }
+
+  return (
+    <ThemedText type="small" themeColor="textDanger">
+      {state.message}
+    </ThemedText>
+  );
+}
+
 export default function HomeScreen() {
   const { signOut } = useClerk();
   const [signOutError, setSignOutError] = useState<string | null>(null);
+  const authedFetch = useAuthedFetch();
+  const [account, setAccount] = useState<AccountState>({ kind: 'loading' });
+  const requested = useRef(false);
+
+  // Jedno żądanie przy wejściu — dowód, że transport tokenu i granica danych działają end-to-end.
+  // Ref, nie tablica zależności, decyduje o „raz": tożsamość `authedFetch` nie jest kontraktem.
+  useEffect(() => {
+    if (requested.current) {
+      return;
+    }
+    requested.current = true;
+
+    authedFetch('/api/account')
+      .then(async (response) => {
+        if (!response.ok) {
+          setAccount({ kind: 'error', message: `Serwer odrzucił żądanie (${response.status}).` });
+          return;
+        }
+
+        const body = (await response.json()) as { userId?: string };
+        setAccount(
+          body.userId
+            ? { kind: 'ready', userId: body.userId }
+            : { kind: 'error', message: 'Odpowiedź bez `userId`.' }
+        );
+      })
+      .catch((error: unknown) => {
+        if (error instanceof OfflineError) {
+          setAccount({ kind: 'offline' });
+          return;
+        }
+        if (error instanceof NotSignedInError) {
+          // Bramka grupy `(app)` odeśle na `/sign-in` sama — tu tylko nie udajemy, że mamy dane.
+          setAccount({ kind: 'error', message: 'Sesja wygasła.' });
+          return;
+        }
+        setAccount({ kind: 'error', message: 'Nie udało się pobrać konta.' });
+      });
+  }, [authedFetch]);
 
   async function handleSignOut() {
     setSignOutError(null);
@@ -65,6 +147,12 @@ export default function HomeScreen() {
           />
           <HintRow title="Dev tools" hint={getDevMenuHint()} />
         </ThemedView>
+
+        {/*
+          Granica danych widoczna z ekranu: `userId` pochodzi z `/api/account`, czyli z tokenu
+          zweryfikowanego przez Workera — nie z klienta Clerka. To odciąg dla kryterium 3.13.
+        */}
+        <AccountRow state={account} />
 
         {/*
           Wylogowanie nie potrzebuje przekierowania: layout grupy `(app)` przestaje widzieć sesję
