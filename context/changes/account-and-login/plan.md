@@ -29,6 +29,24 @@
 > `create({ identifier })` przed `sendCode()` (bez parametrów), `submitPassword` pod
 > `resetPasswordEmailCode`, `finalize()` bez `navigate`; maskowanie `form_identifier_not_found` po
 > stronie ekranu, bo instancja nie ma włączonej ochrony przed wyliczaniem kont.
+>
+> Wersja 2.6 (2026-09-08, po `/10x-impl-review` fazy 2): pod maskę przed wyliczaniem kont wchodzi też
+> błąd `sendCode()` i każde odrzucenie kodu (`reviews/impl-review-phase-2.md`, F1–F3).
+>
+> Wersja 2.7 (2026-09-09, korekta v2.6): ustawienie w dashboardzie **nie zastępuje** maski ekranowej.
+> Ścieżka to *Protect → Rules → User enumeration protection*, nie „Configure → Attack protection",
+> a tryb *strict* wymaga, by hasło nie było pierwszą strategią logowania — czego nie spełniamy.
+> Zostaje tryb *bulk* (same limity częstotliwości) i maska jako jedyny mechanizm ukrywający istnienie
+> konta. Wiersz Progress 2.6 przepisany.
+>
+> Wersja 2.8 (2026-09-09, w trakcie implementacji fazy 3): **logowanie z nowego urządzenia wymaga
+> potwierdzenia kodem** — Clerk zwraca `status: 'needs_client_trust'`, którego ekran logowania nie
+> znał. Wyszło przy weryfikacji kryterium 3.9: telefon nie mógł wejść na konto założone
+> w przeglądarce. Nie jest to rozjazd konfiguracji — instancja ma `second_factors: []`,
+> `sign_in.second_factor.required: false` i `native_settings.trusted_device_sign_in_enabled: false`,
+> a status mimo to przychodzi, więc nie ma go czym wyłączyć. Dodaje krok 3 fazy 2 i wiersze 2.7–2.8.
+> Zakres poszerzony świadomie, decyzją użytkownika: na tym kroku stoi kryterium 4.8, czyli dosłowny
+> wynik S-01 („ten sam stan w przeglądarce i na telefonie").
 
 ## Przegląd
 
@@ -471,8 +489,28 @@ Krok wysyłki kodu pokazuje tę samą odpowiedź niezależnie od tego, czy adres
 ekran staje się wyszukiwarką kont. Instancja ma **wyłączoną** *Enumeration protection*, więc
 Clerk zwraca dla nieznanego adresu `form_identifier_not_found`; ekran maskuje to sam: przechodzi do
 kroku kodu z tym samym tekstem, a każdy kod odrzuca komunikatem identycznym jak dla kodu błędnego.
-Docelowo ochronę włącza się w dashboardzie (Configure → Attack protection) — wtedy maska staje się
-martwa, ale nieszkodliwa.
+**Maska ekranowa jest jedynym mechanizmem, jaki mamy** (ustalone 9.09.2026 wobec dashboardu). Clerk
+daje dwa tryby w *Protect → Rules → User enumeration protection* (nie „Configure → Attack
+protection" — ta strona już nie istnieje): *bulk* nakłada wyłącznie limity częstotliwości i
+istnienia konta nie ukrywa, a *strict* stawia trzy warunki, z których jednego nie spełniamy —
+**hasło nie może być pierwszą strategią logowania** (trzeba je wyłączyć albo ustawić preferowaną
+strategię na OTP), a nasz ekran logowania zaczyna od `signIn.password()`. Pozostałe dwa warunki
+(Open access mode, brak identyfikatorów typu username) spełniamy. Wniosek: strict jest poza
+zasięgiem, dopóki logowanie jest hasło-pierwsze, a to zmiana produktowa poza FR-001. Tryb *bulk*
+jest na instancji włączony (potwierdzone 9.09.2026, wiersz 2.6), więc limity częstotliwości mamy —
+ale istnienia konta nie ukrywają. Granice maski, które zostają na stałe: 422 z FAPI widać
+w zakładce Network, a zamaskowane odrzucenie kodu nie robi żądania, więc nie mruga stanem `busy`.
+
+Błąd `sendCode()` dla konta istniejącego (np. tylko Google, bez czynnika hasła) też idzie pod maskę,
+a każde odrzucenie kodu przez `verifyCode` pokazuje jedną treść (v2.6).
+
+Ekran ma też link „Wróć do logowania" (`router.back()` gdy jest historia, inaczej
+`push('/sign-in')`) — dodany w implementacji, aneks v2.6. Nie jest to nawigacja po zmianie sesji,
+więc nie narusza zasady jednego właściciela z v2.4.
+
+Krok kodu ma link „Nie dostałem kodu, wyślij ponownie" (jak rejestracja od v2.3): przy istniejącej
+próbie woła `sendCode()` raz jeszcze, pod maską nic nie wysyła, a nagłówek w obu przypadkach mówi
+„jeśli konto istnieje, wysłaliśmy kod ponownie". Link znika po przyjęciu kodu. Aneks v2.6.
 
 #### 2. Wejście z ekranu logowania
 
@@ -482,18 +520,42 @@ martwa, ale nieszkodliwa.
 
 **Kontrakt**: link „Nie pamiętam hasła" prowadzący na `/forgot-password`.
 
+#### 3. Zaufanie nowego urządzenia *(aneks v2.8)*
+
+**Plik**: `src/app/(auth)/sign-in.tsx`
+
+**Cel**: wpuścić na konto z urządzenia, które go nie zakładało. Bez tego kroku konto utworzone
+w przeglądarce jest na telefonie nieosiągalne, a wynik S-01 — nieosiągalny.
+
+**Kontrakt**: gdy po `signIn.password({...})` status to `needs_client_trust` (hasło jest już
+`verified` — brakuje potwierdzenia *klienta*, nie tożsamości), ekran woła
+`signIn.mfa.sendEmailCode()` i przechodzi na etap kodu: `signIn.mfa.verifyEmailCode({ code })` →
+status `complete` → `signIn.finalize()` **bez `navigate`**, bo na `/` odsyła bramka `(auth)` (v2.4).
+Etap bierze się ze `signIn.status`, nie z lokalnego stanu — Clerk pamięta rozpoczętą próbę między
+odświeżeniami, dokładnie jak rejestracja. Stąd też ten sam stan dostarczenia
+(`pending` / `sent` / `resent` / `failed`) i link „Nie dostałem kodu, wyślij ponownie": po
+odświeżeniu nie wiemy, czy poprzednia wysyłka doszła, więc tego nie twierdzimy.
+
+Clerk oferuje dla tego kroku dokładnie jeden czynnik — `email_code` na adres konta
+(`supportedSecondFactors: [{ strategy: 'email_code', primary: true }]`) — więc ekran nie ma czego
+wybierać. Na etapie kodu chowają się Google, „Nie pamiętam hasła" i „Nie mam jeszcze konta", jak
+w rejestracji. Komunikat o nieobsługiwanym kroku **zostaje**, dla statusów nadal nieznanych.
+
 ### Kryteria sukcesu:
 
 #### Automated Verification:
 
 - `npx tsc --noEmit` czyste
 - `npx expo lint` czyste
+- Logowanie na świeżym kliencie (wyczyszczone ciasteczka) przechodzi etap kodu urządzenia
+  i kończy się aktywną sesją
 
 #### Manual Verification:
 
 - Reset przechodzi od początku do końca: kod dociera na e-mail, nowe hasło działa, stare nie
 - Po resecie użytkownik jest zalogowany i trafia do zakładek
 - Ten sam przepływ działa w Expo Go
+- Logowanie w Expo Go na konto założone w przeglądarce domyka `needs_client_trust` kodem z maila
 
 ---
 
@@ -864,35 +926,38 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 
 #### Automated
 
-- [x] 2.1 `npx tsc --noEmit` czyste
-- [x] 2.2 `npx expo lint` czyste
+- [x] 2.1 `npx tsc --noEmit` czyste — 529c9db
+- [x] 2.2 `npx expo lint` czyste — 529c9db
+- [x] 2.7 Logowanie na świeżym kliencie przechodzi etap kodu urządzenia i kończy się sesją
 
 #### Manual
 
-- [x] 2.3 Reset przechodzi end-to-end: kod dociera, nowe hasło działa, stare nie
-- [x] 2.4 Po resecie użytkownik jest zalogowany i trafia do zakładek
-- [x] 2.5 Ten sam przepływ działa w Expo Go
+- [x] 2.3 Reset przechodzi end-to-end: kod dociera, nowe hasło działa, stare nie — 529c9db
+- [x] 2.4 Po resecie użytkownik jest zalogowany i trafia do zakładek — 529c9db
+- [x] 2.5 Ten sam przepływ działa w Expo Go — 529c9db
+- [x] 2.6 *User enumeration protection* w trybie **bulk** włączone (Protect → Rules → Manage) — potwierdzone 2026-09-09, było włączone wcześniej; tryb *strict* niedostępny, bo hasło jest pierwszą strategią logowania
+- [x] 2.8 Logowanie w Expo Go na konto z przeglądarki domyka `needs_client_trust` kodem z maila
 
 ### Phase 3: Granica danych na serwerze
 
 #### Automated
 
-- [ ] 3.1 `npm run check-lock`, `npx tsc --noEmit` i `npx expo lint` czyste
-- [ ] 3.2 Migracja `0001` stosuje się lokalnie, `migrations list --local` bez zaległych
-- [ ] 3.3 `wrangler deploy --dry-run` nadal bez modułów z `node_modules`
-- [ ] 3.4 `GET /api/account` bez nagłówka `Authorization` zwraca 401
-- [ ] 3.5 `GET /api/account` z tokenem konta A zwraca jego `userId` i tworzy wiersz w `app_user`
-- [ ] 3.6 `GET /api/account` z tokenem konta B nie rusza wiersza konta A
-- [ ] 3.7 Token z zepsutym podpisem lub po wygaśnięciu zwraca 401
-- [ ] 3.8 `GET /api/health` nadal zwraca `{"ok":true,"d1":true}`
-- [ ] 3.9 Token z Expo Go (bez roszczenia `azp`) przechodzi weryfikację
-- [ ] 3.10 `migrations list --remote` bez zaległych przed commitem fazy
+- [x] 3.1 `npm run check-lock`, `npx tsc --noEmit` i `npx expo lint` czyste
+- [x] 3.2 Migracja `0001` stosuje się lokalnie, `migrations list --local` bez zaległych
+- [x] 3.3 `wrangler deploy --dry-run` nadal bez modułów z `node_modules`
+- [x] 3.4 `GET /api/account` bez nagłówka `Authorization` zwraca 401
+- [x] 3.5 `GET /api/account` z tokenem konta A zwraca jego `userId` i tworzy wiersz w `app_user`
+- [x] 3.6 `GET /api/account` z tokenem konta B nie rusza wiersza konta A
+- [x] 3.7 Token z zepsutym podpisem lub po wygaśnięciu zwraca 401
+- [x] 3.8 `GET /api/health` nadal zwraca `{"ok":true,"d1":true}`
+- [x] 3.9 Token z Expo Go (bez roszczenia `azp`) przechodzi weryfikację
+- [x] 3.10 `migrations list --remote` bez zaległych przed commitem fazy
 
 #### Manual
 
-- [ ] 3.11 Żadna trasa poza `health+api.ts` nie woła `getWorkerEnv()` ani `prepare(`
-- [ ] 3.12 Token do testów pochodzi z działającej aplikacji, nie z ręcznej generacji
-- [ ] 3.13 Ekran startowy pokazuje `userId` z `authedFetch`; offline nie wylogowuje użytkownika
+- [x] 3.11 Żadna trasa poza `health+api.ts` nie woła `getWorkerEnv()` ani `prepare(`
+- [x] 3.12 Token do testów pochodzi z działającej aplikacji, nie z ręcznej generacji
+- [x] 3.13 Ekran startowy pokazuje `userId` z `authedFetch`; offline nie wylogowuje użytkownika
 
 ### Phase 4: Wdrożenie i przebieg na dwóch platformach
 
