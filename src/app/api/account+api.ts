@@ -17,7 +17,20 @@ export async function GET(request: Request): Promise<Response> {
     return auth;
   }
 
-  const user = await touchAppUser(auth.userId);
+  try {
+    const user = await touchAppUser(auth.userId);
 
-  return Response.json({ userId: user.id, createdAt: user.createdAt, lastSeenAt: user.lastSeenAt });
+    return Response.json({
+      userId: user.id,
+      createdAt: user.createdAt,
+      lastSeenAt: user.lastSeenAt,
+    });
+  } catch (error) {
+    // Bez tego awaria D1 (albo niezastosowana migracja) wychodzi z trasy jako generyczne 500
+    // workerd — niewidoczne w `wrangler tail`. `requireUserId` już loguje swoje powody, więc
+    // ścieżka danych też ma to robić. `userId` NIE wchodzi do logu: to dana użytkownika.
+    console.error('[api/account] zapytanie do D1 nie powiodło się:', error);
+
+    return Response.json({ error: 'internal' }, { status: 500 });
+  }
 }

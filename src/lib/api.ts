@@ -1,14 +1,16 @@
-import { useAuth } from '@clerk/expo';
-import { ClerkOfflineError } from '@clerk/react/errors';
 import { Platform } from 'react-native';
 
+import { ProductionOrigin } from '@/constants/api';
+
 /**
- * JEDYNY KANAŁ ŻĄDAŃ KLIENTA DO WŁASNEGO API — odpowiednik `src/server/repository/` po drugiej
- * stronie granicy. Bez tego pliku kontrakt „klient wysyła token nagłówkiem `Authorization: Bearer`"
- * istniałby wyłącznie w prozie `CLAUDE.md`, a każdy kolejny fragment wymyślałby go od zera.
+ * Kontrakt żądań klienta do WŁASNEGO API — odpowiednik `src/server/repository/` po drugiej stronie
+ * granicy. Bez tego pliku reguła „klient wysyła token nagłówkiem `Authorization: Bearer`" istniałaby
+ * wyłącznie w prozie `CLAUDE.md`, a każdy kolejny fragment wymyślałby ją od zera.
  *
  * Reguła dla S-02 i dalszych: ekran nie woła `fetch` do `/api/*` bezpośrednio — woła `authedFetch`
- * z tego pliku. Ciasteczka nie biorą w tym udziału na żadnej platformie.
+ * z [`useAuthedFetch()`](../hooks/use-authed-fetch.ts). Ciasteczka nie biorą w tym udziału na żadnej
+ * platformie. Tu leżą części bez Reacta (adres i typy błędów), sam hook mieszka w `src/hooks/`,
+ * bo tam repo trzyma hooki.
  */
 
 /** `getToken()` oddał `null` — sesji nie ma. Wyrzucenie z aplikacji należy do bramki `(app)`. */
@@ -33,52 +35,36 @@ export class OfflineError extends Error {
 
 /**
  * Na webie żądanie idzie na ten sam origin, co dokument — tak działa i `expo start --web`,
- * i `wrangler dev`, i produkcja. Klient natywny nie ma originu: w Expo Go pod adresem Metro leżą
- * co prawda trasy `+api.ts`, ale uruchomione w Node, gdzie `getWorkerEnv()` nie ma bindingów —
- * więc telefon celuje w produkcyjnego Workera. `EXPO_PUBLIC_API_URL` nadpisuje to na czas
- * ćwiczeń z tunelem do `wrangler dev`.
+ * i `wrangler dev`, i produkcja. Klient natywny originu nie ma: w Expo Go pod adresem Metro leżą
+ * co prawda trasy `+api.ts`, ale uruchomione w Node, gdzie `getWorkerEnv()` nie ma bindingów.
+ * Telefon musi więc dostać adres jawnie.
+ *
+ * W trybie deweloperskim `EXPO_PUBLIC_API_URL` jest **wymagany** i to jest celowe: domyślne
+ * celowanie w produkcję znaczyłoby, że `expo start` na telefonie pisze do produkcyjnej bazy bez
+ * pytania. Dziś kosztowałoby to jeden `last_seen_at`, ale od S-02 w tych tabelach będą dane objęte
+ * guardrailem prywatności z PRD — waga, wiek, płeć. Lepiej, żeby brak konfiguracji był krzykliwym
+ * błędem teraz, niż cichym zapisem wtedy.
  */
-const NATIVE_API_ORIGIN =
-  process.env.EXPO_PUBLIC_API_URL ?? 'https://meal-plan.kurs-ai-szysza.workers.dev';
+function resolveNativeOrigin(): string {
+  const configured = process.env.EXPO_PUBLIC_API_URL;
+  if (configured) {
+    return configured;
+  }
 
-function resolveUrl(path: string): string {
-  return Platform.OS === 'web' ? path : `${NATIVE_API_ORIGIN}${path}`;
+  if (__DEV__) {
+    const message =
+      'Brak EXPO_PUBLIC_API_URL. Klient natywny nie ma originu, a w trybie dev NIE celuje ' +
+      'domyślnie w produkcję. Dopisz do .env.local adres Workera, np. ' +
+      'EXPO_PUBLIC_API_URL=http://<ip-w-LAN>:8787 (wymaga `npx wrangler dev --ip 0.0.0.0`), ' +
+      `albo ${ProductionOrigin}, jeśli świadomie chcesz produkcji. Potem zrestartuj expo start.`;
+    console.error('[api]', message);
+    throw new Error(message);
+  }
+
+  return ProductionOrigin;
 }
 
-/**
- * Zwraca `authedFetch(path, init)` — token z `getToken()` dokłada jako `Authorization: Bearer`.
- *
- * Trzy stany, nie dwa: brak sesji (`NotSignedInError`, żądanie w ogóle nie wychodzi), brak sieci
- * (`OfflineError`, z `getToken()` albo z samego `fetch`) i odpowiedź serwera — także 4xx/5xx,
- * którą oddajemy wywołującemu bez interpretacji. Sygnalizujemy wyjątkiem, bo zwracany typ to
- * `Response` i nie da się w nim uczciwie zakodować „nie wysłałem żądania".
- */
-export function useAuthedFetch() {
-  const { getToken } = useAuth();
-
-  return async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
-    let token: string | null;
-    try {
-      token = await getToken();
-    } catch (error) {
-      if (ClerkOfflineError.is(error)) {
-        throw new OfflineError();
-      }
-      throw error;
-    }
-
-    if (!token) {
-      throw new NotSignedInError();
-    }
-
-    try {
-      return await fetch(resolveUrl(path), {
-        ...init,
-        headers: { ...init?.headers, Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // `fetch` odrzuca obietnicę wyłącznie przy błędzie transportu — status HTTP nią nie jest.
-      throw new OfflineError();
-    }
-  };
+/** Ścieżka względna na webie, absolutna na kliencie natywnym. */
+export function resolveUrl(path: string): string {
+  return Platform.OS === 'web' ? path : `${resolveNativeOrigin()}${path}`;
 }

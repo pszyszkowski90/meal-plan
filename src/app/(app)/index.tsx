@@ -11,7 +11,8 @@ import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { NotSignedInError, OfflineError, useAuthedFetch } from '@/lib/api';
+import { useAuthedFetch } from '@/hooks/use-authed-fetch';
+import { NotSignedInError, OfflineError } from '@/lib/api';
 
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
@@ -61,8 +62,10 @@ function AccountRow({ state }: { state: AccountState }) {
 
   if (state.kind === 'offline') {
     return (
+      // Tekst mówi dokładnie to, co kod robi: żądanie idzie raz przy wejściu, więc ponowna próba
+      // wymaga odświeżenia ekranu. Obiecywanie „pobierzemy, gdy sieć wróci" byłoby nieprawdą.
       <ThemedText type="small" themeColor="textDanger">
-        Brak połączenia — konto pobierzemy, gdy sieć wróci. Sesja jest zachowana.
+        Brak połączenia — odśwież ekran, gdy sieć wróci. Sesja jest zachowana.
       </ThemedText>
     );
   }

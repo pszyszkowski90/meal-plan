@@ -942,22 +942,22 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 
 #### Automated
 
-- [x] 3.1 `npm run check-lock`, `npx tsc --noEmit` i `npx expo lint` czyste
-- [x] 3.2 Migracja `0001` stosuje się lokalnie, `migrations list --local` bez zaległych
-- [x] 3.3 `wrangler deploy --dry-run` nadal bez modułów z `node_modules`
-- [x] 3.4 `GET /api/account` bez nagłówka `Authorization` zwraca 401
-- [x] 3.5 `GET /api/account` z tokenem konta A zwraca jego `userId` i tworzy wiersz w `app_user`
-- [x] 3.6 `GET /api/account` z tokenem konta B nie rusza wiersza konta A
-- [x] 3.7 Token z zepsutym podpisem lub po wygaśnięciu zwraca 401
-- [x] 3.8 `GET /api/health` nadal zwraca `{"ok":true,"d1":true}`
-- [x] 3.9 Token z Expo Go (bez roszczenia `azp`) przechodzi weryfikację
-- [x] 3.10 `migrations list --remote` bez zaległych przed commitem fazy
+- [x] 3.1 `npm run check-lock`, `npx tsc --noEmit` i `npx expo lint` czyste — 46c9cd1
+- [x] 3.2 Migracja `0001` stosuje się lokalnie, `migrations list --local` bez zaległych — 46c9cd1
+- [x] 3.3 `wrangler deploy --dry-run` nadal bez modułów z `node_modules` — 46c9cd1
+- [x] 3.4 `GET /api/account` bez nagłówka `Authorization` zwraca 401 — 46c9cd1
+- [x] 3.5 `GET /api/account` z tokenem konta A zwraca jego `userId` i tworzy wiersz w `app_user` — 46c9cd1
+- [x] 3.6 `GET /api/account` z tokenem konta B nie rusza wiersza konta A — 46c9cd1
+- [x] 3.7 Token z zepsutym podpisem lub po wygaśnięciu zwraca 401 — 46c9cd1
+- [x] 3.8 `GET /api/health` nadal zwraca `{"ok":true,"d1":true}` — 46c9cd1
+- [x] 3.9 Token z Expo Go (bez roszczenia `azp`) przechodzi weryfikację — 46c9cd1
+- [x] 3.10 `migrations list --remote` bez zaległych przed commitem fazy — 46c9cd1
 
 #### Manual
 
-- [x] 3.11 Żadna trasa poza `health+api.ts` nie woła `getWorkerEnv()` ani `prepare(`
-- [x] 3.12 Token do testów pochodzi z działającej aplikacji, nie z ręcznej generacji
-- [x] 3.13 Ekran startowy pokazuje `userId` z `authedFetch`; offline nie wylogowuje użytkownika
+- [x] 3.11 Żadna trasa poza `health+api.ts` nie woła `getWorkerEnv()` ani `prepare(` — 46c9cd1
+- [x] 3.12 Token do testów pochodzi z działającej aplikacji, nie z ręcznej generacji — 46c9cd1
+- [x] 3.13 Ekran startowy pokazuje `userId` z `authedFetch`; offline nie wylogowuje użytkownika — 46c9cd1
 
 ### Phase 4: Wdrożenie i przebieg na dwóch platformach
 

@@ -1,5 +1,6 @@
 import { verifyToken } from '@clerk/backend';
 
+import { ProductionOrigin } from '@/constants/api';
 import { getWorkerEnv } from '@/server/env';
 
 /**
@@ -17,11 +18,16 @@ import { getWorkerEnv } from '@/server/env';
  * potrzebny, bo przepływy Clerka ćwiczymy właśnie na `expo start --web` — token z originu poza
  * listą wróciłby jako 401 nieodróżnialne od zepsutej weryfikacji.
  */
-const AUTHORIZED_PARTIES = [
-  'https://meal-plan.kurs-ai-szysza.workers.dev',
-  'http://localhost:8787',
-  'http://localhost:8081',
-];
+const AUTHORIZED_PARTIES = [ProductionOrigin, 'http://localhost:8787', 'http://localhost:8081'];
+
+/**
+ * Wydawca tokenu. `verifyToken` z samym `jwtKey` **nie sprawdza `iss`** (potwierdzone w `verifyJwt`
+ * SDK 3.17.1: asercje obejmują `sub`, `exp`, `nbf`, `iat`, `typ` i algorytm, a `aud` i `azp` tylko
+ * gdy je podasz). Bez tej linii każdy JWT podpisany kluczem tej instancji — również z custom JWT
+ * template — przechodziłby jako token sesji. Podpis mówi „to nasza instancja", `iss` mówi „to jej
+ * Frontend API", i to drugie jest tu przypięciem prowenancji.
+ */
+const ISSUER = 'https://flying-dove-9587.clerk.accounts.dev';
 
 /**
  * `azp` sprawdzamy sami, zamiast przekazywać `authorizedParties` do `verifyToken`. Powód jest
@@ -34,14 +40,35 @@ const AUTHORIZED_PARTIES = [
  * sprawdzenie świadomie, bo to klient natywny. Plan przewidział tę rozwidlenie w kroku 3 fazy 3.
  */
 function hasAllowedParty(azp: unknown): boolean {
-  if (typeof azp !== 'string' || azp === '') {
+  // Tylko FAKTYCZNY brak roszczenia znaczy „klient natywny". Roszczenie obecne, ale nie-stringowe,
+  // to nie brak — Clerk takiego nie wystawia, więc jest niezgodnością, nie przepustką.
+  if (azp === undefined || azp === null) {
     return true;
   }
-  return AUTHORIZED_PARTIES.includes(azp);
+  return typeof azp === 'string' && AUTHORIZED_PARTIES.includes(azp);
 }
 
 function unauthorized(): Response {
   return Response.json({ error: 'unauthorized' }, { status: 401 });
+}
+
+/**
+ * Awaria po NASZEJ stronie, nie odrzucenie tożsamości. Rozdzielenie tych dwóch klas jest istotne
+ * operacyjnie: nieudany `wrangler secret put` sprawia, że `verifyToken` rzuca `jwk-local-missing`
+ * dla KAŻDEGO żądania. Wpuszczone w tę samą ścieżkę co zły token dałoby 401 wszystkim użytkownikom,
+ * nieodróżnialne od wygasłej sesji — czyli awarię wdrożenia przebraną za problem użytkownika.
+ */
+function misconfigured(): Response {
+  return Response.json({ error: 'internal' }, { status: 500 });
+}
+
+/** `TokenVerificationError` niesie `reason`; zwykły `Error` już nie. */
+function rejectionReason(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+  const reason = Reflect.get(error, 'reason');
+  return typeof reason === 'string' ? reason : error.message;
 }
 
 function readBearerToken(request: Request): string | null {
@@ -65,20 +92,40 @@ export async function requireUserId(request: Request): Promise<{ userId: string 
     return unauthorized();
   }
 
-  try {
-    const payload = await verifyToken(token, { jwtKey: getWorkerEnv().CLERK_JWT_KEY });
+  const jwtKey = getWorkerEnv().CLERK_JWT_KEY;
+  if (!jwtKey) {
+    console.error('[auth] brak sekretu CLERK_JWT_KEY — sprawdź `wrangler secret list`.');
+    return misconfigured();
+  }
 
-    if (!payload.sub || !hasAllowedParty(payload.azp)) {
+  try {
+    const payload = await verifyToken(token, { jwtKey });
+
+    if (!payload.sub || payload.iss !== ISSUER || !hasAllowedParty(payload.azp)) {
+      console.warn('[auth] token odrzucony: roszczenia niezgodne (sub / iss / azp)');
       return unauthorized();
     }
 
     return { userId: payload.sub };
   } catch (error) {
-    // Podpis, `exp`, `nbf`, `typ`, algorytm — każdy powód odrzucenia wygląda z zewnątrz tak samo.
-    // Do środka idzie powód: 401 bez śladu jest nie do zdiagnozowania, a `observability` w
-    // `wrangler.jsonc` jest włączone. Loguje się wyłącznie powód, nigdy token.
-    const reason = error instanceof Error ? (Reflect.get(error, 'reason') ?? error.message) : error;
-    console.warn('[auth] token odrzucony:', reason);
+    // Do środka idzie powód: 401 bez śladu jest nie do zdiagnozowania, a `observability`
+    // w `wrangler.jsonc` jest włączone. Loguje się wyłącznie powód, nigdy token.
+    const reason = rejectionReason(error);
+
+    // Zniekształcony PEM to awaria konfiguracji, nie zły token — patrz `misconfigured()`.
+    if (reason === 'jwk-local-missing') {
+      console.error('[auth] CLERK_JWT_KEY nie daje się wczytać jako klucz PEM.');
+      return misconfigured();
+    }
+
+    // Wygasanie jest rutynowe, nie wyjątkowe, a `head_sampling_rate` to 1 — stąd niższy poziom.
+    if (reason === 'token-expired') {
+      console.debug('[auth] token odrzucony:', reason);
+    } else {
+      console.warn('[auth] token odrzucony:', reason);
+    }
+
+    // Podpis, `exp`, `nbf`, `typ`, algorytm — każdy powód wygląda z zewnątrz tak samo.
     return unauthorized();
   }
 }

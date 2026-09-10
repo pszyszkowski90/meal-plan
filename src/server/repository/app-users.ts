@@ -28,28 +28,58 @@ interface AppUserRow {
 }
 
 /**
- * Wstawia wiersz przy pierwszym kontakcie z kontem i aktualizuje `last_seen_at` przy kolejnych.
- * Tabela `app_user` powstaje leniwie, właśnie tutaj — nie ma webhooka z Clerka, który by ją zasilał.
+ * Jak stary musi być `last_seen_at`, żeby warto go było przepisać. Trasa `GET` nie ma prawa
+ * zapisywać przy KAŻDYM żądaniu: plan darmowy D1 limituje zapisy (100 tys./dobę), nie odczyty,
+ * a na ścieżce uwierzytelnionej nie ma żadnego ograniczenia częstości — pętla renderów po stronie
+ * klienta generowałaby zapisy 1:1. Godzina wystarcza do tego, po co `last_seen_at` istnieje.
+ */
+const STALE_AFTER_MS = 60 * 60 * 1000;
+
+function toAppUser(row: AppUserRow): AppUser {
+  return { id: row.id, createdAt: row.created_at, lastSeenAt: row.last_seen_at };
+}
+
+/**
+ * Wstawia wiersz przy pierwszym kontakcie z kontem i odświeża `last_seen_at`, ale **tylko gdy jest
+ * starszy niż `STALE_AFTER_MS`**. Tabela `app_user` powstaje leniwie, właśnie tutaj — nie ma
+ * webhooka z Clerka, który by ją zasilał.
  *
- * `RETURNING` oddaje stan po zapisie, więc jedno zapytanie zamiast dwóch rund do D1.
+ * Dwa zapytania, nie jedno, i to jest świadomy koszt. `RETURNING` oddaje wiersz, gdy zapis
+ * faktycznie zaszedł — czyli przy pierwszym kontakcie (INSERT) albo przy przeterminowanym
+ * `last_seen_at` (UPDATE); wtedy wystarcza jedna runda. Gdy predykat `DO UPDATE … WHERE` jest
+ * fałszywy, SQLite traktuje konflikt jak `DO NOTHING` i `RETURNING` oddaje **pustkę** (zmierzone
+ * na D1, nie założone), więc świeży wiersz trzeba doczytać. Alternatywa „najpierw SELECT" byłaby
+ * gorsza: kosztowałaby dwie rundy także przy zakładaniu konta.
  */
 export async function touchAppUser(userId: string): Promise<AppUser> {
-  const now = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const staleBefore = new Date(now.getTime() - STALE_AFTER_MS).toISOString();
+  const db = getWorkerEnv().DB;
 
-  const row = await getWorkerEnv()
-    .DB.prepare(
+  const written = await db
+    .prepare(
       `insert into app_user (id, created_at, last_seen_at)
        values (?1, ?2, ?2)
        on conflict(id) do update set last_seen_at = ?2
-       where app_user.id = ?1
+       where app_user.last_seen_at < ?3
        returning id, created_at, last_seen_at`
     )
-    .bind(userId, now)
+    .bind(userId, nowIso, staleBefore)
     .first<AppUserRow>();
 
-  if (!row) {
-    throw new Error('Zapis app_user nie zwrócił wiersza — nieoczekiwany stan D1.');
+  if (written) {
+    return toAppUser(written);
   }
 
-  return { id: row.id, createdAt: row.created_at, lastSeenAt: row.last_seen_at };
+  const fresh = await db
+    .prepare(`select id, created_at, last_seen_at from app_user where id = ?1`)
+    .bind(userId)
+    .first<AppUserRow>();
+
+  if (!fresh) {
+    throw new Error('Wiersz app_user ani nie powstał, ani nie istnieje — nieoczekiwany stan D1.');
+  }
+
+  return toAppUser(fresh);
 }
