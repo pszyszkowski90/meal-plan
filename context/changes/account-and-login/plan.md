@@ -963,11 +963,11 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 
 #### Automated
 
-- [ ] 4.1 `npx tsc --noEmit`, `npx expo lint`, `npm run check-lock` czyste
-- [ ] 4.2 `migrations list --remote` bez zaległych migracji
-- [ ] 4.3 Smoke po wdrożeniu: `/` HTML, nieznana ścieżka 404, `/api/health` `d1:true`
+- [x] 4.1 `npx tsc --noEmit`, `npx expo lint`, `npm run check-lock` czyste
+- [x] 4.2 `migrations list --remote` bez zaległych migracji
+- [x] 4.3 Smoke po wdrożeniu: `/` HTML, nieznana ścieżka 404, `/api/health` `d1:true`
 - [ ] 4.4 Na produkcji `/api/account` zwraca 401 bez tokenu i `userId` z ważnym tokenem
-- [ ] 4.5 Klucz publikowalny w zmiennych buildu, `wrangler secret list` pokazuje `CLERK_JWT_KEY`
+- [x] 4.5 Klucz publikowalny w zmiennych buildu, `wrangler secret list` pokazuje `CLERK_JWT_KEY`
 
 #### Manual
 
@@ -975,4 +975,4 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 - [ ] 4.7 Przebieg w Expo Go przeciw produkcji: sesja przetrwa zamknięcie aplikacji
 - [ ] 4.8 To samo konto pokazuje ten sam stan w przeglądarce i na telefonie
 - [ ] 4.9 `npx wrangler tail` pokazuje żądania `/api/account` bez błędów
-- [ ] 4.10 `CLAUDE.md` opisuje stan po zmianie
+- [x] 4.10 `CLAUDE.md` opisuje stan po zmianie

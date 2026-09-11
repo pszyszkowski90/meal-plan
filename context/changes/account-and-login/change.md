@@ -3,7 +3,7 @@ change_id: account-and-login
 title: Konto e-mail + hasło i granica danych użytkownika
 status: impl_reviewed
 created: 2026-08-31
-updated: 2026-09-09
+updated: 2026-09-11
 archived_at: null
 ---
 

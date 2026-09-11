@@ -1,8 +1,9 @@
 # Repository Guidelines
 
 MealPlan — aplikacja do planowania posiłków na Expo SDK 57 / React Native 0.86 / React 19.2:
-TypeScript, Expo Router, jedna baza kodu na iOS, Androida i statyczny web. Backendu jeszcze nie ma —
-patrz [tech-stack.md](context/foundation/tech-stack.md).
+TypeScript, Expo Router, jedna baza kodu na iOS, Androida i web renderowany serwerowo. Backend to
+Cloudflare Worker z bazą D1, tożsamość prowadzi Clerk — patrz
+[tech-stack.md](context/foundation/tech-stack.md) i [infrastructure.md](context/foundation/infrastructure.md).
 
 Ten plik jest jedynym źródłem reguł projektu; [AGENTS.md](AGENTS.md) tylko na niego wskazuje.
 Nie przenoś treści do AGENTS.md: ta instalacja Claude Code nie wczytuje `AGENTS.md` i nie rozwija
@@ -65,9 +66,26 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
 
 ## Struktura i konwencje
 
-- [src/app/](src/app/) trasy, [src/components/](src/components/) komponenty
-  (+ [ui/](src/components/ui/) prymitywy), [src/hooks/](src/hooks/) hooki,
-  [src/constants/theme.ts](src/constants/theme.ts) motyw; `assets/` leży **poza** `src/`.
+- [src/app/](src/app/) trasy — produktowe w grupie [(app)/](src/app/(app)/), logowanie
+  w [(auth)/](src/app/(auth)/), trasy API w [api/](src/app/api/); [src/components/](src/components/)
+  komponenty (+ [ui/](src/components/ui/) prymitywy), [src/hooks/](src/hooks/) hooki,
+  [src/constants/theme.ts](src/constants/theme.ts) motyw i
+  [src/constants/api.ts](src/constants/api.ts) (`ProductionOrigin` — **jedno** miejsce na adres
+  Workera, czytane i przez klienta natywnego, i przez listę `AUTHORIZED_PARTIES` na serwerze;
+  rozjazd objawia się jako 401 bez wskazówki); `assets/` leży **poza** `src/`.
+- **[sso-callback.tsx](src/app/sso-callback.tsx) zostaje na najwyższym poziomie `src/app/`** — poza
+  grupą `(auth)` i poza obiema bramkami, choć dotyczy logowania. Woła
+  `WebBrowser.maybeCompleteAuthSession()` w zakresie modułu i musi przeżyć prerender oraz zwracać
+  200 bez sesji. Przeniesienie go do `(auth)` „dla porządku" zabija Google SSO, a `tsc` tego nie
+  złapie.
+- [src/server/](src/server/) to kod wyłącznie serwerowy: [env.ts](src/server/env.ts) (bindingi),
+  [auth.ts](src/server/auth.ts) (token → `userId`) i [repository/](src/server/repository/) — jedyne
+  miejsce z SQL-em. Klientowi odpowiada [src/lib/api.ts](src/lib/api.ts): jedyny kanał żądań do
+  własnego API (adres, typy błędów), z hookiem [use-authed-fetch.ts](src/hooks/use-authed-fetch.ts)
+  obok. Ekran nie woła `fetch` do `/api/*` bezpośrednio.
+- [migrations/](migrations/) to numerowane migracje D1 czytane przez wranglera z najwyższego poziomu;
+  [migrations/down/](migrations/down/) to migracje wstecz, których wrangler nie widzi i które
+  uruchamia wyłącznie człowiek. Nie ustawiaj `migrations_pattern` w `wrangler.jsonc` — zjadłby `down/`.
 - Nazwy plików kebab-case (`themed-text.tsx`), nazwy eksportów PascalCase / camelCase.
 - Importy przez aliasy: `@/*` → `src/*`, `@/assets/*` → `assets/*`. Względne `./` tylko dla
   rodzeństwa wewnątrz `src/components/` — tak robi cały starter (8 wystąpień, zero `../`).
@@ -79,9 +97,11 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
   `type` (`title`, `subtitle`, `small`, `code`, `link`… / `background`, `backgroundElement`,
   `backgroundSelected`), a nie własny styl inline.
 - **`useColorScheme` bierz z [`@/hooks/use-color-scheme`](src/hooks/use-color-scheme.ts), nie
-  z `react-native`.** Web renderuje się statycznie (`app.json` → `web.output: "static"`), więc
-  wariant webowy odracza odczyt schematu do hydracji; hook z `react-native` daje niezgodność
-  SSR/klient. Starter (`_layout.tsx`, `app-tabs.tsx`) importuje jeszcze wprost — nie powielaj tego.
+  z `react-native`.** Web renderuje HTML po stronie serwera (`app.json` → `web.output: "server"`),
+  więc wariant webowy odracza odczyt schematu do hydracji; hook z `react-native` daje niezgodność
+  SSR/klient. Importują jeszcze wprost [app-tabs.tsx](src/components/app-tabs.tsx),
+  [app-tabs.web.tsx](src/components/app-tabs.web.tsx) i
+  [web-badge.tsx](src/components/web-badge.tsx) — nie powielaj tego.
 - **Przewijalne ekrany same rezerwują `BottomTabInset + Spacing.*`** w `paddingBottom` /
   `contentInset`; dolny pasek nawigacji nie jest w layoucie flexbox. Bez tego ostatni element
   chowa się pod zakładkami.
@@ -92,8 +112,9 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
 
 ## Architektura
 
-**Warstwa nawigacji jest rozdwojona.** [_layout.tsx](src/app/_layout.tsx) montuje jeden komponent
-`AppTabs`, ale Metro podstawia inny plik na każdą platformę: natywnie `NativeTabs`
+**Warstwa nawigacji jest rozdwojona.** [(app)/_layout.tsx](src/app/(app)/_layout.tsx) montuje jeden
+komponent `AppTabs` (root [_layout.tsx](src/app/_layout.tsx) montuje tylko `ClerkProvider`,
+`ThemeProvider`, nakładkę splash i `Stack`), ale Metro podstawia inny plik na każdą platformę: natywnie `NativeTabs`
 z `expo-router/unstable-native-tabs`, gdzie `NativeTabs.Trigger name` **musi** odpowiadać nazwie
 pliku trasy; na webie headless `Tabs` / `TabList` / `TabTrigger` z `expo-router/ui`, gdzie `name`
 jest dowolne, a wiąże `href`. Dlatego zakładka „Home" nazywa się tam `home`, a natywnie `index`.
@@ -108,23 +129,50 @@ porządkach.
 Splash: `SplashScreen.preventAutoHideAsync()` w layoucie, a `hideAsync()` woła dopiero `onLayout`
 nakładki — kolejność jest celowa, przestawienie daje mignięcie.
 
-**Backend stoi, ale jest pusty.** `web.output: "server"` produkuje `dist/client` (assets) i
-`dist/server` (prerenderowany HTML + trasy API); `worker.ts` oddaje żądania adapterowi workerd,
-a wszystko wisi na Cloudflare Workers z bazą D1 `mealplan` w bindingu `DB`. Jedyna trasa API to
-[health+api.ts](src/app/api/health+api.ts) — smoke test wdrożenia, nie funkcja produktowa. **D1 nie ma
-schematu.**
+**Backend.** `web.output: "server"` produkuje `dist/client` (assets) i `dist/server` (prerenderowany
+HTML + trasy API); `worker.ts` oddaje żądania adapterowi workerd, a wszystko wisi na Cloudflare
+Workers z bazą D1 `mealplan` w bindingu `DB`. Dwie trasy API: [health+api.ts](src/app/api/health+api.ts)
+(smoke test wdrożenia: adapter, binding D1 **i** obecność tabeli `app_user`) oraz
+[account+api.ts](src/app/api/account+api.ts) — trasa odniesienia dla granicy danych, nie funkcja
+produktowa; nie dokładaj do niej pól, profil ma własną trasę w S-02.
 
-**Auth jest rozstrzygnięty, ale niezaimplementowany.** Tożsamość prowadzi **Clerk** — decyzja
-z 1.09.2026 wraz z listą odrzuconych opcji leży w
-[change.md](context/changes/account-and-login/change.md), a jej skutki dla infrastruktury
-w aneksie [infrastructure.md](context/foundation/infrastructure.md). Konsekwencje, które obowiązują
-od pierwszej linii kodu auth: hasła, sesje, maile i limit prób są po stronie Clerka; Worker
-**wyłącznie weryfikuje podpis JWT** kluczem publicznym PEM (`CLERK_JWT_KEY`) i wyciąga `userId`;
-klient wysyła token nagłówkiem `Authorization: Bearer` na obu platformach, więc trasy API nigdy nie
-czytają ciasteczek; **D1 nie przechowuje danych tożsamościowych** — e-mail i hash hasła nie są tu
-duplikowane. Nie dodawaj własnego hashowania ani tabel sesji. Gdy schemat wejdzie: cały dostęp do
-danych użytkownika przez jedną warstwę repozytorium przyjmującą `userId` jako pierwszy argument, bo
-D1 nie ma RLS, a repo nie ma testów.
+**Trasy produktowe mieszkają w grupie `(app)` za bramką sesji.**
+[(app)/_layout.tsx](src/app/(app)/_layout.tsx) jest jedynym miejscem decydującym, czy widok
+produktowy się montuje: `isLoaded === false` → stan neutralny (pełny ekran w kolorze tła, bez
+przekierowania i wskaźnika), brak sesji → `Redirect` na `/sign-in`, sesja → `AppTabs`. Grupa
+`(auth)` (`sign-in`, `sign-up`, `forgot-password`) ma bramkę odwrotną. **Nawigacja po zmianie sesji
+ma jednego właściciela — te dwie bramki**; ekrany po `finalize()` nie nawigują same. Stan neutralny
+jest konieczny, bo web renderuje HTML bez sesji, a Clerk odtwarza ją dopiero po hydracji — bez
+niego przy każdym wejściu mignąłby ekran logowania. Nie da się tego załatać `setState` w efekcie
+(patrz Pułapki).
+
+**Tożsamość prowadzi Clerk** — decyzja z 1.09.2026 wraz z odrzuconymi opcjami w
+[change.md](context/changes/account-and-login/change.md), skutki infrastrukturalne w aneksie
+[infrastructure.md](context/foundation/infrastructure.md). Hasła, sesje, maile, limit prób i Google
+SSO są u Clerka. Worker **wyłącznie weryfikuje podpis JWT** kluczem publicznym PEM
+(`CLERK_JWT_KEY`, sekret Workera): [`requireUserId(request)`](src/server/auth.ts) zwraca `{ userId }`
+albo gotową odpowiedź — 401 dla odrzuconej tożsamości, 500 gdy sekretu brakuje lub nie jest PEM-em,
+bo to awaria wdrożenia, nie użytkownika. Sprawdza `iss` i `azp` (lista `AUTHORIZED_PARTIES`; brak
+`azp` znaczy klient natywny). Klient wysyła token nagłówkiem `Authorization: Bearer` na obu
+platformach przez `useAuthedFetch()`, więc trasy API nigdy nie czytają ciasteczek. Błędy, które łapie
+kod produktowy, są **repo-lokalne** i mieszkają w [src/lib/api.ts](src/lib/api.ts): `OfflineError`
+(z `ClerkOfflineError` Clerka albo z padniętego `fetch`) i `NotSignedInError` (token `null`) —
+**„offline" to nie „wylogowany"**, kod nie może ich mylić, a wyrzucenie z aplikacji należy do bramki.
+`CLERK_SECRET_KEY` nie wchodzi do projektu, Backend API Clerka nie jest wołane. Produkcja na
+`workers.dev` działa na instancji **Development** Clerka (`pk_test`); przejście na Production wymaga
+własnej domeny i jest osobną zmianą.
+
+**D1 ma schemat, ale nie ma danych tożsamościowych.** Tabela `app_user`
+([0001_app_user.sql](migrations/0001_app_user.sql)) trzyma tylko `id` = roszczenie `sub` z tokenu,
+`created_at` i `last_seen_at`; e-mail i hash hasła nie są duplikowane. Wiersz powstaje leniwie przy
+pierwszym uwierzytelnionym żądaniu (`touchAppUser`), bez webhooka z Clerka. **Cały dostęp do danych
+użytkownika idzie przez [src/server/repository/](src/server/repository/)**: każda funkcja przyjmuje
+`userId` jako pierwszy argument i filtruje po nim w SQL-u, bo D1 nie ma RLS, a repo nie ma testów —
+to jedyna izolacja między kontami. `prepare(` żyje wyłącznie w tym katalogu (jedyny wyjątek:
+`health+api.ts`), wartości wchodzą przez `bind(...)`. Trasa `+api.ts` ma kształt `requireUserId` →
+funkcja repozytorium → JSON, zero SQL-a i zero `getWorkerEnv()`. Wzorzec odniesienia:
+[account+api.ts](src/app/api/account+api.ts) + [app-users.ts](src/server/repository/app-users.ts).
+Nie dodawaj własnego hashowania ani tabel sesji.
 
 ## Komendy i weryfikacja
 
@@ -137,6 +185,30 @@ Skrypty (`start`, `android`, `ios`, `web`, `lint`) są w [package.json](package.
 - Nie ma runnera testów. „Przetestowane" znaczy: `npx tsc --noEmit` przechodzi i ekran został
   otwarty na realnej platformie.
 - Tematy commitów: tryb rozkazujący, zdaniowa wielkość liter, bez prefiksu.
+- Konfiguracja lokalna: `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` w `.env.local` (w CI: zmienna buildu
+  Workers Builds), `CLERK_JWT_KEY` w `.dev.vars` dla `wrangler dev` (w produkcji: `wrangler secret`).
+  Klient natywny w trybie dev **wymaga** `EXPO_PUBLIC_API_URL` w `.env.local` — adres
+  `wrangler dev --ip 0.0.0.0` w LAN-ie albo, świadomie, produkcji; bez niego
+  [src/lib/api.ts](src/lib/api.ts) rzuca czytelny błąd zamiast cicho pisać do produkcyjnej D1.
+  Oba pliki są w `.gitignore`.
+
+Migracje D1 mają własną kolejność i **nie idą przez CI**:
+
+```sh
+npx wrangler d1 migrations create mealplan <nazwa>   # nowy plik w migrations/, do niego para w down/
+npx wrangler d1 migrations apply mealplan --local    # baza wrangler dev (.wrangler/state)
+npx wrangler d1 migrations list mealplan --remote    # zaległe na produkcji
+npx wrangler d1 migrations apply mealplan --remote   # produkcja — PRZED commitem fazy, która jej używa
+```
+
+- **Warunek produkcyjny wchodzi przed commitem fazy, która go potrzebuje** — zmienna buildu
+  w Workers Builds, `wrangler secret put`, `migrations apply --remote`. Push na `main` wdraża
+  natychmiast, więc kod czekający na sekret lub tabelę stałby na produkcji i zwracał 500.
+- Migracje wstecz w `migrations/down/` uruchamia wyłącznie człowiek, po `npx wrangler d1 export
+  mealplan --remote --output kopia.sql`. Plik `down` usuwa też wpis z `d1_migrations`, inaczej
+  `migrations apply` nie odtworzy tabeli. `wrangler rollback` cofa **kod, nie schemat**.
+- Podgląd danych: `npx wrangler d1 execute mealplan --local --command "…"`; na produkcji to samo
+  z `--remote`, wyłącznie odczyt.
 
 Wdrożenie ma własną, obowiązkową kolejność — `wrangler deploy` **nie buduje**:
 
@@ -149,8 +221,11 @@ npx wrangler deploy                                   # produkcja
 
 - **`npx expo start --web` nie jest testem wdrożenia** — uruchamia trasy API w Node. Wierność
   runtime'u daje tylko `npx wrangler dev` na zbudowanym `dist/`. To bramka przed każdym deployem.
-- Smoke test po wdrożeniu: `/` zwraca HTML, nieznana ścieżka zwraca 404, a `/api/health` zwraca
-  `{"ok":true,"d1":true}`. Jeśli HTML działa, a trasa API daje 500 — patrz `rules` wyżej.
+- Smoke test po wdrożeniu: `/` zwraca HTML, nieznana ścieżka zwraca 404, `/api/health` zwraca
+  `{"ok":true,"d1":true,…}` (`d1:true` znaczy „tabela `app_user` istnieje", nie tylko „binding
+  działa"), a `/api/account` bez nagłówka `Authorization` zwraca 401. Jeśli HTML działa, a trasa API
+  daje 500 — patrz `rules` wyżej; 500 z `/api/account` przy działającym `/api/health` to brak lub
+  zepsuty sekret `CLERK_JWT_KEY` (`wrangler tail` pokaże `[auth]`).
 - Logi na żywo: `npx wrangler tail`. Rollback: `npx wrangler rollback` — cofa **kod, nie schemat D1**.
 - **Hash bundla webowego może się zmienić bez żadnej zmiany w źródłach** (sporadyczna
   niedeterministyczność Metro — cztery buildy tego samego drzewa dały trzy hashe). Nazwę zasobu do
