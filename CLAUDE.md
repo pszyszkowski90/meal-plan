@@ -244,6 +244,12 @@ nie pisze. Kontekst kursowy: [notes/10x-lesson-m1l4-brief.md](notes/10x-lesson-m
 
 ## Pułapki
 
+- **`10x get <ref>` kasuje skille spoza manifestu tej lekcji.** Nie dokłada kumulatywnie, tylko
+  synchronizuje `.claude/skills/` do stanu żądanej lekcji. Lekcje modułu 4 deklarują zero skilli,
+  więc `10x get m4l1` usuwa cały łańcuch 10x, a `CLAUDE.md` bywa przy tym przepisywany.
+  Uruchamiaj wyłącznie przy czystym `git status`, żeby dało się cofnąć przez
+  `git checkout <sha> -- .claude CLAUDE.md`. Stan obecny: manifest m3l5 (24 skille) plus siedem
+  skilli modułu 5 nałożonych ręcznie — łącznie 30.
 - `npx tsc --noEmit` na świeżym klonie zgłasza dwa fałszywe błędy o `.css`
   (`animated-icon.module.css`, `@/global.css`). Deklaracje tych modułów siedzą w `expo-env.d.ts`
   i `.expo/types/`, które są generowane przy pierwszym `npm start` i są w `.gitignore`. Uruchom
