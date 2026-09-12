@@ -687,14 +687,14 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Automated
 
-- [x] 1.1 `npm test` przechodzi ze wszystkimi przypadkami z tabeli
-- [x] 1.2 `npx tsc --noEmit` czyste z plikiem testu
-- [x] 1.3 `npx expo lint` czyste
-- [x] 1.4 `npm run check-lock` przechodzi, lockfile nietknięty
+- [x] 1.1 `npm test` przechodzi ze wszystkimi przypadkami z tabeli — 8da373c
+- [x] 1.2 `npx tsc --noEmit` czyste z plikiem testu — 8da373c
+- [x] 1.3 `npx expo lint` czyste — 8da373c
+- [x] 1.4 `npm run check-lock` przechodzi, lockfile nietknięty — 8da373c
 
 #### Manual
 
-- [x] 1.5 Moduł `calorie-target.ts` bez importów z React, React Native, Clerka i `@/server`
+- [x] 1.5 Moduł `calorie-target.ts` bez importów z React, React Native, Clerka i `@/server` — 8da373c
 
 ### Phase 2: Granica danych profilu na serwerze
 

@@ -108,6 +108,14 @@ describe('computeCalorieTarget — wzór Mifflin-St Jeor', () => {
     assert.equal(target.computedKcal, 2759);
     assert.equal(target.bmrKcal, 1780);
   });
+
+  test('nadpisanie 0 i -0 nie obowiązuje — effectiveKcal wraca do wyliczenia', () => {
+    for (const override of [0, -0]) {
+      const target = computeCalorieTarget({ ...maleProfile, targetKcalOverride: override });
+      assert.equal(target.effectiveKcal, 2759, `override ${override} nie może obowiązywać`);
+      assert.equal(target.computedKcal, 2759);
+    }
+  });
 });
 
 describe('validateProfile — granice włącznie', () => {
@@ -123,6 +131,13 @@ describe('validateProfile — granice włącznie', () => {
     expectInvalidOn({ ...maleProfile, weightKg: 300.1 }, 'weightKg');
     assert.equal(expectValid({ ...maleProfile, weightKg: 30 }).weightKg, 30);
     assert.equal(expectValid({ ...maleProfile, weightKg: 300 }).weightKg, 300);
+  });
+
+  test('waga normalizuje się PRZED granicą — szczelina [29,95; 300,05) jest kontraktem', () => {
+    assert.equal(expectValid({ ...maleProfile, weightKg: 29.95 }).weightKg, 30);
+    assert.equal(expectValid({ ...maleProfile, weightKg: 300.04 }).weightKg, 300);
+    expectInvalidOn({ ...maleProfile, weightKg: 29.94 }, 'weightKg');
+    expectInvalidOn({ ...maleProfile, weightKg: 300.05 }, 'weightKg');
   });
 
   test('wzrost 99 / 251 odrzucone, 100 / 250 przyjęte', () => {

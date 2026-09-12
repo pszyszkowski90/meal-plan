@@ -117,22 +117,39 @@ function isActivityLevel(value: unknown): value is ActivityLevel {
   return value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
 }
 
-/** Do 0,1 kg — więcej nie ma sensu ani na wadze łazienkowej, ani we wzorze. */
+/**
+ * Do 0,1 kg — więcej nie ma sensu ani na wadze łazienkowej, ani we wzorze.
+ *
+ * Kolejność jest celowa i jest częścią kontraktu: waga normalizuje się PRZED sprawdzeniem granic,
+ * więc faktycznie przyjmowany surowy przedział to `[29,95; 300,05)`, a nie `[30; 300]`. Kto wpisze
+ * „29,95” zobaczy „30,0 kg”, a nie błąd zakresu dla wartości, którą ekran i tak zaokrągli. Zapisana
+ * wartość zawsze mieści się w `ProfileBounds.weightKg`, więc `CHECK` w migracji może mówić 30–300.
+ * Pozostałe trzy pola idą odwrotnie — całkowitość sprawdzana przed granicą — bo tam nie ma czego
+ * zaokrąglać. Test przypina obie skrajnie szczeliny.
+ */
 function normalizeWeight(weightKg: number): number {
   return Math.round(weightKg * 10) / 10;
 }
 
 /**
  * Waliduje nieznany kształt (ciało żądania albo kandydat z formularza) i zwraca albo czysty
- * `ProfileInput`, albo polskie komunikaty pod właściwe pola. Nigdy nie rzuca.
+ * `ProfileInput`, albo polskie komunikaty pod właściwe pola. Nie rzuca dla wejścia pochodzącego
+ * z `JSON.parse` ani z formularza — czyli dla obu realnych wywołujących. Obietnica nie jest
+ * bezwarunkowa: odczyt sześciu pól przejdzie przez getter albo pułapkę `Proxy`, więc obiekt
+ * spreparowany ręcznie może wyjątek wypuścić. Tą drogą nic tu nie wchodzi.
  *
  * Pola liczbowe przyjmują WYŁĄCZNIE skończony `number` — stringi liczbowe formularz zamienia
  * wcześniej przez `parseNumberInput`, żeby ekran i trasa nie rozjechały się w interpretacji
  * („70,5” to liczba dla ekranu, ale nie dla `JSON.parse`).
  */
 export function validateProfile(input: unknown): ProfileValidation {
+  // `!Array.isArray` domyka klasę: tablica niosąca nazwane właściwości jest `typeof 'object'`
+  // i bez tego zwalidowałaby się na `ok: true`. Z `JSON.parse` nieosiągalne, ale moduł jest
+  // granicą zaufania trasy `PUT /api/profile`, więc kształt odrzucamy tu, a nie u wywołującego.
   const source: Record<string, unknown> =
-    typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {};
+    typeof input === 'object' && input !== null && !Array.isArray(input)
+      ? (input as Record<string, unknown>)
+      : {};
   const errors: ProfileFieldErrors = {};
 
   const { age, weightKg, heightCm, sex, activityLevel, targetKcalOverride } = source;
@@ -211,8 +228,15 @@ export function validateProfile(input: unknown): ProfileValidation {
 }
 
 /**
- * Zaokrąglenie do pełnych kcal odporne na artefakty zmiennoprzecinkowe (`1290 × 1.55` ma prawo
- * wyjść jako `1999.4999…`, a użytkownik na kalkulatorze widzi `1999.5` → `2000`).
+ * Zaokrąglenie do pełnych kcal z buforem na artefakty zmiennoprzecinkowe: gdyby iloczyn wyszedł
+ * jako `1999.4999…`, samo `Math.round` dałoby `1999`, a użytkownik na kalkulatorze widzi `2000`.
+ *
+ * Dla OBECNYCH stałych bufor nigdy się nie uruchamia — sprawdzone wyczerpująco na całej dziedzinie
+ * (wagi 30–300 co 0,1 kg × wzrosty 100–250 × wiek 18–100 × obie płcie dla BMR, oraz całkowite BMR
+ * 500–4000 × pięć mnożników dla TDEE): zero przypadków, w których wynik różni się od gołego
+ * `Math.round`. Wbrew wcześniejszemu komentarzowi `1290 × 1.55` jest w IEEE754 dokładnie `1999.5`.
+ * Bufor zostaje na wypadek zmiany mnożników, granic albo kroku normalizacji wagi — nie jest
+ * reakcją na zaobserwowany błąd.
  */
 function roundKcal(value: number): number {
   return Math.round(Math.round(value * 1e6) / 1e6);
@@ -230,6 +254,11 @@ export function computeCalorieTarget(profile: ProfileInput): CalorieTarget {
   const multiplier = ActivityMultiplier[profile.activityLevel];
   const computedKcal = roundKcal(bmrKcal * multiplier);
   const overrideKcal = profile.targetKcalOverride;
+  // Świadomie NIE `overrideKcal ?? computedKcal`: `??` cofa się wyłącznie przy `null`/`undefined`,
+  // więc `0` przeszłoby jako obowiązujący cel. `validateProfile` broni tej drogi (granica 1000 kcal),
+  // ale `computeCalorieTarget` bywa wołane bez niej — na profilu odtworzonym z wiersza D1. Cel 0 kcal
+  // zasiliłby ograniczenie ±10% generatora (S-04), więc guard siedzi tutaj, przy samym wzorze.
+  const overrideApplies = typeof overrideKcal === 'number' && overrideKcal > 0;
 
   return {
     bmrKcal,
@@ -237,6 +266,6 @@ export function computeCalorieTarget(profile: ProfileInput): CalorieTarget {
     activityLevel: profile.activityLevel,
     computedKcal,
     overrideKcal,
-    effectiveKcal: overrideKcal ?? computedKcal,
+    effectiveKcal: overrideApplies ? overrideKcal : computedKcal,
   };
 }
