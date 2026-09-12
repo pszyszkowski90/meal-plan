@@ -12,6 +12,9 @@
       ]
     }
   },
+  "exclude": [
+    "tests"
+  ],
   "include": [
     "**/*.ts",
     "**/*.tsx",

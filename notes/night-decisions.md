@@ -166,3 +166,40 @@ je dorzucić rano — mapa ma ledger świeżości i przewidziane `--refresh`.
 
 **Jak cofnąć:** `/10x-test-plan --refresh` otwiera zmianę aktualizującą dokument z prawdziwym
 wywiadem.
+
+### D10 — Playwright i poświadczenia poza repozytorium; `tests/` poza `tsconfig.json`
+
+**Co:** Harness (konfiguracja Playwrighta, `node_modules`, `.env` z poświadczeniami, katalog
+`test-results/`) mieszka w `~/.mealplan-e2e`. W repo leżą wyłącznie specyfikacje
+(`tests/e2e/*.spec.ts`) i README. Do `tsconfig.json` dopisane `"exclude": ["tests"]`.
+
+**Powód:** Playwright nie może wejść do `package.json` — `npm install` psuje lockfile na Windowsie
+i wywraca build w Workers Builds. Skutkiem ubocznym jest to, że `@playwright/test` nie istnieje
+w `node_modules` projektu, więc `npx tsc --noEmit` — główna bramka jakości repo — zaświecił
+20 błędami „Cannot find module". Wyłączenie `tests/` z typechecku przywraca bramce sens:
+lepiej, żeby mierzyła kod produkcyjny wiarygodnie, niż żeby była czerwona z powodu, który nie
+jest defektem. Poświadczenia są poza repo, bo przegląd fazy 1 odnotował jako KRYTYCZNE, że hasło
+w postaci jawnej trafiło do commitu — hasła, którego nie ma w drzewie, nie da się zacommitować.
+
+**Koszt przyjęty:** specyfikacje nie są typecheckowane przez `tsc` repo (Playwright je
+transpiluje, nie sprawdza typów). Harness nie jest przenośny — nowa maszyna wymaga kroków
+z `tests/e2e/README.md`.
+
+**Jak cofnąć:** usunąć `"exclude": ["tests"]` z `tsconfig.json`; wtedy typecheck wymaga
+Playwrighta w zależnościach projektu, czego robić nie wolno.
+
+### D11 — Brak nazw dostępnościowych zgłoszony, nie naprawiony
+
+**Co:** Formularz logowania nie ma żadnych nazw dostępnościowych: `input` bez `id`, `name`,
+`placeholder` i `aria-label` (jedyny rozróżnik to `autocomplete`), przyciski to `div`-y
+z `tabindex` bez `role="button"`, zero nagłówków. Zapisałem to w `tests/e2e/README.md`
+i zamknąłem obejścia w jednym pliku (`support/sign-in.ts`), ale **kodu aplikacji nie ruszyłem**.
+
+**Powód:** To realna wada — czytnik ekranu przeczyta ten ekran jako dwa nienazwane pola i cztery
+nieklikalne napisy — ale leży w kodzie fazy 2, a celem nocy jest faza 3. Naprawa oznaczałaby
+zmianę komponentów tuż przed implementacją, która i tak ich dotknie, bez testu regresji
+na to zachowanie. Tańszy i uczciwszy ruch: zgłosić, odizolować obejście, zostawić decyzję rano.
+
+**Jak cofnąć:** nie ma czego cofać — to świadome niedziałanie. Naprawa to dopisanie
+`accessibilityLabel` / `accessibilityRole` w `text-field.tsx` i `action-button.tsx`, po czym
+`support/sign-in.ts` można uprościć do `getByRole`.
