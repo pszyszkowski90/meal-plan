@@ -66,7 +66,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 | F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | planning |
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
 | S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | in-progress |
-| S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | blocked  |
+| S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | planning |
 | S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | proposed |
 | S-05  | `swap-and-reject-dish`       | wymienić danie w planie i oznaczyć je, żeby nie wracało              | S-04               | FR-010, FR-011                    | proposed |
 | S-06  | `step-by-step-cooking`       | przejść instrukcję dania krok po kroku w trakcie gotowania           | F-01, S-04         | FR-016, NFR                       | proposed |
@@ -195,14 +195,17 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **Wymagania wstępne:** S-01
 - **Równolegle z:** F-01, S-02
 - **Blokery:** —
-- **Niewiadome:**
-  - Jak rozdzielone są wykluczenia składnikowe od daniowych? Bez tego rozdzielenia ograniczenie
-    o wykluczeniach będzie łamane — dopasowanie „nie jem grzybów" do dania zawierającego grzyby
-    wymaga innego modelu danych niż „nie jem risotto". Właściciel: użytkownik. Blok: tak.
+- **Niewiadome:** — rozstrzygnięte 13.09.2026 (decyzja D14, `notes/night-decisions.md`).
+  - ~~Jak rozdzielone są wykluczenia składnikowe od daniowych?~~ **Jedna tabela `exclusion`
+    z polem `kind`** (`ingredient` / `dish`); wykluczenie składnikowe wskazuje `ingredient_id`,
+    nigdy tekst — dopasowanie po nazwie łamie guardrail przy „risotto z borowikami".
+    Rozpisane w `context/changes/dish-source-and-seed-pool/options.md` §4.
+- **Korekta zależności (13.09.2026):** wykluczenia składnikowe wskazują na tabelę `ingredient`
+  z F-01, więc S-03 **nie jest już równoległe do F-01** — wymaga jego fazy 1 (schemat).
 - **Ryzyko:** to tutaj powstaje jedna lista wykluczeń, którą później zasila także S-05
   (oznaczanie dań z planu) — PRD jest jednoznaczne, że to jeden mechanizm, nie dwa. Zły model
   danych na tym fragmencie wraca jako przeróbka w S-04 i S-05.
-- **Status:** blocked
+- **Status:** planning
 
 ### S-04: Użytkownik dostaje wygenerowany tygodniowy jadłospis z przepisami
 
@@ -318,7 +321,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 | F-01          | `dish-source-and-seed-pool`  | Wybór źródła przepisów i zseedowanie puli dań              | no                    | Czeka na Otwarte pytania 1 i 2 (decyzja użytkownika)      |
 | S-01          | `account-and-login`          | Konto e-mail + hasło i granica danych użytkownika          | yes                   | Uruchom `/10x-plan account-and-login`                      |
 | S-02          | `profile-and-calorie-target` | Profil użytkownika i wyliczone zapotrzebowanie             | no                    | Po ukończeniu S-01                                         |
-| S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | no                    | Czeka na Otwarte pytanie 3 oraz na S-01                    |
+| S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | no                    | Zaplanowane; wymaga F-01 fazy 1 (tabela `ingredient`)      |
 | S-04          | `first-weekly-plan`          | Generator tygodniowego jadłospisu z widokiem przepisu      | no                    | Po F-01, S-02 i S-03                                       |
 | S-05          | `swap-and-reject-dish`       | Wymiana dania i trwałe odrzucenie                          | no                    | Po S-04                                                    |
 | S-06          | `step-by-step-cooking`       | Tryb gotowania krok po kroku                               | no                    | Po F-01 i S-04; wykonalność zależy od Otwartego pytania 2  |
