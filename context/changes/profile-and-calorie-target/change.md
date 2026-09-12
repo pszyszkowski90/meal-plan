@@ -1,7 +1,7 @@
 ---
 change_id: profile-and-calorie-target
 title: Profile and calorie target
-status: impl_reviewed
+status: implementing
 created: 2026-09-12
 updated: 2026-09-12
 archived_at: null

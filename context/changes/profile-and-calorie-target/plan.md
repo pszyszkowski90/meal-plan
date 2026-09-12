@@ -700,23 +700,23 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Automated
 
-- [ ] 2.1 `npx tsc --noEmit`, `npx expo lint`, `npm test` czyste
-- [ ] 2.2 Migracja `0002` stosuje się lokalnie, `migrations list --local` bez zaległych
-- [ ] 2.3 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`, `profile+api.ts` w trasach
-- [ ] 2.4 `GET` i `PUT /api/profile` bez nagłówka `Authorization` → 401
-- [ ] 2.5 `GET` konta A bez profilu → 200 `{"profile":null,"target":null}`
-- [ ] 2.6 `PUT` z `age: 17` → 400 `invalid` z `fields.age`; nie-JSON → 400 `invalid_json`
-- [ ] 2.7 `PUT` konta A z profilem 80/180/30/male/3 → `computedKcal` 2759; `GET` to samo; jeden wiersz w D1
-- [ ] 2.8 `PUT` z `targetKcalOverride` 2200 → `effectiveKcal` 2200, `computedKcal` 2759; `null` wraca do 2759
-- [ ] 2.9 Konto B: `GET` → `profile: null`, `PUT` tworzy drugi wiersz, wiersz A nietknięty
-- [ ] 2.10 `GET /api/health` `d1:true` i `GET /api/account` bez regresji
-- [ ] 2.11 `migrations list --remote` bez zaległych przed commitem fazy
+- [x] 2.1 `npx tsc --noEmit`, `npx expo lint`, `npm test` czyste
+- [x] 2.2 Migracja `0002` stosuje się lokalnie, `migrations list --local` bez zaległych
+- [x] 2.3 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`, `profile+api.ts` w trasach
+- [x] 2.4 `GET` i `PUT /api/profile` bez nagłówka `Authorization` → 401
+- [x] 2.5 `GET` konta A bez profilu → 200 `{"profile":null,"target":null}`
+- [x] 2.6 `PUT` z `age: 17` → 400 `invalid` z `fields.age`; nie-JSON → 400 `invalid_json`
+- [x] 2.7 `PUT` konta A z profilem 80/180/30/male/3 → `computedKcal` 2759; `GET` to samo; jeden wiersz w D1
+- [x] 2.8 `PUT` z `targetKcalOverride` 2200 → `effectiveKcal` 2200, `computedKcal` 2759; `null` wraca do 2759
+- [x] 2.9 Konto B: `GET` → `profile: null`, `PUT` tworzy drugi wiersz, wiersz A nietknięty
+- [x] 2.10 `GET /api/health` `d1:true` i `GET /api/account` bez regresji
+- [x] 2.11 `migrations list --remote` bez zaległych przed commitem fazy
 
 #### Manual
 
-- [ ] 2.12 Żadna trasa poza `health+api.ts` nie woła `prepare(` ani `getWorkerEnv()`
-- [ ] 2.13 Tokeny kont A i B pochodzą z działającej aplikacji
-- [ ] 2.14 Wymuszony błąd D1 loguje `[api/profile]` bez `userId` i ciała, klient dostaje 500 `internal`
+- [x] 2.12 Żadna trasa poza `health+api.ts` nie woła `prepare(` ani `getWorkerEnv()`
+- [x] 2.13 Tokeny kont A i B pochodzą z działającej aplikacji
+- [x] 2.14 Wymuszony błąd D1 loguje `[api/profile]` bez `userId` i ciała, klient dostaje 500 `internal`
 
 ### Phase 3: Ekran profilu i karta celu
 
