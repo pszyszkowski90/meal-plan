@@ -78,8 +78,9 @@ Na produkcji (web) i w Expo Go przeciw produkcyjnemu API:
   tam pól profilu i wskazuje własną trasę dla S-02; kształt `try/catch` → `{ error: 'internal' }`
   jest kontraktem odpowiedzi, który trasa profilu powtarza.
 - [`app-users.ts:1-16`](../../../src/server/repository/app-users.ts) — reguła repozytorium;
-  `touchAppUser` pisze co najwyżej raz na godzinę, więc wołanie go przed zapisem profilu nie
-  narusza limitu zapisów D1.
+  `touchAppUser` jest narzędziem ścieżki ODCZYTU (próg świeżości plus odczyt zwrotny). Zapis
+  profilu potrzebuje wyłącznie istnienia wiersza, więc dostaje własne `ensureAppUser` —
+  `on conflict(id) do nothing`, jedna runda, bez odczytu (przegląd implementacji fazy 2, F4).
 - [`use-authed-fetch.ts:28-32`](../../../src/hooks/use-authed-fetch.ts) — nagłówki przez
   `new Headers(init?.headers)`, komentarz wprost przewiduje pierwszy `POST` z `Content-Type`.
 - [`index.tsx:116-157`](../../../src/app/(app)/index.tsx) — wzorzec „jedno żądanie przy wejściu”
@@ -98,7 +99,7 @@ Na produkcji (web) i w Expo Go przeciw produkcyjnemu API:
   `renderingMode="template"`), jak Home (przegląd planu, F3).
 - D1 wymusza klucze obce domyślnie, więc `user_profile.user_id REFERENCES app_user(id)` odrzuci
   zapis dla konta, które nigdy nie wołało `/api/account`. Trasa zapisu **musi** wołać
-  `touchAppUser` przed `saveUserProfile`.
+  `ensureAppUser` przed `saveUserProfile`.
 - `tsconfig.json` dziedziczy `noEmit: true` z `expo/tsconfig.base`, więc `allowImportingTsExtensions`
   jest dozwolone; `@types/node` jest już w `node_modules/@types` tranzytywnie, więc `node:test`
   i `node:assert` przejdą `tsc` bez nowej zależności.
@@ -159,7 +160,10 @@ ekran po zapisie nie musi niczego przeliczać ani scalać — bierze to, co wró
   „względne `./` tylko w `src/components/`” — zapisany w `CLAUDE.md` w fazie 4.
 - **Klucz obcy wymaga wiersza `app_user`.** Zapis profilu na koncie, które nigdy nie weszło na
   Home (a więc nie wołało `/api/account`), padłby na `FOREIGN KEY constraint failed`. Trasa `PUT`
-  woła `touchAppUser(userId)` przed `saveUserProfile` — to jedno tanie zapytanie.
+  woła `ensureAppUser(userId)` przed `saveUserProfile` — jedno zapytanie bez odczytu zwrotnego.
+  `touchAppUser` byłby tu złym narzędziem: przy świeżym `last_seen_at` jego `RETURNING` jest puste
+  i dociąga awaryjny `SELECT`, czyli drugą rundę, której wynik zapis i tak wyrzuca (przegląd
+  implementacji fazy 2, F4).
 - **Typed routes.** `href="/profile"` na Home jest błędem typu, dopóki Metro nie zregeneruje
   `.expo/types/router.d.ts`. W fazie 3 najpierw powstaje `profile.tsx`, potem jedno `npx expo
   start` (można przerwać po starcie), dopiero potem `Link` na Home i `tsc`.
@@ -307,8 +311,11 @@ czytanie ciała `PUT` i walidacja modułem z fazy 1.
 REAL NOT NULL, height_cm INTEGER NOT NULL, sex TEXT NOT NULL CHECK (sex IN ('female','male')),
 activity_level INTEGER NOT NULL CHECK (activity_level BETWEEN 1 AND 5), target_kcal_override
 INTEGER, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`. `target_kcal_override` `NULL`
-znaczy „obowiązuje wyliczenie”. Ograniczenia `CHECK` są drugą linią za `validateProfile`, nie
-zamiast niej. Plik wstecz: `DROP TABLE IF EXISTS user_profile` **i** `DELETE FROM d1_migrations
+znaczy „obowiązuje wyliczenie”. `CHECK` **wyłącznie wyliczeniowe** (`sex`, `activity_level`) —
+domykają rzutowania `as Sex` / `as ActivityLevel` w repozytorium. Zakresów liczbowych w DDL NIE
+ma: jedynym ich źródłem prawdy jest `ProfileBounds`, a kopia w schemacie rozjechałaby się przy
+pierwszej korekcie granic i wychodziła jako 500 zamiast 400 pod polem (przegląd implementacji
+fazy 2, F1). Plik wstecz: `DROP TABLE IF EXISTS user_profile` **i** `DELETE FROM d1_migrations
 WHERE name = '0002_user_profile.sql'` — bez tego `migrations apply` nie odtworzy tabeli (lekcja
 F4 z przeglądu S-01). Komentarze nagłówkowe jak w `0001`.
 
@@ -344,8 +351,10 @@ F4 z przeglądu S-01). Komentarze nagłówkowe jak w `0001`.
   404** — brak profilu jest stanem, nie błędem, a klient nie ma mylić go z awarią.
 - `PUT`: `requireUserId` → `request.json()` w `try` (niepoprawny JSON → 400
   `{ error: 'invalid_json' }`) → `validateProfile(body)` (`ok: false` → 400 `{ error: 'invalid',
-  fields }`) → `touchAppUser(userId)` (wiersz `app_user` musi istnieć dla klucza obcego) →
+  fields }`) → `ensureAppUser(userId)` (wiersz `app_user` musi istnieć dla klucza obcego) →
   `saveUserProfile(userId, value)` → 200 `ProfileResponse`.
+- Obie odpowiedzi `ProfileResponse` idą przez jeden helper z `Cache-Control: no-store` — ładunek
+  jest osobowy (przegląd implementacji fazy 2, F2).
 - Obie metody: `try/catch` wokół ścieżki danych → `console.error('[api/profile] …', error)` bez
   `userId` i bez ciała żądania (dane objęte guardrailem prywatności) → 500 `{ error: 'internal' }`.
 - Zero `prepare(`, zero `getWorkerEnv()` w pliku.
@@ -571,9 +580,9 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
   `profile` (`GET`/`PUT`, kontrakt `ProfileResponse` z `src/lib/calorie-target.ts`); wzór
   i walidacja żyją w jednym module współdzielonym przez klienta i serwer; cel **nie** jest
   utrwalany, S-04 liczy go tym samym modułem; klucz obcy `user_profile → app_user` wymaga
-  `touchAppUser` przed zapisem. Zdanie „Wiersz powstaje leniwie przy pierwszym uwierzytelnionym
+  `ensureAppUser` przed zapisem. Zdanie „Wiersz powstaje leniwie przy pierwszym uwierzytelnionym
   żądaniu” przeredagować: wiersz `app_user` powstaje przy pierwszym **zapisie** (`PUT /api/profile`,
-  przez `touchAppUser`) albo przy wejściu na trasę odniesienia `/api/account`; `GET /api/profile`
+  przez `ensureAppUser`) albo przy wejściu na trasę odniesienia `/api/account`; `GET /api/profile`
   nie pisze, więc `last_seen_at` nie jest wskaźnikiem aktywności — Home po tej zmianie nie woła
   już `/api/account` (przegląd planu, F5).
 - „Twarde reguły › zakładki”: przykład zakładek to teraz `index` / `profile`; ikony zakładek
@@ -633,9 +642,10 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 ## Uwagi dotyczące wydajności
 
-- Odczyt: jedno zapytanie D1; wyliczenie w Workerze to kilka mnożeń. Zapis: `touchAppUser`
-  (zapis co najwyżej raz na godzinę) + jeden upsert. Zapisy są jawnymi akcjami użytkownika, więc
-  limit 100 tys. zapisów/dobę planu darmowego nie jest tematem.
+- Odczyt: jedno zapytanie D1; wyliczenie w Workerze to kilka mnożeń. Zapis: `ensureAppUser`
+  (jedno `do nothing`, bez odczytu) + jeden upsert — dwie rundy, nie trzy. Zapisy są jawnymi
+  akcjami WŁASNEGO klienta; klient skryptowy z ważnym tokenem nie ma ogranicznika i to jest
+  świadomie odłożone (przegląd implementacji fazy 2, F3).
 - Home woła `/api/profile` przy każdym wejściu w zakładkę — odczyt, nie zapis; przy małej skali
   PRD to nie jest koszt. Gdyby był, efekt na `useIsFocused` zamienia się na odświeżanie po powrocie
   z Profilu, nie na cache.
@@ -700,23 +710,23 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Automated
 
-- [x] 2.1 `npx tsc --noEmit`, `npx expo lint`, `npm test` czyste
-- [x] 2.2 Migracja `0002` stosuje się lokalnie, `migrations list --local` bez zaległych
-- [x] 2.3 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`, `profile+api.ts` w trasach
-- [x] 2.4 `GET` i `PUT /api/profile` bez nagłówka `Authorization` → 401
-- [x] 2.5 `GET` konta A bez profilu → 200 `{"profile":null,"target":null}`
-- [x] 2.6 `PUT` z `age: 17` → 400 `invalid` z `fields.age`; nie-JSON → 400 `invalid_json`
-- [x] 2.7 `PUT` konta A z profilem 80/180/30/male/3 → `computedKcal` 2759; `GET` to samo; jeden wiersz w D1
-- [x] 2.8 `PUT` z `targetKcalOverride` 2200 → `effectiveKcal` 2200, `computedKcal` 2759; `null` wraca do 2759
-- [x] 2.9 Konto B: `GET` → `profile: null`, `PUT` tworzy drugi wiersz, wiersz A nietknięty
-- [x] 2.10 `GET /api/health` `d1:true` i `GET /api/account` bez regresji
-- [x] 2.11 `migrations list --remote` bez zaległych przed commitem fazy
+- [x] 2.1 `npx tsc --noEmit`, `npx expo lint`, `npm test` czyste — 029517f
+- [x] 2.2 Migracja `0002` stosuje się lokalnie, `migrations list --local` bez zaległych — 029517f
+- [x] 2.3 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`, `profile+api.ts` w trasach — 029517f
+- [x] 2.4 `GET` i `PUT /api/profile` bez nagłówka `Authorization` → 401 — 029517f
+- [x] 2.5 `GET` konta A bez profilu → 200 `{"profile":null,"target":null}` — 029517f
+- [x] 2.6 `PUT` z `age: 17` → 400 `invalid` z `fields.age`; nie-JSON → 400 `invalid_json` — 029517f
+- [x] 2.7 `PUT` konta A z profilem 80/180/30/male/3 → `computedKcal` 2759; `GET` to samo; jeden wiersz w D1 — 029517f
+- [x] 2.8 `PUT` z `targetKcalOverride` 2200 → `effectiveKcal` 2200, `computedKcal` 2759; `null` wraca do 2759 — 029517f
+- [x] 2.9 Konto B: `GET` → `profile: null`, `PUT` tworzy drugi wiersz, wiersz A nietknięty — 029517f
+- [x] 2.10 `GET /api/health` `d1:true` i `GET /api/account` bez regresji — 029517f
+- [x] 2.11 `migrations list --remote` bez zaległych przed commitem fazy — 029517f
 
 #### Manual
 
-- [x] 2.12 Żadna trasa poza `health+api.ts` nie woła `prepare(` ani `getWorkerEnv()`
-- [x] 2.13 Tokeny kont A i B pochodzą z działającej aplikacji
-- [x] 2.14 Wymuszony błąd D1 loguje `[api/profile]` bez `userId` i ciała, klient dostaje 500 `internal`
+- [x] 2.12 Żadna trasa poza `health+api.ts` nie woła `prepare(` ani `getWorkerEnv()` — 029517f
+- [x] 2.13 Tokeny kont A i B pochodzą z działającej aplikacji — 029517f
+- [x] 2.14 Wymuszony błąd D1 loguje `[api/profile]` bez `userId` i ciała, klient dostaje 500 `internal` — 029517f
 
 ### Phase 3: Ekran profilu i karta celu
 

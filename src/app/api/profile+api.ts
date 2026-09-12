@@ -1,6 +1,6 @@
 import { computeCalorieTarget, validateProfile, type ProfileResponse } from '@/lib/calorie-target';
 import { requireUserId } from '@/server/auth';
-import { touchAppUser } from '@/server/repository/app-users';
+import { ensureAppUser } from '@/server/repository/app-users';
 import { getUserProfile, saveUserProfile } from '@/server/repository/user-profile';
 import type { UserProfile } from '@/server/repository/user-profile';
 
@@ -37,6 +37,19 @@ function toResponse(profile: UserProfile | null): ProfileResponse {
 }
 
 /**
+ * Jedyny sposób oddania `ProfileResponse` klientowi — i jedyne miejsce, które pamięta o `no-store`.
+ *
+ * Wiek, waga, wzrost i płeć są objęte guardrailem prywatności z PRD. Bez tej dyrektywy cache
+ * przeglądarki może je zatrzymać na dysku wg reguł heurystycznych RFC 9111 (odpowiedź nie ma
+ * `Last-Modified`, ale i tak kwalifikuje się do przechowania) — czytelne po wylogowaniu i na
+ * współdzielonej maszynie. Cloudflare uwierzytelnionych `/api/*` nie cache'uje, więc to warstwa
+ * klienta jest tu jedynym ryzykiem.
+ */
+function profileJson(body: ProfileResponse): Response {
+  return Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
+}
+
+/**
  * `console.error` bez `userId` i bez ciała żądania: wiek, waga i wzrost są objęte guardrailem
  * prywatności z PRD, a log Workera jest widoczny w `wrangler tail` dla każdego, kto ma dostęp
  * do konta Cloudflare.
@@ -57,7 +70,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const profile = await getUserProfile(auth.userId);
 
-    return Response.json(toResponse(profile));
+    return profileJson(toResponse(profile));
   } catch (error) {
     return internalError(error);
   }
@@ -86,12 +99,14 @@ export async function PUT(request: Request): Promise<Response> {
   try {
     // Klucz obcy `user_profile.user_id → app_user.id` wymaga istniejącego wiersza tożsamości.
     // Konto, które zapisuje profil przed wejściem na jakąkolwiek trasę czytającą `app_user`,
-    // padłoby tu na `FOREIGN KEY constraint failed`. Jedno tanie zapytanie zamyka ten tryb awarii.
-    await touchAppUser(auth.userId);
+    // padłoby tu na `FOREIGN KEY constraint failed`. `ensureAppUser`, nie `touchAppUser`: zapisowi
+    // potrzebne jest samo ISTNIENIE wiersza, a tamto przy świeżym `last_seen_at` kosztuje drugą
+    // rundę do D1 na odczyt, którego wynik i tak byśmy wyrzucili.
+    await ensureAppUser(auth.userId);
 
     const profile = await saveUserProfile(auth.userId, validation.value);
 
-    return Response.json(toResponse(profile));
+    return profileJson(toResponse(profile));
   } catch (error) {
     return internalError(error);
   }

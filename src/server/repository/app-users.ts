@@ -51,6 +51,30 @@ function toAppUser(row: AppUserRow): AppUser {
  * na D1, nie założone), więc świeży wiersz trzeba doczytać. Alternatywa „najpierw SELECT" byłaby
  * gorsza: kosztowałaby dwie rundy także przy zakładaniu konta.
  */
+/**
+ * Gwarantuje ISTNIENIE wiersza `app_user` — nic więcej i nic mniej. Dla klucza obcego
+ * (`user_profile.user_id → app_user.id` i każdego kolejnego) to jedyne, czego potrzeba.
+ *
+ * Jedna runda do D1: `DO NOTHING` bez `RETURNING` nie czyta nic, więc nie ma tu awaryjnego
+ * `SELECT`, którego wymaga `touchAppUser`, ani jego trybu awarii. Nie odświeża `last_seen_at`
+ * przy istniejącym wierszu i nie ma po temu powodu — ta kolumna opisuje ścieżkę ODCZYTU.
+ *
+ * Zapis produktowy woła to, nie `touchAppUser`: tamto jest narzędziem trasy czytającej, z progiem
+ * świeżości i odczytem zwrotnym, których zapis nie potrzebuje i których wynik i tak wyrzuca.
+ */
+export async function ensureAppUser(userId: string): Promise<void> {
+  const nowIso = new Date().toISOString();
+
+  await getWorkerEnv()
+    .DB.prepare(
+      `insert into app_user (id, created_at, last_seen_at)
+       values (?1, ?2, ?2)
+       on conflict(id) do nothing`
+    )
+    .bind(userId, nowIso)
+    .run();
+}
+
 export async function touchAppUser(userId: string): Promise<AppUser> {
   const now = new Date();
   const nowIso = now.toISOString();

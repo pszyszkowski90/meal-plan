@@ -6,6 +6,11 @@
  * Kształt profilu (`ProfileInput`) przychodzi z `src/lib/calorie-target.ts` i nie jest tu
  * redefiniowany: ta sama definicja waliduje ciało `PUT`, zasila podgląd w formularzu i opisuje
  * wiersz w bazie. Wyliczonego celu tabela NIE trzyma — liczy się przy odczycie tym samym modułem.
+ *
+ * Ten plik jako pierwszy w repo interpoluje coś do napisu w `prepare(` (`SELECT_COLUMNS`), więc
+ * reguła wprost: interpolować wolno WYŁĄCZNIE identyfikatory ze stałych tego modułu, nigdy
+ * wartości — te wchodzą przez `bind(...)` bez wyjątku. Inaczej grep za `${` wewnątrz `prepare(`
+ * przestaje być wiarygodnym sygnałem alarmowym w katalogu, który nie ma testów.
  */
 import type { ActivityLevel, ProfileInput, Sex } from '@/lib/calorie-target';
 import { getWorkerEnv } from '@/server/env';
@@ -59,8 +64,14 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
  * Wstawia albo nadpisuje profil — jedno zapytanie, jedna runda do D1.
  *
  * W przeciwieństwie do `touchAppUser` NIE ma tu progu świeżości: zapis profilu jest jawną akcją
- * użytkownika (kliknięcie „Zapisz"), a nie efektem ubocznym odczytu, więc pętla renderów nie ma
- * jak go wywołać i limit zapisów D1 nie jest zagrożony.
+ * użytkownika (kliknięcie „Zapisz"), a nie efektem ubocznym odczytu, więc pętla renderów po stronie
+ * klienta nie ma jak go wywołać. Tyle i tylko tyle to rozumowanie obejmuje — WŁASNY klient.
+ * Klient skryptowy z ważnym tokenem woła `PUT /api/profile` w pętli i płaci dwa zapisy za żądanie
+ * (`touchAppUser` plus ten upsert), a limit zapisów D1 jest wspólny dla wszystkich kont, więc jedno
+ * konto może wyczerpać dobę pozostałym. Rate-limit jest świadomie odłożony: MVP nie ma bindingu
+ * Rate Limiting, a przy obecnej liczbie kont koszt nadzoru przewyższa ryzyko. Gdyby dokładać
+ * ogranicznik, najtańszy jest tutaj — pominięcie upsertu, gdy nadesłany `ProfileInput` jest
+ * identyczny z wierszem w bazie.
  *
  * `created_at` przetrwa konflikt (kolumna nie jest w `DO UPDATE SET`), `updated_at` idzie na teraz.
  * `RETURNING` przy `DO UPDATE` BEZ predykatu `WHERE` zawsze oddaje wiersz — stąd brak odczytu

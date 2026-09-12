@@ -15,10 +15,17 @@
 -- `FOREIGN KEY constraint failed` — dlatego trasa `PUT /api/profile` woła `touchAppUser` PRZED
 -- `saveUserProfile`. To nie jest ostrożność, to warunek działania.
 --
--- Ograniczenia `CHECK` są DRUGĄ linią obrony, za `validateProfile` z modułu wzoru, nie zamiast
--- niej: komunikaty pod polami formularza rodzą się tam, a tutaj chronimy bazę przed zapisem
--- z pominięciem trasy. Zakres wagi może mówić 30–300, bo walidacja normalizuje wartość do 0,1 kg
--- przed sprawdzeniem granic, więc do zapisu nigdy nie trafi liczba spoza przedziału.
+-- Ograniczenia `CHECK` są tu WYŁĄCZNIE wyliczeniowe (`sex`, `activity_level`) i mają jedno
+-- zadanie: domykają rzutowania `as Sex` i `as ActivityLevel` w `user-profile.ts`, które bez nich
+-- byłyby kłamstwem typu — baza jest jedynym miejscem, które może zagwarantować, że nie ma tam
+-- innej wartości.
+--
+-- Zakresów liczbowych (wiek, waga, wzrost, własny cel) tu ŚWIADOMIE nie ma. Ich jedynym źródłem
+-- prawdy jest `ProfileBounds` w `src/lib/calorie-target.ts`, a `saveUserProfile` jest jedyną
+-- drogą zapisu, więc każda wartość przechodzi przez `validateProfile`. Kopia granic w DDL
+-- rozjechałaby się przy pierwszej ich korekcie, a rozjazd wychodzi użytkownikowi jako 500
+-- `internal` zamiast 400 z błędem pod polem — nierozróżnialnie od awarii D1. Do tego SQLite nie
+-- ma `ALTER TABLE … DROP CONSTRAINT`, więc zmiana granicy kosztowałaby przebudowę tabeli.
 --
 -- Migracja wstecz leży w `migrations/down/0002_user_profile.down.sql`. Kolejność cofania to
 -- `0002`, potem `0001` — odwrotna jest niemożliwa, bo klucz obcy nie pozwoli usunąć `app_user`
@@ -26,12 +33,12 @@
 
 CREATE TABLE user_profile (
   user_id TEXT PRIMARY KEY REFERENCES app_user(id),
-  age INTEGER NOT NULL CHECK (age BETWEEN 18 AND 100),
-  weight_kg REAL NOT NULL CHECK (weight_kg BETWEEN 30 AND 300),
-  height_cm INTEGER NOT NULL CHECK (height_cm BETWEEN 100 AND 250),
+  age INTEGER NOT NULL,
+  weight_kg REAL NOT NULL,
+  height_cm INTEGER NOT NULL,
   sex TEXT NOT NULL CHECK (sex IN ('female', 'male')),
   activity_level INTEGER NOT NULL CHECK (activity_level BETWEEN 1 AND 5),
-  target_kcal_override INTEGER CHECK (target_kcal_override IS NULL OR target_kcal_override BETWEEN 1000 AND 6000),
+  target_kcal_override INTEGER,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
