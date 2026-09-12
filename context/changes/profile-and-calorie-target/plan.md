@@ -765,13 +765,34 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Manual
 
-- [ ] 3.7 Web: podgląd 1 780 → × 1.55 → 2 759 przed zapisem dla 80/180/30/mężczyzna/3
-- [ ] 3.8 Web: zapis → „Zapisano”, Home pokazuje „2 759 kcal dziennie”
-- [ ] 3.9 Web: „70,5” przyjęte; wiek 17 i waga 7 dają błędy pod polami po „Zapisz”, bez żądania
-- [ ] 3.10 Web: nadpisanie 2 200 widoczne na Profilu i Home; edycja wagi nie kasuje; „Wróć do wyliczenia” działa
-- [ ] 3.11 Web offline: odczyt i zapis komunikują brak sieci bez wylogowania, wartości zostają
-- [ ] 3.12 Expo Go: zakładka Profil z ikoną, ten sam przebieg, klawiatury liczbowe, formularz nie chowa się pod zakładkami
-- [ ] 3.13 Web: zakładki „MealPlan” / „Home” / „Profil”, bez „Docs”
+- [x] 3.7 Web: podgląd 1 780 → × 1.55 → 2 759 przed zapisem dla 80/180/30/mężczyzna/3
+- [x] 3.8 Web: zapis → „Zapisano”, Home pokazuje „2 759 kcal dziennie”
+- [x] 3.9 Web: „70,5” przyjęte; wiek 17 i waga 7 dają błędy pod polami po „Zapisz”, bez żądania
+- [x] 3.10 Web: nadpisanie 2 200 widoczne na Profilu i Home; edycja wagi nie kasuje; „Wróć do wyliczenia” działa
+- [x] 3.11 Web offline: odczyt i zapis komunikują brak sieci bez wylogowania, wartości zostają
+- [ ] 3.12 Expo Go: zakładka Profil z ikoną, ten sam przebieg, klawiatury liczbowe, formularz nie chowa się pod zakładkami — **BLOCKED-MANUAL**: emulator nie wystartował (osierocone blokady AVD), weryfikacja natywna po stronie człowieka
+- [x] 3.13 Web: zakładki „MealPlan” / „Home” / „Profil”, bez „Docs”
+
+> **Czym odhaczone.** Kryteria 3.7–3.11 i 3.13 przeszły jako testy przeglądarkowe
+> (`tests/e2e/profile-screen.spec.ts`) przeciw `wrangler dev` na zbudowanym `dist/`, cztery
+> przebiegi całego zestawu z rzędu na zielono (19/19). To nie jest „powinno działać" — każdy
+> z nich uruchamia prawdziwy formularz w prawdziwej przeglądarce.
+>
+> **3.12 zostaje dla człowieka**: emulator Androida nie wystartował tej nocy (osierocone blokady
+> AVD), więc warstwa natywna — ikona zakładki, klawiatury liczbowe, formularz nad zakładkami —
+> nie została sprawdzona wcale.
+>
+> Dwie rozbieżności między zapisem kryteriów a zachowaniem, obie do rozstrzygnięcia przez
+> właściciela, żadna nie zmienia arytmetyki:
+> 1. **Separator tysięcy.** Kryteria piszą „1 780" i „2 759"; ekran pokazuje „1780" i „2759",
+>    bo `toLocaleString('pl-PL')` nie grupuje liczb czterocyfrowych. Zachowanie jest poprawne
+>    typograficznie — nieprecyzyjny jest zapis kryterium.
+> 2. **Mnożnik.** Kryterium 3.7 pisze „× 1.55", ekran pokazuje „× 1,55" (przecinek dziesiętny
+>    po polsku, zgodnie z regułą „liczby przez `toLocaleString`").
+>
+> Obserwacja z budowy testów, nie kryterium: odpowiedź początkowego `GET /api/profile`
+> **nadpisuje to, co użytkownik zdążył wpisać**, jeśli dojdzie po rozpoczęciu pisania.
+> Na wolnym łączu oznacza to utratę pierwszych znaków.
 
 ### Phase 4: Produkcja i reguły
 

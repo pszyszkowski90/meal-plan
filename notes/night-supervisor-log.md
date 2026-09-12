@@ -16,3 +16,9 @@ Ostatni heartbeat sesji: zapis 22:55 UTC — T1 ok; znacznik jest około 52 minu
 Commitów w git log: bez uruchamiania gita; 5 ostatnich wpisów reflogu, 2 nowe commity od kontroli 21:43 UTC.
 Reakcja: brak
 Uwagi: Ostatni commit 6deaba2c0ee9b47792cbf723335bcf439ce1fa33, czas reflogu 2026-09-12 21:57:33 UTC. Poprzedni nowy commit 64634da8020e9afd96047bf38bf85c58e5d5861c. Claude zakończył T1: według dziennika 13 testów E2E przeszło dwa razy; 2.5/2.9 pozostają niepokryte bez drugiego konta. Teraz aktywnie pracuje nad T2, usuwa przeszkody przy uruchomieniu emulatora; panel wskazuje Running Bash / Claude is working, bez pytania do właściciela. Brak podstaw do interwencji przy świeżym commicie i pracy w UI. Błędny znacznik czasu i deklarowany czas T1 (~1h20m wobec około 40 minut obserwowanych) odnotowano właścicielowi w tym dzienniku, bez poprawiania plików sesji. Przy dalszym nadzorze nie czekać na przyszły heartbeat: brać pod uwagę czas reflogu i własne obserwacje. Liczba restartów tej nocy: 0.
+
+### 22:23 UTC
+Ostatni heartbeat sesji: zapis 23:20 UTC — T2 blocked; znacznik nadal w przyszłości względem rzeczywistego czasu 22:23 UTC, nie używam go do obliczenia ciszy.
+Commitów w git log: bez uruchamiania gita; 5 ostatnich wpisów reflogu, 1 nowy commit od kontroli 22:03 UTC.
+Reakcja: brak
+Uwagi: Ostatni odczytany commit 54a56648cd060d81072e455a0b9af32b03c78765 (T2, 22:06:02 UTC). T2 zapisano jako BLOCKED-EMULATOR z kryterium 3.12 BLOCKED-MANUAL i pozostawiono do rana; sesja sama przeszła dalej. W UI Claude aktywnie domyka T3: zgłasza sześć zielonych kryteriów automatycznych, regresję E2E 13/13 i próbę celowego zepsucia, przygotowuje commit fazy 3. Running Bash / Claude is working, brak pytania do właściciela. Bez interwencji przy wyraźnym postępie. Liczba restartów tej nocy: 0.
