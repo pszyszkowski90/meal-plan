@@ -296,3 +296,27 @@ Commit: 42b6917
 Do decyzji rano: mnożnik w podglądzie renderuje się jako „× 1,55" (`toLocaleString('pl-PL')`),
 a kryterium 3.7 zapisuje „× 1.55" — do rozstrzygnięcia, która forma obowiązuje. Karta na Home
 składa „2 759 kcal" i „dziennie" jako dwa osobne wiersze, nie jedno zdanie jak w umowie planu.
+
+### 02:25 UTC — T4 Weryfikacja fazy 3 harnessem
+Wynik: ok
+Co zrobione: `tests/e2e/profile-screen.spec.ts` (+ `support/profile-form.ts`) zamienia ręczne
+kryteria na testy. Odhaczone realnym przebiegiem: **3.7** (podgląd 1780 → × 1,55 → 2759 i zero
+żądań przed zapisem), **3.8** (zapis → „Zapisano", Home pokazuje ten sam cel), **3.9** („70,5"
+przyjęte; wiek 17 i waga 7 zatrzymują zapis PRZED siecią — asercja liczy żądania, nie komunikaty),
+**3.10** (nadpisanie 2200 i wyliczone 2759 w jednym wierszu, edycja wagi go nie kasuje, „Wróć do
+wyliczenia" czyści), **3.11** (offline: komunikat, sesja zachowana, wartości w polach zostają),
+**3.13** (zakładki MealPlan / Home / Profil, bez Docs i Explore).
+**3.12 zostaje BLOCKED-MANUAL** — emulator nie wystartował, warstwa natywna niesprawdzona wcale.
+Zestaw: 19/19, cztery przebiegi z rzędu.
+Po drodze wyszły trzy rzeczy warte uwagi rano, wszystkie zapisane w planie:
+1. Ekran pokazuje „1780"/„2759", nie „1 780"/„2 759" — `toLocaleString('pl-PL')` nie grupuje liczb
+   czterocyfrowych. To zapis kryterium jest nieprecyzyjny, nie kod.
+2. Mnożnik renderuje się jako „× 1,55", kryterium pisze „× 1.55".
+3. **Obserwacja o realnym zachowaniu:** odpowiedź początkowego `GET /api/profile` nadpisuje to,
+   co użytkownik zdążył wpisać, jeśli dojdzie po rozpoczęciu pisania. To była przyczyna losowej
+   czerwieni (raz na trzy przebiegi) — usunięta w testach przez czekanie na stan, ale w aplikacji
+   zostaje: na wolnym łączu użytkownik traci pierwsze znaki.
+Zestaw jedzie na jednym workerze — jedno konto testowe znaczy, że wiersz profilu w D1 jest
+zasobem współdzielonym; `retries` maskowałyby wyścig, więc usunąłem przyczynę.
+Commit: 7aadf2d
+Do decyzji rano: rozstrzygnąć 1 i 2 (separator i przecinek), zdecydować, czy 3 to defekt do naprawy
