@@ -238,7 +238,7 @@ Warunek startu spełniony, pętlę prowadzi jedna sesja.
 Commit: -
 Do decyzji rano: -
 
-### 22:55 UTC — T1 Plan testów i harness webowy
+### 21:57 UTC — T1 Plan testów i harness webowy
 Wynik: ok
 Co zrobione: `/10x-test-plan` napisał `context/foundation/test-plan.md` — siedem ryzyk z wpływem,
 prawdopodobieństwem i dowodem, tabela odpowiedzi na ryzyko, cztery fazy wdrożenia, bramki jakości.
@@ -261,7 +261,7 @@ celowego zepsucia. Formularz logowania nie ma nazw dostępnościowych; zgłoszon
 Commit: 64634da + ten
 Do decyzji rano: czy naprawiać dostępność formularza (D11) i czy założyć drugie konto testowe dla 2.5/2.9
 
-### 23:20 UTC — T2 Harness natywny
+### 22:06 UTC — T2 Harness natywny
 Wynik: blocked
 Co zrobione: Emulator **nie wystartował ani razu**, więc hipoteza z D3 (że bez VPN-a wystarczy
 domyślny DNS albo `-dns-server 8.8.8.8`) **pozostaje niesprawdzona** — blokada leży wcześniej.
@@ -278,7 +278,7 @@ i wymaga człowieka przy maszynie: zamknąć Android Studio, jeśli działa, usu
 i zrobić `adb kill-server`. Dopiero potem da się sprawdzić hipotezę DNS. Kryterium 3.12 zostaje
 jako BLOCKED-MANUAL.
 
-### 00:35 UTC — T3 Faza 3: ekran profilu i karta celu
+### 22:24 UTC — T3 Faza 3: ekran profilu i karta celu
 Wynik: ok
 Co zrobione: `/10x-goal-implement` wdrożył fazę 3 — implementacja delegowana do subagenta, bramki
 i commit w kontekście głównym. Powstały `choice-field.tsx` (prymityw wyboru), `profile.tsx`
@@ -297,7 +297,7 @@ Do decyzji rano: mnożnik w podglądzie renderuje się jako „× 1,55" (`toLoca
 a kryterium 3.7 zapisuje „× 1.55" — do rozstrzygnięcia, która forma obowiązuje. Karta na Home
 składa „2 759 kcal" i „dziennie" jako dwa osobne wiersze, nie jedno zdanie jak w umowie planu.
 
-### 02:25 UTC — T4 Weryfikacja fazy 3 harnessem
+### 22:44 UTC — T4 Weryfikacja fazy 3 harnessem
 Wynik: ok
 Co zrobione: `tests/e2e/profile-screen.spec.ts` (+ `support/profile-form.ts`) zamienia ręczne
 kryteria na testy. Odhaczone realnym przebiegiem: **3.7** (podgląd 1780 → × 1,55 → 2759 i zero
@@ -320,3 +320,13 @@ Zestaw jedzie na jednym workerze — jedno konto testowe znaczy, że wiersz prof
 zasobem współdzielonym; `retries` maskowałyby wyścig, więc usunąłem przyczynę.
 Commit: 7aadf2d
 Do decyzji rano: rozstrzygnąć 1 i 2 (separator i przecinek), zdecydować, czy 3 to defekt do naprawy
+
+### 22:49 UTC — Korekta znaczników czasu w Dzienniku
+Wynik: ok
+Co zrobione: Znaczniki wpisów T1–T4 były błędne — część zapisałem czasem lokalnym (+02:00),
+a wpis T4 („02:25") był po prostu zmyślony zamiast zmierzony. Odtworzyłem je z czasów commitów
+i poprawiłem na: T1 21:57, T2 22:06, T3 22:24, T4 22:44. To nie jest kosmetyka: nadzorca liczy
+ciszę od ostatniego znacznika, więc znacznik z przyszłości kazałby mu uznać martwą sesję za żywą.
+Od tego wpisu każdy znacznik pochodzi z `date -u +%H:%M`, nie z oszacowania.
+Commit: ten
+Do decyzji rano: -
