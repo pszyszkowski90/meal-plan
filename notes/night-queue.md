@@ -369,3 +369,24 @@ Kryterium 4.6 wykonane: `CLAUDE.md` mówił „dwie trasy API" (są trzy), „ni
 Commit: b664e2f (+ push)
 Do decyzji rano: **4.4 tylko częściowo** — pełnego przebiegu z zapisem na produkcji świadomie nie
 robiłem, bo zasady nocy zabraniają pisania danych testowych do produkcyjnej D1. **4.5 BLOCKED-MANUAL.**
+
+### 23:15 UTC — T6 Briefy z lekcji (priorytet)
+Wynik: ok
+Co zrobione: Cztery briefy priorytetowe, każdy osobnym commitem, wszystkie pisane **z realnego
+użycia narzędzi tej nocy**, nie ze streszczenia CLI:
+- `10x-lesson-m3l1-brief.md` — plan testów; najmocniejszym dowodem ryzyka okazały się przeglądy
+  implementacji, nie PRD, a ledger świeżości dostał wyzwalacz zdarzeniowy zamiast daty.
+- `10x-lesson-m3l2-brief.md` — problem wyroczni; wszystkie stałe (1780, 1,55, 2759, 2200) pochodzą
+  z kryteriów planu, co potwierdziła próba zepsucia wzoru o 7 kcal.
+- `10x-lesson-m3l4-brief.md` — E2E; cztery miejsca, gdzie to repo odbiega od lekcji, w tym takie,
+  gdzie `getByRole` nie ma się o co oprzeć, i takie, gdzie próba zepsucia raz skłamała na zielono.
+- `10x-lesson-m5l5-brief.md` — praca bez nadzoru; podział „subagent pisze kod, bramki w kontekście
+  głównym" i dlaczego ewaluator celu wymusza wypisywanie werdyktów bramek.
+Źródło (`lessons/*.json`) leżało w scratchpadzie **poprzedniej** sesji — mój jest osobny; znalazłem
+je przeszukaniem katalogu tymczasowego.
+**Świadomie NIE napisałem** pozostałych 14 briefów (m2l3–m2l5, m3l3, m3l5, m4l1–m4l5, m5l1–m5l4).
+Powód: te lekcje nie dostarczyły narzędzi używanych tej nocy, więc brief powstałby wyłącznie
+z parafrazy streszczenia CLI — a to jest dokument bez wartości, który udaje wiedzę. T7 odblokowuje
+całą resztę mapy drogowej i jest wart więcej niż 14 parafraz.
+Commit: 94c123e, e3e26b8, 6d37a35, 7b82566
+Do decyzji rano: czy pozostałe 14 briefów są w ogóle potrzebne, skoro streszczenia CLI zostają
