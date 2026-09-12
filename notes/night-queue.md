@@ -90,6 +90,11 @@ wpuszcza do `(app)`; `/api/health` → `d1:true`; `/api/account` bez tokenu → 
 
 **Gotowe, gdy:** przechodzi dwa razy z rzędu zielono i `git diff package-lock.json` pusty.
 
+**Limit: 2,5 godziny.** Po tym czasie przechodzisz do T3 z tym, co masz — choćby samym logowaniem.
+Faza 3 jest celem nocy, harness jest środkiem. Wpisz w Dzienniku, co z harnessu zostało niegotowe,
+i wróć do tego w T4, jeśli zostanie czas. Harness, który zjadł noc i nie ma czego weryfikować,
+jest porażką, nie sukcesem.
+
 ### T2 — Harness natywny (jedna próba, 30 minut)
 
 VPN jest celowo rozłączony (D3), więc sprawdzona konfiguracja DNS nie zadziała. Jedna hipoteza
