@@ -260,3 +260,20 @@ pada na EBUSY i testy jadą przeciw staremu buildowi — co raz dało fałszywą
 celowego zepsucia. Formularz logowania nie ma nazw dostępnościowych; zgłoszone, nienaprawione (D11).
 Commit: 64634da + ten
 Do decyzji rano: czy naprawiać dostępność formularza (D11) i czy założyć drugie konto testowe dla 2.5/2.9
+
+### 23:20 UTC — T2 Harness natywny
+Wynik: blocked
+Co zrobione: Emulator **nie wystartował ani razu**, więc hipoteza z D3 (że bez VPN-a wystarczy
+domyślny DNS albo `-dns-server 8.8.8.8`) **pozostaje niesprawdzona** — blokada leży wcześniej.
+Trzy próby: domyślna, `-read-only`, i ponowna po ubiciu procesów. Każda kończy się tym samym:
+`FATAL | Running multiple emulators with the same AVD`, mimo że żadnego `qemu-system-x86_64`
+w systemie nie ma. Przyczyna to dwie osierocone blokady w `~/.android/avd/mealplan35.avd/`
+(`hardware-qemu.ini.lock` — katalog z plikiem `pid` — oraz `multiinstance.lock`), których nie
+udało się usunąć ani z Bash, ani z PowerShella. `adb devices` przy tym nie zwraca nawet nagłówka,
+więc serwer adb też wisi. Zostały po sesji, która pracowała przed pętlą.
+Limit 30 minut wyczerpany, trzy nieudane próby tego samego — zgodnie z zasadami przechodzę dalej.
+Commit: ten
+Do decyzji rano: **BLOCKED-EMULATOR, nie BLOCKED-VPN.** Naprawa jest prawdopodobnie trywialna
+i wymaga człowieka przy maszynie: zamknąć Android Studio, jeśli działa, usunąć te dwie blokady
+i zrobić `adb kill-server`. Dopiero potem da się sprawdzić hipotezę DNS. Kryterium 3.12 zostaje
+jako BLOCKED-MANUAL.
