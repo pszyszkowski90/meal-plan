@@ -63,7 +63,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 
 | ID    | Change ID                    | Wynik (użytkownik może …)                                          | Wymagania wstępne  | Odnośniki PRD                     | Status   |
 | ----- | ---------------------------- | ------------------------------------------------------------------ | ------------------ | --------------------------------- | -------- |
-| F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | blocked  |
+| F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | planning |
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
 | S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | in-progress |
 | S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | blocked  |
@@ -127,18 +127,20 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **Wymagania wstępne:** —
 - **Równolegle z:** S-01, S-02, S-03
 - **Blokery:** —
-- **Niewiadome:**
-  - Skąd biorą się przepisy i makra — generowanie przez model AI na żądanie, własna ręcznie
-    zseedowana pula, czy publiczna baza składników (USDA / Open Food Facts) plus własne
-    przepisy? Właściciel: użytkownik. Blok: tak.
-  - Czy wybrane źródło daje instrukcję rozbitą na kroki, czy jeden blok tekstu? Właściciel:
-    użytkownik. Blok: tak.
+- **Niewiadome:** — rozstrzygnięte 13.09.2026 (decyzja D14 w `notes/night-decisions.md`,
+  konsekwencje w `context/changes/dish-source-and-seed-pool/options.md`).
+  - ~~Skąd biorą się przepisy i makra?~~ **Hybryda:** model autoryzuje przepisy raz poza runtime,
+    człowiek przegląda gramatury, makra liczy skrypt z USDA FoodData Central (CC0). Odrzucone:
+    model na żądanie (makra niewiarygodne), zewnętrzne API przepisów (licencja zabrania
+    przechowywania, co kłóci się z wymaganiem offline).
+  - ~~Czy źródło daje instrukcję rozbitą na kroki?~~ **Tak — jesteśmy autorem.** Kroki powstają
+    jako osobne rekordy z kolejnością (`dish_step`), nie jako blok tekstu.
 - **Ryzyko:** to nie jest budowa całej warstwy danych, tylko minimalny kontrakt treści — pula ma
   być na tyle duża, żeby generator miał z czego wybierać, i ani trochę większa. Trzy rozważane
   źródła dają trzy zupełnie różne plany implementacyjne (zapytanie do własnej bazy kontra
   wywołanie modelu na żądanie), więc `/10x-plan` na S-04 przed tą decyzją byłby zmarnowany.
   Ryzyko wtórne: jeśli źródło nie daje kroków, FR-016 wymaga ręcznej obróbki każdego przepisu.
-- **Status:** blocked
+- **Status:** planning
 
 ## Fragmenty
 
