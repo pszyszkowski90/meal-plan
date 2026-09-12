@@ -437,3 +437,26 @@ kobieta / poziom 1) daje **317 kcal dziennie**, a maksymalny (300 kg / 250 cm / 
 pozwoliłby wpisać ręcznie**, a ta liczba zasili ograniczenie ±10% generatora w S-04. Testy
 przypinają stan faktyczny; czy cel wyliczony ma być przycinany albo opatrzony ostrzeżeniem,
 jest decyzją produktową i świadomie jej nie podjąłem.
+
+### 23:50 UTC — T8 (domknięcie) Przegląd reguł `CLAUDE.md`
+Wynik: ok
+Co zrobione: Karta wyników pięciu sprawdzeń w `notes/claude-md-rule-review.md`. Werdykty:
+długość WARN (272 linie niepuste, z czego 34 to blok generowany przez `10x-cli`), osadzony kod OK,
+precyzja języka OK (zero „pisz czysty kod"), redundancja WARN, kolejność WARN, aktualność WARN.
+**Przegląd wykazał, że kryterium 4.6 odhaczyłem niekompletnie.** Plik nadal zawierał zdania
+opisujące stan sprzed zmiany, w tym **sprzeczność w jednym akapicie**: „`npx tsc --noEmit` — jedyne
+realne sprawdzenie poprawności w tym repo" obok zdania wymieniającego `tsc` **i** `npm test`.
+Agent czytający listę od góry pominąłby testy. Drugie groźne zdanie: „repo nie ma testów" jako
+uzasadnienie, że filtrowanie po `userId` jest jedyną izolacją kont — po tej nocy nieprawda
+(`data-boundary.spec.ts` testuje dokładnie tę granicę).
+Poprawiłem **wyłącznie fakty** (sześć miejsc): obie powyższe, listę skryptów `package.json`,
+brak `lessons.md` i `test-plan.md` w „Dokumentach projektu", licznik importów względnych (nocny
+plik testu był w świetle starego brzmienia naruszeniem reguły) oraz nieaktualną **Blokadę** na
+górze pliku — Otwarte pytanie 1 rozstrzygnęła decyzja D14, więc blokada obowiązuje teraz z innego
+powodu (brak puli dań, nie brak decyzji).
+**Nie ruszałem projektu reguł** — zmiana kolejności, usunięcie bloku `10x-cli` i odchudzenie
+duplikatów zostają jako propozycje w raporcie, zgodnie z zasadą T8.
+`npm test` 32/32, `tsc` i `expo lint` czyste.
+Commit: ten
+Do decyzji rano: trzy propozycje z raportu — podnieść trzy reguły niszczące do „Twardych reguł",
+odzyskać 34 linie z bloku `10x-cli`, usunąć duplikaty wartości `Spacing`

@@ -26,8 +26,14 @@ wykluczeń, nie dwa mechanizmy.
 Poza zakresem MVP: dziennik jedzenia, śledzenie wagi, plan miesięczny, preferencje pozytywne
 (FR-005), eksport listy zakupów (FR-015). Nie dokładaj ich „przy okazji".
 
-**Blokada:** źródło przepisów i makr jest nierozstrzygnięte (Open Question 1 w PRD). Generator planu
-i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim nie zapadnie.
+**Źródło przepisów rozstrzygnięte 13.09.2026** (Open Question 1 i 2 w PRD): model językowy
+autoryzuje przepisy **raz, poza runtime**, człowiek przegląda gramatury, a makra liczy skrypt
+z tabeli USDA. **Worker nigdy nie woła modelu** — w runtime czyta wyłącznie D1. Konsekwencje
+i odrzucone opcje: [options.md](context/changes/dish-source-and-seed-pool/options.md).
+
+**Blokada nadal obowiązuje, ale z innego powodu:** generatora planu (S-04) nie implementuj, zanim
+nie powstanie pula dań — nie ma z czego wybierać ani czym liczyć kalorii. Plan puli:
+[dish-source-and-seed-pool](context/changes/dish-source-and-seed-pool/plan.md).
 
 ## Twarde reguły
 
@@ -88,8 +94,9 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
   uruchamia wyłącznie człowiek. Nie ustawiaj `migrations_pattern` w `wrangler.jsonc` — zjadłby `down/`.
 - Nazwy plików kebab-case (`themed-text.tsx`), nazwy eksportów PascalCase / camelCase.
 - Importy przez aliasy: `@/*` → `src/*`, `@/assets/*` → `assets/*`. Względne `./` tylko dla
-  rodzeństwa wewnątrz `src/components/` (5 wystąpień, zero `../` w całym `src/`).
-  `../` w imporcie to błąd.
+  rodzeństwa wewnątrz `src/components/` (5 wystąpień) oraz dla pliku testu obok modułu
+  w `src/lib/` (`calorie-target.test.ts` → `./calorie-target.ts`; Node nie zgaduje rozszerzeń
+  w ESM). Zero `../` w całym `src/` — `../` w imporcie to błąd.
 - **Zero surowych kolorów i odstępów w `StyleSheet`.** Kolor bierz z `useTheme()`, odstęp i promień
   z `Spacing` ([theme.ts](src/constants/theme.ts)) — to skala nazwana słownie (`half`=2, `one`=4 …
   `six`=64), nie liczby.
@@ -169,7 +176,8 @@ własnej domeny i jest osobną zmianą.
 `created_at` i `last_seen_at`; e-mail i hash hasła nie są duplikowane. Wiersz powstaje leniwie przy
 pierwszym uwierzytelnionym żądaniu (`touchAppUser`), bez webhooka z Clerka. **Cały dostęp do danych
 użytkownika idzie przez [src/server/repository/](src/server/repository/)**: każda funkcja przyjmuje
-`userId` jako pierwszy argument i filtruje po nim w SQL-u, bo D1 nie ma RLS, a repo nie ma testów —
+`userId` jako pierwszy argument i filtruje po nim w SQL-u, bo D1 nie ma RLS, a warstwa repozytorium
+nie ma testów jednostkowych (granicy pilnuje dopiero `tests/e2e/data-boundary.spec.ts`) —
 to jedyna izolacja między kontami. `prepare(` żyje wyłącznie w tym katalogu (jedyny wyjątek:
 `health+api.ts`), wartości wchodzą przez `bind(...)`. Trasa `+api.ts` ma kształt `requireUserId` →
 funkcja repozytorium → JSON, zero SQL-a i zero `getWorkerEnv()`. Wzorzec odniesienia:
@@ -178,10 +186,12 @@ Nie dodawaj własnego hashowania ani tabel sesji.
 
 ## Komendy i weryfikacja
 
-Skrypty (`start`, `android`, `ios`, `web`, `lint`) są w [package.json](package.json); lint to
+Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`) są w
+[package.json](package.json); lint to
 `expo lint` z flat configiem w [eslint.config.js](eslint.config.js).
 
-- `npx tsc --noEmit` — jedyne realne sprawdzenie poprawności w tym repo. Nie jest skryptem npm.
+- `npx tsc --noEmit` — sprawdzenie typów; **pierwsze z dwóch**, drugim jest `npm test`. Nie jest
+  skryptem npm.
 - `npm run check-lock` — przed każdym pushem, jeśli ruszałeś zależności. Odtwarza sprawdzenie
   spójności robione przez `npm ci`, więc łapie zepsuty lock lokalnie, zamiast na czerwonym buildzie.
 - `npm test` — `node --test` na `src/lib/*.test.ts`, bez żadnej zależności (runner jest wbudowany
@@ -250,7 +260,11 @@ npx wrangler deploy                                   # produkcja
 Repo pracuje w łańcuchu 10x (`.claude/skills/10x-*`). Konwencje katalogów opisują README
 w [context/foundation/](context/foundation/README.md), [context/changes/](context/changes/README.md)
 i [context/archive/](context/archive/README.md) — ten ostatni jest **niezmienny**, żaden skill tam
-nie pisze. Kontekst kursowy: [notes/10x-lesson-m1l4-brief.md](notes/10x-lesson-m1l4-brief.md).
+nie pisze. **Przed planowaniem i przeglądem czytaj**
+[context/foundation/lessons.md](context/foundation/lessons.md) — rejestr powtarzających się reguł,
+tylko do dodawania; mapa ryzyk i bramki jakości są w
+[context/foundation/test-plan.md](context/foundation/test-plan.md).
+Briefy z lekcji kursu leżą w [notes/](notes/) (`10x-lesson-*-brief.md`).
 
 ## Pułapki
 
