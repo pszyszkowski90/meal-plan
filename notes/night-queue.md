@@ -277,3 +277,22 @@ Do decyzji rano: **BLOCKED-EMULATOR, nie BLOCKED-VPN.** Naprawa jest prawdopodob
 i wymaga człowieka przy maszynie: zamknąć Android Studio, jeśli działa, usunąć te dwie blokady
 i zrobić `adb kill-server`. Dopiero potem da się sprawdzić hipotezę DNS. Kryterium 3.12 zostaje
 jako BLOCKED-MANUAL.
+
+### 00:35 UTC — T3 Faza 3: ekran profilu i karta celu
+Wynik: ok
+Co zrobione: `/10x-goal-implement` wdrożył fazę 3 — implementacja delegowana do subagenta, bramki
+i commit w kontekście głównym. Powstały `choice-field.tsx` (prymityw wyboru), `profile.tsx`
+(formularz z podglądem na żywo i nadpisaniem celu), `TargetCard` na Home odświeżana przez
+`useIsFocused` + ref; zakładka Profil zastąpiła Explore na OBU platformach, marka to „MealPlan",
+link „Docs" zniknął; usunięte `explore.tsx`, `hint-row.tsx` i `external-link.tsx` (bez importerów).
+Wszystkie sześć kryteriów automatycznych 3.1–3.6 zielone i odhaczone: `tsc`, `expo lint`,
+`npm test` 28/28, `expo export` + `wrangler deploy --dry-run` (12 modułów, nic z `node_modules`),
+`/profile` → 200 HTML i `/explore` → 404 na `wrangler dev`, `grep` bez trafień.
+Harness E2E po zmianie: 13/13. Jeden test wymagał przekotwiczenia — asercja opierała się na wierszu
+`userId: user_…`, który faza 3 celowo usuwa; dowodem granicy danych jest teraz karta celu.
+To dryf zaplanowany, nie regresja. Nowa asercja przeszła próbę celowego zepsucia: usunięcie
+nagłówka `Authorization` zapaliło ją na czerwono, po czym zepsucie przywrócone.
+Commit: 42b6917
+Do decyzji rano: mnożnik w podglądzie renderuje się jako „× 1,55" (`toLocaleString('pl-PL')`),
+a kryterium 3.7 zapisuje „× 1.55" — do rozstrzygnięcia, która forma obowiązuje. Karta na Home
+składa „2 759 kcal" i „dziennie" jako dwa osobne wiersze, nie jedno zdanie jak w umowie planu.
