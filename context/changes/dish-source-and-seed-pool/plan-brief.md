@@ -24,10 +24,12 @@ nie ma nawet `all()`, więc nie da się odczytać wielu wierszy. To będzie pier
 
 ## Pożądany stan końcowy
 
-W D1 leży ≥ 60 dań rozłożonych na pory posiłku, każde z polską nazwą, czasem przygotowania,
-składnikami z gramaturą, krokami w kolejności i makrami policzonymi z USDA. Istnieje **zmierzony
-dowód**, czy z tej puli da się złożyć dzień w ±10% dla celów od 1600 do 3200 kcal — albo jawna
-informacja, że nie, wraz z liczbą brakujących dań. Zero kodu generatora.
+W D1 leży pula spełniająca minima per pora posiłku (≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji,
+≥ 12 przekąsek — danie może liczyć się do wielu pór), każde danie z polską nazwą, czasem, składnikami
+z gramaturą, krokami w kolejności i makrami policzonymi z USDA. Istnieje **zmierzony dowód**
+wykonalności ±10% dla celów 1600–3200 kcal w **trzech scenariuszach** (bez filtrów, z limitem czasu,
+z limitem i wykluczeniami) — albo jawna informacja, ilu dań brakuje i na której porze.
+Zero kodu generatora, zero tras API.
 
 ## Kluczowe podjęte decyzje
 
@@ -60,18 +62,28 @@ wywoływanie modelu w runtime; pełny import USDA; warianty porcji (przepis = je
 ## Architektura / Podejście
 
 ```
-model (raz, poza aplikacją)  →  seed/dishes/*.json  →  przegląd człowieka  →  walidator
-                                                                                  │
-USDA FoodData Central (CC0)  →  scripts/import-usda.js  →  ingredient            │
-                                                                │                 ▼
-                                                                └──────→  D1: dish, dish_ingredient, dish_step
-                                                                                  │
-                                                          src/lib/dish-macros.ts ←┘  (makra liczone, nie przechowywane)
-                                                                                  │
-                                                          repository/dishes.ts ────┘  → S-04
+model (raz, poza aplikacją) ──→ seed/dishes/<slug>.json ──→ przegląd człowieka (reviewedBy)
+                                          │                            │
+                                          │                            ▼
+USDA (CC0, pobrany raz) ──→ distill-usda.mjs ──→ seed/usda-subset.json │
+                                          │                            │
+                    seed/ingredients.json ┴──→ import-usda.mjs         │
+                                                       │               │
+                                                       ▼               ▼
+                                          D1: ingredient  ◄──── seed-dishes.mjs
+                                                                 (woła dish-validation)
+                                                       │
+                                                       ▼
+                              D1: dish · dish_meal_slot · dish_ingredient · dish_step
+                                                       │
+                       check-pool-feasibility.mjs ─────┘  (woła dish-macros — nie liczy sam)
+                                                       │
+                                                       ▼
+                                             raport liczb  ──→  S-04
 ```
 
-Worker **nigdy nie woła modelu**. W runtime czyta wyłącznie D1.
+Worker **nigdy nie woła modelu**; w tej zmianie w ogóle nie czyta puli — odczyt z aplikacji
+należy do S-04. Makra liczy **wyłącznie** `src/lib/dish-macros.ts`: ani SQL, ani skrypt osobno.
 
 ## Fazy w skrócie
 
@@ -90,14 +102,17 @@ na `--remote` i czy Node zaimportuje `.ts` z pliku `.mjs`. Oba są założeniami
 
 ## Otwarte ryzyka i założenia
 
-- Błąd mapowania składnik → USDA to najpoważniejsze ryzyko rezydualne; łagodzone przeglądem
-  człowieka i zapytaniem kontrolnym na wartości spoza zakresu.
-- Pula może okazać się za mała dla skrajnych celów — faza 4 wykryje to **przed** budową generatora.
-- Nuda po kilku tygodniach (60 dań) — poza MVP, ale zapisany prompt ma czynić rozszerzenie tanim.
+- **Mapowanie `seed/ingredients.json` (polska nazwa → `fdcId`) to główne ryzyko rezydualne.**
+  Zła pozycja daje wiarygodnie wyglądające, błędne makra. Łagodzone konwencją stanu składnika,
+  niezmiennikiem Atwatera, gęstością energetyczną i uszeregowaniem przeglądu przez `modelKcalHint`.
+- Pula może okazać się za mała — **faza 3 wykryje to po 20 daniach, nie po 60**.
+- Dwa założenia do zweryfikowania przed fazą 3 (transakcje D1 na `--remote`, import `.ts` z `.mjs`).
+- Nuda po kilku tygodniach — poza MVP, ale zapisany prompt ma czynić rozszerzenie tanim.
 - Zakładam stabilność licencji USDA CC0 w horyzoncie MVP.
 
 ## Kryteria sukcesu (podsumowanie)
 
-- Z puli da się odczytać dania z makrami, a makra zgadzają się z niezależnym liczeniem z USDA.
+- Makra w bazie zgadzają się z niezależnym liczeniem z USDA, a trzy sita energetyczne
+  (Atwater, progi, gęstość) nie znajdują ani jednego podejrzanego dania.
 - Istnieje liczba, nie przeczucie, odpowiadająca na pytanie „czy guardrail ±10% jest osiągalny".
 - Żadna kaloria w systemie nie pochodzi z odpowiedzi modelu językowego.
