@@ -237,3 +237,22 @@ która ma opisany wyżej tryb zawieszenia.
 tekst w „Własny cel" znika bez komunikatu), F5 (błędne nadpisanie gasi cały podgląd i ukrywa
 przycisk powrotu), F6 (brak nazw dostępnościowych w `TextField` i na grupie wyboru), F7 (osierocone
 ikony `explore*.png`). Każde z nich zmienia zachowanie produktu albo dotyka kodu spoza fazy 3.
+
+### D13 — Wdrożenie idzie pushem na `main`, nie ręcznym `wrangler deploy`
+
+**Co:** T5 wykonuję przez `git push origin main`, zostawiając wdrożenie Workers Builds, zamiast
+uruchamiać `npx wrangler deploy` z lokalnego `dist/`. Kolejka wymaga wybrania jednego z dwóch —
+robienie obu naraz dałoby dwa wdrożenia ścigające się o ten sam Worker.
+
+**Powód:** Trzy rzeczy przemawiają za pushem. (1) To normalna ścieżka wdrożeniowa tego repo —
+wdrożony artefakt jest wtedy dokładnie tym, co CI zbudowało z `main`, a nie tym, co akurat leżało
+w moim lokalnym `dist/`. (2) Push jest **jednocześnie kopią zapasową** 24 commitów pracy, która
+do tej pory istniała wyłącznie na tym dysku; ręczny deploy zostawiłby ją niewypchniętą. (3) Ręczny
+deploy i tak wymagałby późniejszego pusha, który uruchomiłby drugie wdrożenie.
+
+**Sygnał weryfikacyjny wybrany przed wdrożeniem:** produkcja odpowiada dziś `/profile` → 404
+i `/explore` → 200. Po wdrożeniu fazy 3 musi być odwrotnie. To jednoznaczne rozróżnienie
+„wdrożyło się" od „CI padło, a stary kod nadal stoi" — bez zgadywania po czasie.
+
+**Jak cofnąć:** `npx wrangler rollback` cofa **kod, nie schemat D1**. Migracja `0002` jest
+addytywna i już zastosowana `--remote`, więc rollback kodu nie osieroci danych.
