@@ -729,10 +729,28 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 - [x] 2.14 Wymuszony błąd D1 loguje `[api/profile]` bez `userId` i ciała, klient dostaje 500 `internal` — 029517f
 
 > Przegląd implementacji fazy 2 (`reviews/impl-review-phase-2.md`, 2026-09-12) domknął F1–F8.
-> F1, F2, F4 i F6 zmieniły schemat i zachowanie tras, więc **2.4–2.10 wymagają ponownego przebiegu
+> F1, F2, F4 i F6 zmieniły schemat i zachowanie tras, więc **2.4–2.10 wymagały ponownego przebiegu
 > na `wrangler dev`** przed pushem fazy. Kryteria 2.1, 2.2, 2.3, 2.11 i 2.12 zostały w przeglądzie
 > odtworzone i przechodzą; migracja `0002` w docelowym kształcie jest zastosowana `--local`
 > i `--remote`.
+>
+> **Ponowny przebieg wykonany 2026-09-12 harnessem E2E** (`tests/e2e/`, na `wrangler dev`
+> przeciw zbudowanemu `dist/`). Od tej pory te kryteria nie wymagają człowieka:
+>
+> | Kryterium | Stan | Gdzie |
+> |---|---|---|
+> | 2.4 (401 bez `Authorization`) | ponownie zielone | `data-boundary.spec.ts` |
+> | 2.6 (`age: 17` → 400 `invalid` z `fields.age`; nie-JSON → `invalid_json`) | ponownie zielone | `profile-api.spec.ts` |
+> | 2.7 (profil 80/180/30/male/3 → `computedKcal` 2759, `GET` to samo) | ponownie zielone | `profile-api.spec.ts` |
+> | 2.8 (nadpisanie 2200 → `effectiveKcal` 2200, `null` wraca do 2759) | ponownie zielone | `profile-api.spec.ts` |
+> | 2.10 (`/api/health` `d1:true`, `/api/account` bez regresji) | ponownie zielone | `seed.spec.ts`, `data-boundary.spec.ts` |
+> | **2.5** (konto bez profilu → `{"profile":null,"target":null}`) | **NIEPOKRYTE** | wymaga konta bez zapisanego profilu; konto testowe profil ma |
+> | **2.9** (izolacja konta A od konta B) | **NIEPOKRYTE** | wymaga drugiego konta testowego — patrz `test-plan.md` §3 faza 3 |
+>
+> Asercje zostały sprawdzone próbą celowego zepsucia: podmiana `unauthorized()` na odpowiedź 200
+> zapaliła na czerwono wszystkie testy granicy danych, a przesunięcie wyniku `computeCalorieTarget`
+> o 7 kcal — testy celu (oczekiwane 2759, otrzymane 2766). Wyrocznia 2759 pochodzi z kryterium 2.7,
+> nie z uruchomienia modułu liczącego.
 
 ### Phase 3: Ekran profilu i karta celu
 

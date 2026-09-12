@@ -237,3 +237,26 @@ commitów wstecz — tamta sesja skończyła). `npx tsc --noEmit` bez błędów,
 Warunek startu spełniony, pętlę prowadzi jedna sesja.
 Commit: -
 Do decyzji rano: -
+
+### 22:55 UTC — T1 Plan testów i harness webowy
+Wynik: ok
+Co zrobione: `/10x-test-plan` napisał `context/foundation/test-plan.md` — siedem ryzyk z wpływem,
+prawdopodobieństwem i dowodem, tabela odpowiedzi na ryzyko, cztery fazy wdrożenia, bramki jakości.
+Umiejętności użyłem jako autora dokumentu, bez jej maszyny stanów (D8); wywiad zastąpiłem dowodami
+z dokumentów (D9). `/10x-e2e` w trybie jednego ryzyka zbudował harness w `tests/e2e/`: 13 testów,
+dwa przebiegi z rzędu zielone (12,6 s), `git diff package-lock.json` pusty, `npm run check-lock`
+i `npx tsc --noEmit` czyste. Playwright i poświadczenia leżą POZA repo (D10) — hasła, którego nie
+ma w drzewie, nie da się zacommitować, co zamyka ustalenie F1 przeglądu fazy 1.
+Pokryte: logowanie z weryfikacją urządzenia, bramka wpuszcza i sesja przeżywa przeładowanie,
+wylogowanie, 401 bez tokenu i przy podrobionym tokenie, `d1:true`, 404 dla nieznanej ścieżki,
+oraz kryteria fazy 2 **2.4, 2.6, 2.7, 2.8, 2.10** (wciągnięte do zakresu zgodnie z nagłówkiem
+kolejki). **Niepokryte: 2.5 i 2.9** — oba wymagają drugiego konta testowego; odnotowane w planie.
+Każda asercja przeszła próbę celowego zepsucia: odmowa tożsamości zamieniona na 200 zapaliła
+8 z 10 testów, przesunięcie wyniku wzoru o 7 kcal zapaliło testy celu (2759 kontra 2766).
+Dwie rzeczy znalezione po drodze, obie zapisane: harness MUSI używać `localhost`, nie `127.0.0.1`
+(`azp` porównywane jako łańcuch znaków — inaczej każde uwierzytelnione żądanie dostaje 401 bez
+wskazówki), oraz `wrangler dev` trzyma `dist/client`, więc bez jego zatrzymania `expo export`
+pada na EBUSY i testy jadą przeciw staremu buildowi — co raz dało fałszywą zieleń przy próbie
+celowego zepsucia. Formularz logowania nie ma nazw dostępnościowych; zgłoszone, nienaprawione (D11).
+Commit: 64634da + ten
+Do decyzji rano: czy naprawiać dostępność formularza (D11) i czy założyć drugie konto testowe dla 2.5/2.9
