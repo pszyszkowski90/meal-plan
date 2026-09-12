@@ -229,3 +229,11 @@ Do decyzji rano: <albo ->
 ```
 
 <!-- DZIENNIK PONIŻEJ -->
+
+### 21:20 UTC — Preflight
+Wynik: ok
+Co zrobione: `git status` czysty, historia zgodna (commit równoległej sesji `e4ae643` leży pięć
+commitów wstecz — tamta sesja skończyła). `npx tsc --noEmit` bez błędów, `npm test` 28/28 zielono.
+Warunek startu spełniony, pętlę prowadzi jedna sesja.
+Commit: -
+Do decyzji rano: -
