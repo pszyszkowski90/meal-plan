@@ -41,8 +41,26 @@ test.describe('Ryzyko #2 — bramka sesji', () => {
     await expect(page).toHaveURL((u) => !u.pathname.includes('sign-in'));
 
     // …a jego tożsamość realnie doszła do serwera. To odróżnia „bramka wpuściła" od
-    // „bramka wpuściła, ale każde uwierzytelnione żądanie dostaje 401".
-    await expect(page.getByText(/^userId: user_/)).toBeVisible();
+    // „bramka wpuściła, ale każde uwierzytelnione żądanie dostaje 401" — awarii, która wygląda
+    // identycznie, dopóki nie sprawdzi się treści ekranu.
+    //
+    // Dowodem jest karta celu: oba jej stany końcowe poniżej powstają WYŁĄCZNIE po odpowiedzi
+    // 200 z `/api/profile`. Przyjmujemy oba, bo testy kontraktu profilu jadą równolegle i mogą
+    // zmieniać zapisany profil — przypięcie się do jednej liczby dawałoby przypadkowe czerwienie
+    // niezwiązane z ryzykiem #2.
+    //
+    // (Do fazy 3 dowodem był wiersz `userId: user_…` na Home. Faza 3 usunęła go razem z żądaniem
+    // do `/api/account` — zgodnie z planem granicy danych dowodzi teraz `/api/profile`.)
+    // Kotwiczymy się na linku karty, nie na jej tekście: stan „ready" renderuje „2 759 kcal"
+    // i „dziennie" jako DWA osobne elementy, więc żaden pojedynczy element nie zawiera frazy
+    // „kcal dziennie" — dopasowanie tekstem dawałoby fałszywą czerwień. Link jest jeden
+    // i jednoznaczny w każdym z dwóch stanów sukcesu.
+    await expect(page.getByRole('link', { name: /Zmień profil|Przejdź do profilu/ })).toBeVisible();
+
+    // I odwrotnie: stany awaryjne karty muszą być nieobecne. Bez tego asercja powyżej
+    // przepuściłaby ekran, na którym żądanie poległo, a karta pokazuje komunikat błędu.
+    await expect(page.getByText('Nie udało się pobrać celu.')).toHaveCount(0);
+    await expect(page.getByText(/^Brak połączenia/)).toHaveCount(0);
   });
 
   test('wylogowanie odsyła na ekran logowania', async ({ page }) => {

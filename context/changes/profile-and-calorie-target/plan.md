@@ -756,12 +756,12 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Automated
 
-- [ ] 3.1 `npx tsc --noEmit` czyste po regeneracji typed routes (`/profile` w typie, `/explore` poza nim)
-- [ ] 3.2 `npx expo lint` czyste, bez `react-hooks/set-state-in-effect`
-- [ ] 3.3 `npm test` nadal przechodzi
-- [ ] 3.4 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`
-- [ ] 3.5 Na `wrangler dev`: `GET /profile` HTML 200, `GET /explore` 404
-- [ ] 3.6 `grep -rn "hint-row\|explore" src/` bez trafień
+- [x] 3.1 `npx tsc --noEmit` czyste po regeneracji typed routes (`/profile` w typie, `/explore` poza nim)
+- [x] 3.2 `npx expo lint` czyste, bez `react-hooks/set-state-in-effect`
+- [x] 3.3 `npm test` nadal przechodzi
+- [x] 3.4 `expo export` i `wrangler deploy --dry-run` bez modułów z `node_modules`
+- [x] 3.5 Na `wrangler dev`: `GET /profile` HTML 200, `GET /explore` 404
+- [x] 3.6 `grep -rn "hint-row\|explore" src/` bez trafień
 
 #### Manual
 

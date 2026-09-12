@@ -20,10 +20,15 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
+      {/*
+        `name` MUSI równać się nazwie pliku trasy (`src/app/(app)/profile.tsx`). Ikona to PNG
+        w `renderingMode="template"`, tak jak Home — nie `drawable`: to nazwa natywnego zasobu
+        skompilowanego w aplikację, a Expo Go nie ma zasobów tego projektu.
+      */}
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Label>Profil</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
+          src={require('@/assets/images/tabIcons/profile.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>

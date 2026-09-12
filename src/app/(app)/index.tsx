@@ -1,11 +1,10 @@
 import { useClerk } from '@clerk/expo';
-import * as Device from 'expo-device';
+import { Link, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ActionButton } from '@/components/ui/action-button';
@@ -13,67 +12,73 @@ import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuthedFetch } from '@/hooks/use-authed-fetch';
 import { NotSignedInError, OfflineError } from '@/lib/api';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import type { CalorieTarget, ProfileResponse } from '@/lib/calorie-target';
 
 /**
- * Stan granicy danych na tym ekranie. `offline` jest osobnym przypadkiem, a nie odmianą błędu:
- * brak sieci NIE oznacza braku sesji i nie wolno go zamieniać na wylogowanie.
+ * Stan karty celu. `offline` jest osobnym przypadkiem, a nie odmianą błędu: brak sieci NIE oznacza
+ * braku sesji i nie wolno go zamieniać na wylogowanie. `missing` też nie jest błędem — trasa
+ * oddaje `profile: null` ze statusem 200, bo brak profilu to stan, nie awaria.
  */
-type AccountState =
+type TargetState =
   | { kind: 'loading' }
-  | { kind: 'ready'; userId: string }
+  | { kind: 'ready'; target: CalorieTarget }
+  | { kind: 'missing' }
   | { kind: 'offline' }
   | { kind: 'error'; message: string };
 
-function AccountRow({ state }: { state: AccountState }) {
-  if (state.kind === 'loading') {
-    return (
-      <ThemedText type="small" themeColor="textSecondary">
-        Pobieram konto…
-      </ThemedText>
-    );
-  }
+function formatKcal(value: number): string {
+  return value.toLocaleString('pl-PL');
+}
 
-  if (state.kind === 'ready') {
-    return (
-      <ThemedText type="small" themeColor="textSecondary">
-        userId: <ThemedText type="code">{state.userId}</ThemedText>
-      </ThemedText>
-    );
-  }
-
-  if (state.kind === 'offline') {
-    return (
-      // Tekst mówi dokładnie to, co kod robi: żądanie idzie raz przy wejściu, więc ponowna próba
-      // wymaga odświeżenia ekranu. Obiecywanie „pobierzemy, gdy sieć wróci" byłoby nieprawdą.
-      <ThemedText type="small" themeColor="textDanger">
-        Brak połączenia — odśwież ekran, gdy sieć wróci. Sesja jest zachowana.
-      </ThemedText>
-    );
-  }
-
+function TargetCard({ state }: { state: TargetState }) {
   return (
-    <ThemedText type="small" themeColor="textDanger">
-      {state.message}
-    </ThemedText>
+    <ThemedView type="backgroundElement" style={styles.card}>
+      {state.kind === 'loading' ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          Sprawdzam profil…
+        </ThemedText>
+      ) : null}
+
+      {state.kind === 'offline' ? (
+        // Tekst mówi dokładnie to, co kod robi: żądanie idzie przy wejściu w zakładkę, więc ponowna
+        // próba to wyjście i powrót. Obiecywanie „pobierzemy, gdy sieć wróci" byłoby nieprawdą.
+        <ThemedText type="small" themeColor="textDanger">
+          Brak połączenia — odśwież ekran, gdy sieć wróci. Sesja jest zachowana.
+        </ThemedText>
+      ) : null}
+
+      {state.kind === 'error' ? (
+        <ThemedText type="small" themeColor="textDanger">
+          {state.message}
+        </ThemedText>
+      ) : null}
+
+      {state.kind === 'missing' ? (
+        <>
+          <ThemedText type="small">Uzupełnij profil, żeby policzyć zapotrzebowanie.</ThemedText>
+          <Link href="/profile">
+            <ThemedText type="linkPrimary">Przejdź do profilu</ThemedText>
+          </Link>
+        </>
+      ) : null}
+
+      {state.kind === 'ready' ? (
+        <>
+          <ThemedText type="subtitle">{formatKcal(state.target.effectiveKcal)} kcal</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            dziennie
+          </ThemedText>
+          {state.target.overrideKcal !== null ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              cel nadpisany, wyliczone {formatKcal(state.target.computedKcal)} kcal
+            </ThemedText>
+          ) : null}
+          <Link href="/profile">
+            <ThemedText type="linkPrimary">Zmień profil</ThemedText>
+          </Link>
+        </>
+      ) : null}
+    </ThemedView>
   );
 }
 
@@ -81,44 +86,67 @@ export default function HomeScreen() {
   const { signOut } = useClerk();
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const authedFetch = useAuthedFetch();
-  const [account, setAccount] = useState<AccountState>({ kind: 'loading' });
-  const requested = useRef(false);
+  const [target, setTarget] = useState<TargetState>({ kind: 'loading' });
+  const isFocused = useIsFocused();
+  const fetchedForFocus = useRef(false);
 
-  // Jedno żądanie przy wejściu — dowód, że transport tokenu i granica danych działają end-to-end.
-  // Ref, nie tablica zależności, decyduje o „raz": tożsamość `authedFetch` nie jest kontraktem.
+  /**
+   * Karta ma być aktualna po zapisie w Profilu, więc odczyt idzie przy KAŻDYM wejściu w zakładkę.
+   * Sygnałem jest boolean z `useIsFocused()`, nie `useFocusEffect`: ten drugi wykonuje callback
+   * synchronicznie przy każdej zmianie jego tożsamości, a `useCallback` jest w tym repo zakazany.
+   *
+   * O „raz na wejście" decyduje `fetchedForFocus`, nie tablica zależności — pętla żądań jest
+   * niemożliwa niezależnie od tego, co zmemoizuje React Compiler. Stan ustawiany wyłącznie
+   * w callbackach obietnicy (reguła `react-hooks/set-state-in-effect`), a `cancelled` z cleanupu
+   * pilnuje, żeby odpowiedź z poprzedniego wejścia nie nadpisała nowszej.
+   */
   useEffect(() => {
-    if (requested.current) {
+    if (!isFocused) {
+      fetchedForFocus.current = false;
       return;
     }
-    requested.current = true;
+    if (fetchedForFocus.current) {
+      return;
+    }
+    fetchedForFocus.current = true;
 
-    authedFetch('/api/account')
+    let cancelled = false;
+
+    authedFetch('/api/profile')
       .then(async (response) => {
         if (!response.ok) {
-          setAccount({ kind: 'error', message: `Serwer odrzucił żądanie (${response.status}).` });
+          if (!cancelled) {
+            setTarget({ kind: 'error', message: `Serwer odrzucił żądanie (${response.status}).` });
+          }
           return;
         }
 
-        const body = (await response.json()) as { userId?: string };
-        setAccount(
-          body.userId
-            ? { kind: 'ready', userId: body.userId }
-            : { kind: 'error', message: 'Odpowiedź bez `userId`.' }
-        );
+        const body = (await response.json()) as ProfileResponse;
+        if (cancelled) {
+          return;
+        }
+        setTarget(body.target ? { kind: 'ready', target: body.target } : { kind: 'missing' });
       })
       .catch((error: unknown) => {
+        if (cancelled) {
+          return;
+        }
         if (error instanceof OfflineError) {
-          setAccount({ kind: 'offline' });
+          setTarget({ kind: 'offline' });
           return;
         }
         if (error instanceof NotSignedInError) {
           // Bramka grupy `(app)` odeśle na `/sign-in` sama — tu tylko nie udajemy, że mamy dane.
-          setAccount({ kind: 'error', message: 'Sesja wygasła.' });
+          setTarget({ kind: 'error', message: 'Sesja wygasła.' });
           return;
         }
-        setAccount({ kind: 'error', message: 'Nie udało się pobrać konta.' });
+        setTarget({ kind: 'error', message: 'Nie udało się pobrać celu.' });
       });
-  }, [authedFetch]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authedFetch, isFocused]);
 
   async function handleSignOut() {
     setSignOutError(null);
@@ -135,27 +163,15 @@ export default function HomeScreen() {
         <ThemedView style={styles.heroSection}>
           <AnimatedIcon />
           <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
+            MealPlan
           </ThemedText>
         </ThemedView>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/(app)/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-        </ThemedView>
-
         {/*
-          Granica danych widoczna z ekranu: `userId` pochodzi z `/api/account`, czyli z tokenu
-          zweryfikowanego przez Workera — nie z klienta Clerka. To odciąg dla kryterium 3.13.
+          Granica danych widoczna z ekranu: cel pochodzi z `/api/profile`, czyli z tokenu
+          zweryfikowanego przez Workera — nie z klienta Clerka.
         */}
-        <AccountRow state={account} />
+        <TargetCard state={target} />
 
         {/*
           Wylogowanie nie potrzebuje przekierowania: layout grupy `(app)` przestaje widzieć sesję
@@ -199,12 +215,10 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
   },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
+  card: {
+    gap: Spacing.one,
     alignSelf: 'stretch',
+    alignItems: 'center',
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.four,
     borderRadius: Spacing.four,
