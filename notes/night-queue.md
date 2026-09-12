@@ -350,3 +350,22 @@ Commit: 829d984
 Do decyzji rano: cztery ustalenia zostawione świadomie jako PENDING — F4 (nieliczbowy „Własny cel"
 znika bez komunikatu), F5 (błędne nadpisanie gasi cały podgląd i ukrywa „Wróć do wyliczenia"),
 F6 (pola bez nazw dostępnościowych), F7 (osierocone `explore*.png`)
+
+### 23:15 UTC — T5 Faza 4: produkcja
+Wynik: ok
+Co zrobione: Bramka z D4 spełniona (harness 20/20, `tsc`, `expo lint`, `npm test` 28/28,
+`check-lock`, `migrations list --remote` bez zaległych, dry-run 12 modułów). Wdrożenie poszło
+**pushem na `main`**, nie ręcznym `wrangler deploy` (D13) — jedna ścieżka zamiast dwóch ścigających
+się wdrożeń, a przy okazji kopia zapasowa 25 commitów, które do tej pory żyły tylko na tym dysku.
+Sygnał weryfikacyjny wybrałem PRZED wdrożeniem: produkcja miała `/profile` → 404 i `/explore` → 200;
+po wdrożeniu musiało być odwrotnie. Workers Builds wdrożyło w ~2 minuty i tak się stało.
+Smoke na produkcji przeszedł w całości: `/` 200 HTML, `/profile` 200 HTML, `/explore` 404,
+nieznana ścieżka 404, `/api/health` `d1:true`, `/api/profile` i `/api/account` bez tokenu 401,
+zasób JS wzięty **z wdrożonego HTML-a** (nie z lokalnego `dist/`) 200. Dodatkowo testy
+tylko-do-odczytu przeciw produkcji: 7/7 — granica danych trzyma się też tam.
+Kryterium 4.6 wykonane: `CLAUDE.md` mówił „dwie trasy API" (są trzy), „nie ma runnera testów"
+(jest `npm test` i harness) i wymieniał `app-tabs.web.tsx` wśród importerów `useColorScheme`
+(już nim nie jest); poprawiłem też zdezaktualizowaną liczbę importów względnych.
+Commit: b664e2f (+ push)
+Do decyzji rano: **4.4 tylko częściowo** — pełnego przebiegu z zapisem na produkcji świadomie nie
+robiłem, bo zasady nocy zabraniają pisania danych testowych do produkcyjnej D1. **4.5 BLOCKED-MANUAL.**
