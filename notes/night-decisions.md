@@ -131,3 +131,38 @@ Plan pokazuje ci decyzję w działaniu przy koszcie kilku minut czytania.
 Format: `### D<n> — <tytuł>` + Co / Powód / Jak cofnąć / Status. Dopisuj poniżej.
 
 <!-- KOLEJNE DECYZJE PONIŻEJ -->
+
+### D8 — `/10x-test-plan` użyty tylko jako autor dokumentu, bez jego maszyny stanów
+
+**Co:** Przeszedłem fazy 0–4 umiejętności (odkrycie, skan hot-spotów, profil bazy testowej,
+synteza, zapis `context/foundation/test-plan.md`) i **zatrzymałem się przed fazami 5–6**, czyli
+przed łańcuchem przekazań `/10x-new` → `/10x-research` → `/10x-plan` → `/10x-implement`,
+otwieranym osobno dla każdej fazy wdrożenia.
+
+**Powód:** Umiejętność jest orkiestratorem stanowym, który dla każdej z czterech faz wdrożenia
+chce otworzyć własny folder zmiany i przejść pełny łańcuch. To zjadłoby całą noc, a celem nocy
+jest faza 3 zmiany `profile-and-calorie-target`, nie zbudowanie równoległego programu testowego.
+T1 w kolejce zamawia dwie rzeczy: mapę ryzyk (ten dokument) i harness (`/10x-e2e`) — i tyle.
+Odstępstwo jest odnotowane w samym dokumencie, w uwadze pod tabelą §3, więc kolejne wywołanie
+umiejętności nie zobaczy sprzecznego stanu.
+
+**Jak cofnąć:** `git revert` commitu z tym dokumentem. Fazy 2–4 z §3 mają status `not started`
+i mogą pójść normalną ścieżką w dowolnym momencie.
+
+### D9 — Wywiad z użytkownikiem zastąpiony dowodami z dokumentów
+
+**Co:** Faza 2 umiejętności (pięć pytań do człowieka: „co cię najbardziej martwi", „gdzie się
+sparzyłeś") została przeprowadzona przeciw dokumentom, nie przeciw właścicielowi.
+
+**Powód:** Nikogo nie ma przy klawiaturze, a umiejętność sama dopuszcza pominięcie wywiadu pod
+warunkiem odnotowania, że wdrożenie opiera się na dokumentach. W tym repo dokumenty **są**
+zapisem sparzeń: sekcja Pułapki w `CLAUDE.md` to lista rzeczy, które już raz zepsuły repo,
+a przeglądy implementacji zawierają ustalenia z realnych awarii — w tym krytyczne F1 fazy 1
+(hasło w postaci jawnej i 19 artefaktów E2E w commicie). To mocniejszy dowód niż odpowiedź
+z pamięci. Ryzyko #5 w mapie pochodzi wprost stamtąd i kształtuje projekt harnessu w T1.
+
+**Ryzyko przyjęte:** obawy, których nigdzie nie zapisano, nie trafiły do mapy. Właściciel może
+je dorzucić rano — mapa ma ledger świeżości i przewidziane `--refresh`.
+
+**Jak cofnąć:** `/10x-test-plan --refresh` otwiera zmianę aktualizującą dokument z prawdziwym
+wywiadem.
