@@ -419,7 +419,7 @@ Do decyzji rano: zatwierdzić D14 (albo ją odwrócić — plany są tanie do wy
 dwa założenia oznaczone w planie F-01 jako do zweryfikowania przed fazą 3 (transakcje D1 na
 `--remote`, import `.ts` z `.mjs`)
 
-### 23:47 UTC — T8 Zapas: lekcje i przypadki brzegowe
+### 23:43 UTC — T8 Zapas: lekcje i przypadki brzegowe
 Wynik: ok
 Co zrobione:
 1. `context/foundation/lessons.md` — cztery lekcje, każda z **realnej awarii tej nocy**, nie
