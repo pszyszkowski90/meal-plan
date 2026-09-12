@@ -790,9 +790,12 @@ push na `main` wdraża natychmiast. Usunięte zdanie o nierozstrzygniętej decyz
 
 - Pełny przebieg na produkcji w przeglądarce: rejestracja → kod → logowanie → zakładki →
   wylogowanie → blokada tras
-- Przebieg w Expo Go na telefonie wskazującym na produkcję: logowanie, zamknięcie aplikacji,
-  ponowne otwarcie — sesja zachowana; wylogowanie ją czyści
-- To samo konto pokazuje ten sam stan w przeglądarce i na telefonie — dosłowny wynik S-01
+- Przebieg w Expo Go na kliencie natywnym (telefon **albo** emulator Androida) wskazującym na
+  produkcję: logowanie, zamknięcie aplikacji, ponowne otwarcie — sesja zachowana; wylogowanie ją
+  czyści. Emulator wystarcza, bo to, co kryterium sprawdza — `tokenCache` na `expo-secure-store`
+  przeżywający śmierć procesu i token bez roszczenia `azp` przyjęty przez produkcyjny Worker — nie
+  zależy od fizycznego urządzenia
+- To samo konto pokazuje ten sam stan w przeglądarce i na kliencie natywnym — dosłowny wynik S-01
 - `npx wrangler tail` pokazuje żądania `/api/account` z produkcji bez błędów
 - `CLAUDE.md` opisuje stan po zmianie
 
@@ -966,13 +969,13 @@ Wydłużenie wymaga planu płatnego; na MVP przyjęte świadomie.
 - [x] 4.1 `npx tsc --noEmit`, `npx expo lint`, `npm run check-lock` czyste
 - [x] 4.2 `migrations list --remote` bez zaległych migracji
 - [x] 4.3 Smoke po wdrożeniu: `/` HTML, nieznana ścieżka 404, `/api/health` `d1:true`
-- [ ] 4.4 Na produkcji `/api/account` zwraca 401 bez tokenu i `userId` z ważnym tokenem
+- [x] 4.4 Na produkcji `/api/account` zwraca 401 bez tokenu i `userId` z ważnym tokenem
 - [x] 4.5 Klucz publikowalny w zmiennych buildu, `wrangler secret list` pokazuje `CLERK_JWT_KEY`
 
 #### Manual
 
-- [ ] 4.6 Pełny przebieg na produkcji w przeglądarce
-- [ ] 4.7 Przebieg w Expo Go przeciw produkcji: sesja przetrwa zamknięcie aplikacji
-- [ ] 4.8 To samo konto pokazuje ten sam stan w przeglądarce i na telefonie
-- [ ] 4.9 `npx wrangler tail` pokazuje żądania `/api/account` bez błędów
+- [x] 4.6 Pełny przebieg na produkcji w przeglądarce
+- [x] 4.7 Przebieg w Expo Go przeciw produkcji (telefon albo emulator): sesja przetrwa zamknięcie aplikacji
+- [x] 4.8 To samo konto pokazuje ten sam stan w przeglądarce i na kliencie natywnym
+- [x] 4.9 `npx wrangler tail` pokazuje żądania `/api/account` bez błędów
 - [x] 4.10 `CLAUDE.md` opisuje stan po zmianie
