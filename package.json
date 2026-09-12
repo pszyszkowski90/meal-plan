@@ -47,6 +47,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test src/lib/*.test.ts",
     "check-lock": "node ./scripts/check-lockfile.js"
   },
   "private": true

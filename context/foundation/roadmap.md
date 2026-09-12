@@ -65,7 +65,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 | ----- | ---------------------------- | ------------------------------------------------------------------ | ------------------ | --------------------------------- | -------- |
 | F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | blocked  |
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
-| S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | proposed |
+| S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | in-progress |
 | S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | blocked  |
 | S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | proposed |
 | S-05  | `swap-and-reject-dish`       | wymienić danie w planie i oznaczyć je, żeby nie wracało              | S-04               | FR-010, FR-011                    | proposed |
@@ -182,7 +182,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   na każdy wygenerowany plan i pozostaje niewidoczny, dopóki ktoś nie policzy ręcznie. Dane
   profilu są jednocześnie najbardziej wrażliwe w produkcie, więc to pierwszy realny test
   warstwy izolacji wprowadzonej w S-01.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-03: Użytkownik podaje preferencje żywieniowe
 

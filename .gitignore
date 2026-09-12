@@ -46,3 +46,6 @@ example
 .dev.vars
 .wrangler/
 .wrangler-dry/
+
+# Artefakty narzędzi testowych (zrzuty DOM zapisują zawartość pól haseł)
+.playwright-mcp/
