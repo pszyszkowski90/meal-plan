@@ -390,3 +390,31 @@ z parafrazy streszczenia CLI — a to jest dokument bez wartości, który udaje 
 całą resztę mapy drogowej i jest wart więcej niż 14 parafraz.
 Commit: 94c123e, e3e26b8, 6d37a35, 7b82566
 Do decyzji rano: czy pozostałe 14 briefów są w ogóle potrzebne, skoro streszczenia CLI zostają
+
+### 23:40 UTC — T7 Otwarte pytania: rozstrzygnięte i zaplanowane
+Wynik: ok
+Co zrobione:
+1. `options.md` w `dish-source-and-seed-pool` — konsekwencje trzech opcji źródła dla guardraila
+   ±10%, limitu CPU, FR-016, **sumowania jednostek w liście zakupów**, kosztu i nakładu; model
+   wykluczeń („nie jem grzybów" kontra „nie jem risotto") jako jedna tabela z polem `kind`;
+   odpowiedź na OP 3 (niewykonalny plan). Kolejka prosiła o „OP 1–3", ale opisała treść OP **4**
+   z PRD — rozstrzygnąłem oba, bo próg niewykonalności zależy od modelu wykluczeń.
+2. Decyzja **D14**: hybryda — model autoryzuje przepisy raz poza runtime, człowiek przegląda
+   gramatury, makra liczy skrypt z USDA (CC0). Odrzucone z uzasadnieniem: model na żądanie
+   (makra z błędem energii ~36%), zewnętrzne API przepisów (**blokada licencyjna** — zakaz
+   przechowywania kłóci się z wymaganiem offline).
+3. `dish-source-and-seed-pool`: plan + brief + **przegląd planu**. Przegląd zwrócił WYMAGA UWAGI
+   z sześcioma ustaleniami krytycznymi — wszystkie naprawione w wersji 2 planu. Najpoważniejsze:
+   fazy 2 i 3 blokowały się wzajemnie; przegląd 60 dań (nieodwracalny) stał **przed** pomiarem,
+   który mógł go unieważnić (stąd nowa faza pilotażowa na 20 daniach); `listDishes` nie miał
+   w tej zmianie **żadnej** ścieżki uruchomienia; tożsamość dania po nazwie wyświetlanej;
+   i stan składnika surowy/ugotowany — różnica ~180%, której przegląd gramatur **nie wykrywa**.
+4. `dietary-preferences`: nowa zmiana + plan. Niewiadoma blokująca S-03 zdjęta przez D14.
+   **Korekta mapy drogowej:** S-03 nie jest już równoległe do F-01 — wykluczenia składnikowe
+   wskazują na `ingredient_id`, więc wymagają schematu z F-01.
+F-01 i S-03 przestawione w `roadmap.md` z `blocked` na `planning`.
+**Granica z D7 utrzymana: zero kodu produktowego na obu fragmentach.**
+Commit: kilka; ostatni w tej serii dotyczy S-03
+Do decyzji rano: zatwierdzić D14 (albo ją odwrócić — plany są tanie do wyrzucenia); rozstrzygnąć
+dwa założenia oznaczone w planie F-01 jako do zweryfikowania przed fazą 3 (transakcje D1 na
+`--remote`, import `.ts` z `.mjs`)
