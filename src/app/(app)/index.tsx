@@ -89,6 +89,7 @@ export default function HomeScreen() {
   const [target, setTarget] = useState<TargetState>({ kind: 'loading' });
   const isFocused = useIsFocused();
   const fetchedForFocus = useRef(false);
+  const runId = useRef(0);
 
   /**
    * Karta ma być aktualna po zapisie w Profilu, więc odczyt idzie przy KAŻDYM wejściu w zakładkę.
@@ -97,8 +98,16 @@ export default function HomeScreen() {
    *
    * O „raz na wejście" decyduje `fetchedForFocus`, nie tablica zależności — pętla żądań jest
    * niemożliwa niezależnie od tego, co zmemoizuje React Compiler. Stan ustawiany wyłącznie
-   * w callbackach obietnicy (reguła `react-hooks/set-state-in-effect`), a `cancelled` z cleanupu
-   * pilnuje, żeby odpowiedź z poprzedniego wejścia nie nadpisała nowszej.
+   * w callbackach obietnicy (reguła `react-hooks/set-state-in-effect`).
+   *
+   * Nieaktualność odpowiedzi pilnuje LICZNIK PRZEBIEGÓW, nie flaga `cancelled` z cleanupu.
+   * Powód jest konkretny: `cancelled` żyje w domknięciu jednego przebiegu, a `fetchedForFocus`
+   * żyje przez cały czas życia komponentu. Przy zmianie tożsamości `authedFetch` w locie te dwa
+   * czasy życia się rozjeżdżały — cleanup poprzedniego przebiegu ustawiał `cancelled = true`,
+   * nowy przebieg widział `fetchedForFocus.current === true` i NIE startował żądania, więc
+   * odpowiedź w locie była odrzucana, a karta zostawała na „Sprawdzam profil…" **na zawsze**
+   * (jedynym wyjściem było przełączenie zakładki). Licznik ma ten sam czas życia co ref:
+   * unieważnia odpowiedź tylko wtedy, gdy naprawdę wystartował NOWSZY przebieg.
    */
   useEffect(() => {
     if (!isFocused) {
@@ -110,25 +119,26 @@ export default function HomeScreen() {
     }
     fetchedForFocus.current = true;
 
-    let cancelled = false;
+    const run = ++runId.current;
+    const cancelled = () => run !== runId.current;
 
     authedFetch('/api/profile')
       .then(async (response) => {
         if (!response.ok) {
-          if (!cancelled) {
+          if (!cancelled()) {
             setTarget({ kind: 'error', message: `Serwer odrzucił żądanie (${response.status}).` });
           }
           return;
         }
 
         const body = (await response.json()) as ProfileResponse;
-        if (cancelled) {
+        if (cancelled()) {
           return;
         }
         setTarget(body.target ? { kind: 'ready', target: body.target } : { kind: 'missing' });
       })
       .catch((error: unknown) => {
-        if (cancelled) {
+        if (cancelled()) {
           return;
         }
         if (error instanceof OfflineError) {
@@ -143,9 +153,6 @@ export default function HomeScreen() {
         setTarget({ kind: 'error', message: 'Nie udało się pobrać celu.' });
       });
 
-    return () => {
-      cancelled = true;
-    };
   }, [authedFetch, isFocused]);
 
   async function handleSignOut() {

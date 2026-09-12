@@ -174,6 +174,42 @@ test.describe('Faza 3 — ekran profilu w przeglądarce', () => {
     }
   });
 
+  /**
+   * Regresja do ustalenia F1 z `reviews/impl-review-phase-3.md`.
+   *
+   * Ekran robi jedno `GET /api/profile` przy wejściu i wypełnia pola odpowiedzią. Zanim doszła
+   * poprawka, odpowiedź stosowała się BEZWARUNKOWO — więc na wolnym łączu kasowała to, co
+   * użytkownik zdążył wpisać. Ten test odtwarza dokładnie ten wyścig: opóźnia odpowiedź,
+   * pisze w tym czasie i sprawdza, że wpisana wartość przeżyła.
+   *
+   * Celowo NIE używa `openProfile()` — jego zadaniem jest ten wyścig omijać.
+   */
+  test('F1 odpowiedź początkowego GET nie kasuje tego, co użytkownik zdążył wpisać', async ({
+    page,
+  }) => {
+    await page.route('**/api/profile', async (route) => {
+      if (route.request().method() === 'GET') {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+      await route.continue();
+    });
+
+    const loaded = page.waitForResponse(
+      (r) => r.url().includes('/api/profile') && r.request().method() === 'GET',
+    );
+    await page.goto('/profile');
+
+    // Piszemy, gdy żądanie jest jeszcze w locie. 44 nie jest zapisanym wiekiem (jest nim 30),
+    // więc nadpisanie przez odpowiedź byłoby natychmiast widoczne.
+    await ageField(page).waitFor({ state: 'visible' });
+    await ageField(page).fill('44');
+
+    await loaded;
+    await expect(ageField(page)).toHaveValue('44');
+
+    await page.unroute('**/api/profile');
+  });
+
   test('3.13 zakładki to MealPlan, Home i Profil — bez Docs', async ({ page }) => {
     await page.goto('/');
 

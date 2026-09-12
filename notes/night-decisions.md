@@ -203,3 +203,37 @@ na to zachowanie. Tańszy i uczciwszy ruch: zgłosić, odizolować obejście, zo
 **Jak cofnąć:** nie ma czego cofać — to świadome niedziałanie. Naprawa to dopisanie
 `accessibilityLabel` / `accessibilityRole` w `text-field.tsx` i `action-button.tsx`, po czym
 `support/sign-in.ts` można uprościć do `getByRole`.
+
+### D12 — Dwa ostrzeżenia z przeglądu naprawione PRZED wdrożeniem, nie po
+
+**Co:** Przegląd implementacji fazy 3 (`reviews/impl-review-phase-3.md`) nie znalazł ustaleń
+krytycznych, ale dwa ostrzeżenia dotyczyły zachowania widocznego dla użytkownika. Naprawiłem oba
+przed wykonaniem T5, mimo że formalnie nie należą do zakresu fazy 4:
+
+- **F1** (`profile.tsx`) — odpowiedź początkowego `GET` nadpisywała to, co użytkownik zdążył
+  wpisać, a przy zaległym `GET` po `PUT` ekran pokazywał **stare** liczby pod komunikatem
+  „Zapisano". Poprawka: ref `touched` ustawiany przy każdej edycji i przy zapisie; odpowiedź
+  `GET` nie jest stosowana, gdy formularz jest dotknięty.
+- **F2** (`index.tsx`) — karta celu mogła zawisnąć na „Sprawdzam profil…" **na zawsze**, jeśli
+  tożsamość `authedFetch` zmieniła się w locie: cleanup poprzedniego przebiegu ustawiał
+  `cancelled = true`, a nowy przebieg nie startował żądania, bo ref mówił „już pobrane".
+  Poprawka: licznik przebiegów zamiast flagi z domknięcia — ten sam czas życia co ref.
+
+**Powód:** Bramka z D4 była spełniona, więc mogłem wdrożyć bez tych poprawek. Ale F2 to tryb
+awarii, który **faza 3 sama wprowadziła** (wersja sprzed niej go nie miała), a F1 gubi dane
+wpisane przez użytkownika. Wdrożenie w nocy, bez nadzoru, czegoś, o czym wiem, że wiesza ekran,
+byłoby gorsze niż wdrożenie 20 minut później. Obie poprawki są chirurgiczne i mieszczą się
+w plikach, które faza 3 i tak zmieniła.
+
+**Dowód, że działają — nie deklaracja:** doszedł test regresji `F1 …` odtwarzający wyścig
+(opóźniona odpowiedź + pisanie w tym czasie). Próba celowego zepsucia: po usunięciu strażnika
+test świeci czerwono z „Expected 44, Received 30", czyli odtwarza dokładnie tę utratę danych.
+Cały zestaw po poprawkach: 20/20.
+
+**Jak cofnąć:** `git revert` commitu z poprawkami. F2 wraca wtedy do wersji z `cancelled`,
+która ma opisany wyżej tryb zawieszenia.
+
+**Czego NIE naprawiłem** (zostaje właścicielowi, zapisane w raporcie jako PENDING): F4 (nieliczbowy
+tekst w „Własny cel" znika bez komunikatu), F5 (błędne nadpisanie gasi cały podgląd i ukrywa
+przycisk powrotu), F6 (brak nazw dostępnościowych w `TextField` i na grupie wyboru), F7 (osierocone
+ikony `explore*.png`). Każde z nich zmienia zachowanie produktu albo dotyka kodu spoza fazy 3.

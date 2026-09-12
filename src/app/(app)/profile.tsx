@@ -86,6 +86,20 @@ export default function ProfileScreen() {
   const [serverFieldErrors, setServerFieldErrors] = useState<ProfileFieldErrors | null>(null);
 
   const requested = useRef(false);
+  /**
+   * Czy użytkownik zdążył już dotknąć formularza (albo zapisać).
+   *
+   * Chroni przed wyścigiem, który realnie gubił dane: ekran robi jedno `GET /api/profile` przy
+   * wejściu i wypełnia pola tym, co wróci. Na wolnym łączu odpowiedź potrafi dojść PO tym, jak
+   * użytkownik zaczął pisać — i wtedy kasowała wpisane znaki. Ten sam strażnik zamyka drugi
+   * przebieg: `PUT` wraca przed zaległym `GET`, po czym stary profil nadpisywał świeżo zapisane
+   * wartości, a ekran pokazywał nieaktualne liczby pod komunikatem „Zapisano".
+   *
+   * Celowo NIE jest to flaga `cancelled` z cleanupu efektu: `requested` żyje przez cały czas życia
+   * komponentu, więc flaga z domknięcia jednego przebiegu rozjechałaby się z nim tak samo, jak to
+   * się stało na Home (patrz komentarz w `index.tsx`).
+   */
+  const touched = useRef(false);
 
   // Jedno żądanie przy wejściu — wzorzec z `index.tsx`: o „raz" decyduje ref, nie tożsamość
   // `authedFetch`. Stan ustawiany wyłącznie w callbackach obietnicy (`react-hooks/set-state-in-effect`).
@@ -103,7 +117,8 @@ export default function ProfileScreen() {
         }
 
         const body = (await response.json()) as ProfileResponse;
-        if (body.profile) {
+        // Nie nadpisuj tego, co użytkownik zdążył wpisać albo zapisać.
+        if (body.profile && !touched.current) {
           applyProfile(body.profile);
         }
         setLoad({ kind: 'ready' });
@@ -172,7 +187,14 @@ export default function ProfileScreen() {
     setSaveNotice(null);
   }
 
+  /** Każda zmiana pola przez użytkownika: czyści komunikaty i blokuje nadpisanie z zaległego `GET`. */
+  function markEdited() {
+    touched.current = true;
+    clearNotices();
+  }
+
   async function handleSave() {
+    touched.current = true;
     setSubmitted(true);
     setServerFieldErrors(null);
     setSaveNotice(null);
@@ -276,7 +298,7 @@ export default function ProfileScreen() {
           label="Wiek (lata)"
           value={ageText}
           onChangeText={(text) => {
-            clearNotices();
+            markEdited();
             setAgeText(text);
           }}
           onBlur={() => markBlurred('age')}
@@ -290,7 +312,7 @@ export default function ProfileScreen() {
           label="Waga (kg)"
           value={weightText}
           onChangeText={(text) => {
-            clearNotices();
+            markEdited();
             setWeightText(text);
           }}
           onBlur={() => markBlurred('weightKg')}
@@ -304,7 +326,7 @@ export default function ProfileScreen() {
           label="Wzrost (cm)"
           value={heightText}
           onChangeText={(text) => {
-            clearNotices();
+            markEdited();
             setHeightText(text);
           }}
           onBlur={() => markBlurred('heightCm')}
@@ -319,7 +341,7 @@ export default function ProfileScreen() {
           value={sex}
           options={SexOptions}
           onChange={(value) => {
-            clearNotices();
+            markEdited();
             setSex(value);
           }}
           error={errorFor('sex')}
@@ -330,7 +352,7 @@ export default function ProfileScreen() {
           value={activityLevel}
           options={ActivityOptions}
           onChange={(value) => {
-            clearNotices();
+            markEdited();
             setActivityLevel(value);
           }}
           error={errorFor('activityLevel')}
@@ -364,7 +386,7 @@ export default function ProfileScreen() {
           label="Własny cel (kcal), opcjonalnie"
           value={overrideText}
           onChangeText={(text) => {
-            clearNotices();
+            markEdited();
             setOverrideText(text);
           }}
           onBlur={() => markBlurred('targetKcalOverride')}
@@ -383,7 +405,7 @@ export default function ProfileScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                clearNotices();
+                markEdited();
                 setOverrideText('');
               }}
               style={({ pressed }) => pressed && styles.pressed}>
