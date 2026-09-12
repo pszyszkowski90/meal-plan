@@ -331,7 +331,7 @@ Od tego wpisu każdy znacznik pochodzi z `date -u +%H:%M`, nie z oszacowania.
 Commit: ten
 Do decyzji rano: -
 
-### 23:12 UTC — T4 (domknięcie) Przegląd implementacji fazy 3
+### 23:02 UTC — T4 (domknięcie) Przegląd implementacji fazy 3
 Wynik: ok
 Co zrobione: `/10x-impl-review` w dwóch równoległych przeglądach (odchylenia od planu + bezpieczeństwo
 i wzorce). Raport: `context/changes/profile-and-calorie-target/reviews/impl-review-phase-3.md`.
