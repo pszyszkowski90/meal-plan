@@ -351,7 +351,7 @@ Do decyzji rano: cztery ustalenia zostawione świadomie jako PENDING — F4 (nie
 znika bez komunikatu), F5 (błędne nadpisanie gasi cały podgląd i ukrywa „Wróć do wyliczenia"),
 F6 (pola bez nazw dostępnościowych), F7 (osierocone `explore*.png`)
 
-### 23:15 UTC — T5 Faza 4: produkcja
+### 23:10 UTC — T5 Faza 4: produkcja
 Wynik: ok
 Co zrobione: Bramka z D4 spełniona (harness 20/20, `tsc`, `expo lint`, `npm test` 28/28,
 `check-lock`, `migrations list --remote` bez zaległych, dry-run 12 modułów). Wdrożenie poszło
