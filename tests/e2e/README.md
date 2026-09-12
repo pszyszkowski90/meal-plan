@@ -84,10 +84,36 @@ Numery ryzyk odsyłają do `context/foundation/test-plan.md` §2.
 | `seed.spec.ts` | #7 | Wzorzec dla kolejnych testów + kontrakt wdrożeniowy: HTML, `d1:true`, 404 dla nieznanej ścieżki |
 | `session-gate.spec.ts` | #2 | Niezalogowany nie wchodzi; sesja przeżywa przeładowanie strony; wylogowanie odsyła na logowanie |
 | `data-boundary.spec.ts` | #1 | Trasy danych odmawiają bez tożsamości i przy podrobionym tokenie, i nic nie oddają |
+| `profile-api.spec.ts` | #4, #6 | Kontrakt profilu po HTTP z pominięciem UI — kryteria fazy 2: 2.6, 2.7, 2.8 |
+| `profile-screen.spec.ts` | #4, #6, #3 | Formularz profilu w przeglądarce — kryteria fazy 3: 3.7–3.11, 3.13 |
 | `auth.setup.ts` | — | Infrastruktura: loguje się raz i zapisuje sesję poza repo |
 
-**Czego NIE pokrywa:** pełnego dowodu izolacji między dwoma kontami (potrzebne drugie konto —
-faza 3 wdrożenia z planu testów) oraz całej ścieżki profilu, która nie jest jeszcze zbudowana.
+**Czego NIE pokrywa:** pełnego dowodu izolacji między dwoma kontami (kryterium 2.9 — potrzebne
+drugie konto, faza 3 wdrożenia z planu testów), stanu „konto bez zapisanego profilu" (2.5 — konto
+testowe profil ma) oraz **całej warstwy natywnej** (3.12 — Expo Go, klawiatury liczbowe, ikona
+zakładki; emulator nie startuje).
+
+## Dlaczego jeden worker
+
+`workers: 1` i `fullyParallel: false` są **celowe**. Mamy jedno konto testowe, więc wiersz profilu
+w D1 jest zasobem współdzielonym przez cały zestaw: `profile-api` i `profile-screen` piszą do tego
+samego rekordu. Przy przebiegu równoległym zestaw sypał się losowo mniej więcej raz na dwa
+uruchomienia, zawsze w innym miejscu. `retries` zamiotłyby ten wyścig pod dywan — a wyścig jest
+prawdziwy. Gdy pojawi się drugie konto testowe, można wrócić do równoległości.
+
+## Pułapka: oba ekrany zakładek są zamontowane naraz
+
+Nawigacja na Home **nie odmontowuje** ekranu profilu. Ta sama liczba stoi więc jednocześnie
+w karcie celu („2759 kcal") i w podglądzie profilu („= 2759 kcal dziennie"), a luźne dopasowanie
+tekstem trafia w oba i daje naruszenie trybu ścisłego Playwrighta — co wygląda jak brak elementu,
+a jest kolizją lokatora. Asercje dotyczące karty celują więc w dokładną formę albo w link karty.
+
+## Pułapka: początkowe pobranie nadpisuje wpisane wartości
+
+Ekran profilu robi jedno `GET /api/profile` przy wejściu i wypełnia pola tym, co wróci. Jeśli
+pisanie zacznie się przed odpowiedzią, **odpowiedź nadpisuje wpisane znaki**. W testach rozwiązuje
+to `openProfile()` z `support/profile-form.ts`, które czeka na odpowiedź przed wpisywaniem.
+W aplikacji zachowanie zostaje — na wolnym łączu użytkownik może stracić pierwsze znaki.
 
 ## Lokatory — dlaczego nie `getByRole`
 
