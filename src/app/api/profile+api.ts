@@ -60,14 +60,22 @@ function internalError(error: unknown): Response {
   return Response.json({ error: 'internal' }, { status: 500 });
 }
 
-/** Brak profilu to STAN, nie błąd — stąd 200 z `profile: null`, nie 404. Klient nie ma tego mylić z awarią. */
+/**
+ * Brak profilu to STAN, nie błąd — stąd 200 z `profile: null`, nie 404. Klient nie ma tego mylić
+ * z awarią.
+ *
+ * `requireUserId` jest W ŚRODKU `try`, inaczej niż w `account+api.ts`: woła `getWorkerEnv()`,
+ * które rzuca przy braku bindingów (trasa poza workerd), a wtedy odrzucenie wychodziło z handlera
+ * bez wpisu `[api/profile]` i z generycznym 500 od runtime'u — czyli dokładnie tym trybem awarii,
+ * przed którym `try/catch` ma chronić.
+ */
 export async function GET(request: Request): Promise<Response> {
-  const auth = await requireUserId(request);
-  if (auth instanceof Response) {
-    return auth;
-  }
-
   try {
+    const auth = await requireUserId(request);
+    if (auth instanceof Response) {
+      return auth;
+    }
+
     const profile = await getUserProfile(auth.userId);
 
     return profileJson(toResponse(profile));
@@ -77,7 +85,15 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function PUT(request: Request): Promise<Response> {
-  const auth = await requireUserId(request);
+  // Osobny `try` niż ścieżka danych (patrz `GET`): tamten nie może objąć całości, bo połknąłby
+  // 400 za zepsute ciało i za niepoprawny profil.
+  let auth: Awaited<ReturnType<typeof requireUserId>>;
+  try {
+    auth = await requireUserId(request);
+  } catch (error) {
+    return internalError(error);
+  }
+
   if (auth instanceof Response) {
     return auth;
   }

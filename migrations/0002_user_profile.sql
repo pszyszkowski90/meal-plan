@@ -12,8 +12,14 @@
 --
 -- `REFERENCES app_user(id)` domyka obietnicę z komentarza `0001`. D1 wymusza klucze obce
 -- domyślnie, więc zapis profilu dla konta, które nigdy nie dotknęło `app_user`, poleci na
--- `FOREIGN KEY constraint failed` — dlatego trasa `PUT /api/profile` woła `touchAppUser` PRZED
+-- `FOREIGN KEY constraint failed` — dlatego trasa `PUT /api/profile` woła `ensureAppUser` PRZED
 -- `saveUserProfile`. To nie jest ostrożność, to warunek działania.
+--
+-- `ON DELETE CASCADE`, bo tożsamość jest właścicielem profilu: gdy zniknie wiersz `app_user`,
+-- profil nie ma czyj być. Bez tego usunięcie konta padałoby na klucz obcy, dopóki ktoś nie
+-- skasowałby profilu ręcznie i w odpowiedniej kolejności. Usuwanie konta jest poza zakresem M-01,
+-- ale ta decyzja kosztuje dziś jedno słowo, a po pierwszym wierszu na produkcji kosztowałaby
+-- migrację przebudowującą tabelę. Preferencje (S-03) i plany (S-04) mają się dowiązać tak samo.
 --
 -- Ograniczenia `CHECK` są tu WYŁĄCZNIE wyliczeniowe (`sex`, `activity_level`) i mają jedno
 -- zadanie: domykają rzutowania `as Sex` i `as ActivityLevel` w `user-profile.ts`, które bez nich
@@ -32,7 +38,7 @@
 -- przy istniejących wierszach profilu.
 
 CREATE TABLE user_profile (
-  user_id TEXT PRIMARY KEY REFERENCES app_user(id),
+  user_id TEXT PRIMARY KEY REFERENCES app_user(id) ON DELETE CASCADE,
   age INTEGER NOT NULL,
   weight_kg REAL NOT NULL,
   height_cm INTEGER NOT NULL,
