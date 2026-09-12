@@ -88,7 +88,7 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
   uruchamia wyłącznie człowiek. Nie ustawiaj `migrations_pattern` w `wrangler.jsonc` — zjadłby `down/`.
 - Nazwy plików kebab-case (`themed-text.tsx`), nazwy eksportów PascalCase / camelCase.
 - Importy przez aliasy: `@/*` → `src/*`, `@/assets/*` → `assets/*`. Względne `./` tylko dla
-  rodzeństwa wewnątrz `src/components/` — tak robi cały starter (8 wystąpień, zero `../`).
+  rodzeństwa wewnątrz `src/components/` (5 wystąpień, zero `../` w całym `src/`).
   `../` w imporcie to błąd.
 - **Zero surowych kolorów i odstępów w `StyleSheet`.** Kolor bierz z `useTheme()`, odstęp i promień
   z `Spacing` ([theme.ts](src/constants/theme.ts)) — to skala nazwana słownie (`half`=2, `one`=4 …
@@ -99,9 +99,8 @@ i guardrail ±10% stoją na tej decyzji — nie implementuj generatora, zanim ni
 - **`useColorScheme` bierz z [`@/hooks/use-color-scheme`](src/hooks/use-color-scheme.ts), nie
   z `react-native`.** Web renderuje HTML po stronie serwera (`app.json` → `web.output: "server"`),
   więc wariant webowy odracza odczyt schematu do hydracji; hook z `react-native` daje niezgodność
-  SSR/klient. Importują jeszcze wprost [app-tabs.tsx](src/components/app-tabs.tsx),
-  [app-tabs.web.tsx](src/components/app-tabs.web.tsx) i
-  [web-badge.tsx](src/components/web-badge.tsx) — nie powielaj tego.
+  SSR/klient. Importują jeszcze wprost [app-tabs.tsx](src/components/app-tabs.tsx)
+  i [web-badge.tsx](src/components/web-badge.tsx) — nie powielaj tego.
 - **Przewijalne ekrany same rezerwują `BottomTabInset + Spacing.*`** w `paddingBottom` /
   `contentInset`; dolny pasek nawigacji nie jest w layoucie flexbox. Bez tego ostatni element
   chowa się pod zakładkami.
@@ -131,10 +130,13 @@ nakładki — kolejność jest celowa, przestawienie daje mignięcie.
 
 **Backend.** `web.output: "server"` produkuje `dist/client` (assets) i `dist/server` (prerenderowany
 HTML + trasy API); `worker.ts` oddaje żądania adapterowi workerd, a wszystko wisi na Cloudflare
-Workers z bazą D1 `mealplan` w bindingu `DB`. Dwie trasy API: [health+api.ts](src/app/api/health+api.ts)
-(smoke test wdrożenia: adapter, binding D1 **i** obecność tabeli `app_user`) oraz
+Workers z bazą D1 `mealplan` w bindingu `DB`. Trzy trasy API: [health+api.ts](src/app/api/health+api.ts)
+(smoke test wdrożenia: adapter, binding D1 **i** obecność tabeli `app_user`),
 [account+api.ts](src/app/api/account+api.ts) — trasa odniesienia dla granicy danych, nie funkcja
-produktowa; nie dokładaj do niej pól, profil ma własną trasę w S-02.
+produktowa; nie dokładaj do niej pól — oraz [profile+api.ts](src/app/api/profile+api.ts)
+(`GET`/`PUT` profilu, jeden kontrakt `{ profile, target }` dla obu metod). Cel kaloryczny **nie
+jest utrwalany** — liczy go przy odczycie [calorie-target.ts](src/lib/calorie-target.ts), ten sam
+moduł, którego użyje generator planu. Zero dryfu między ekranem a generatorem.
 
 **Trasy produktowe mieszkają w grupie `(app)` za bramką sesji.**
 [(app)/_layout.tsx](src/app/(app)/_layout.tsx) jest jedynym miejscem decydującym, czy widok
@@ -182,8 +184,16 @@ Skrypty (`start`, `android`, `ios`, `web`, `lint`) są w [package.json](package.
 - `npx tsc --noEmit` — jedyne realne sprawdzenie poprawności w tym repo. Nie jest skryptem npm.
 - `npm run check-lock` — przed każdym pushem, jeśli ruszałeś zależności. Odtwarza sprawdzenie
   spójności robione przez `npm ci`, więc łapie zepsuty lock lokalnie, zamiast na czerwonym buildzie.
-- Nie ma runnera testów. „Przetestowane" znaczy: `npx tsc --noEmit` przechodzi i ekran został
-  otwarty na realnej platformie.
+- `npm test` — `node --test` na `src/lib/*.test.ts`, bez żadnej zależności (runner jest wbudowany
+  w Node). Obejmuje **wyłącznie czyste moduły** z `src/lib/`; nie ma testów komponentów ani tras.
+- Testy przeglądarkowe (Playwright) leżą w [tests/e2e/](tests/e2e/), ale **Playwright NIE jest
+  zależnością tego repo** — mieszka poza nim, bo `npm install` psuje tu lockfile. Instrukcja
+  uruchomienia, pokrycie i dwie pułapki lokatorów: [tests/e2e/README.md](tests/e2e/README.md).
+  Dlatego `tests/` jest wyłączone z `tsconfig.json` — inaczej `tsc` świeciłby na czerwono brakiem
+  `@playwright/test`. Testy jadą przeciw `wrangler dev` na zbudowanym `dist/`, **nie** przeciw
+  produkcji: konto testowe nie zapisuje danych do produkcyjnej D1.
+- „Przetestowane" znaczy: `npx tsc --noEmit` i `npm test` przechodzą, a zmiana została **zobaczona
+  w działaniu** — harnessem albo na realnej platformie. Warstwy natywnej harness nie pokrywa.
 - Tematy commitów: tryb rozkazujący, zdaniowa wielkość liter, bez prefiksu.
 - Konfiguracja lokalna: `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` w `.env.local` (w CI: zmienna buildu
   Workers Builds), `CLERK_JWT_KEY` w `.dev.vars` dla `wrangler dev` (w produkcji: `wrangler secret`).

@@ -120,7 +120,8 @@ Na produkcji (web) i w Expo Go przeciw produkcyjnemu API:
   tym samym modułem, którego użyje S-04. Zero dryfu między ekranem a generatorem.
 - **Jednostek imperialnych, wieku poniżej 18 lat, trzeciej wartości płci** — decyzje z sesji.
 - **Podziału zapotrzebowania na posiłki** — liczba posiłków to S-03 (FR-007), podział to S-04.
-- **Vitest, testów komponentów, testów tras API** — runner ogranicza się do czystych modułów
+- ~~**Vitest, testów komponentów, testów tras API**~~ — *nieaktualne od 13.09.2026: właściciel zlecił harness `tests/e2e/` (decyzja D6 w `notes/night-decisions.md`), który testuje i trasy API, i ekrany. Runner pozostaje bez Vitest — Playwright mieszka poza `package.json`.*
+- **Vitest jako zależności repo** — runner ogranicza się do czystych modułów
   w `src/lib/`; szerszy runner to osobna decyzja, gdy pojawi się drugi kandydat.
 - **Usuwania konta / profilu, eksportu danych** — poza zakresem M-01.
 - **Przebudowy Home poza kartą celu** — Home docelowo należy do S-04 (plan tygodnia).
@@ -798,12 +799,12 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Automated
 
-- [ ] 4.1 `npx tsc --noEmit`, `npx expo lint`, `npm test`, `npm run check-lock` czyste
-- [ ] 4.2 `migrations list --remote` bez zaległych
-- [ ] 4.3 Smoke na produkcji: `/` HTML, `/profile` 200, `/explore` 404, `/api/health` `d1:true`, `/api/profile` 401 bez tokenu
+- [x] 4.1 `npx tsc --noEmit`, `npx expo lint`, `npm test`, `npm run check-lock` czyste
+- [x] 4.2 `migrations list --remote` bez zaległych
+- [x] 4.3 Smoke na produkcji: `/` HTML, `/profile` 200, `/explore` 404, `/api/health` `d1:true`, `/api/profile` 401 bez tokenu
 
 #### Manual
 
-- [ ] 4.4 Pełny przebieg na produkcji w przeglądarce
-- [ ] 4.5 Ten sam profil widoczny w Expo Go przeciw produkcji
-- [ ] 4.6 `CLAUDE.md` bez zdań opisujących stan sprzed zmiany
+- [ ] 4.4 Pełny przebieg na produkcji w przeglądarce — **CZĘŚCIOWO**: smoke i testy tylko-do-odczytu przeszły na produkcji; pełnego przebiegu z zapisem świadomie NIE robiono, bo zasada nocy zabrania pisania danych testowych do produkcyjnej D1
+- [ ] 4.5 Ten sam profil widoczny w Expo Go przeciw produkcji — **BLOCKED-MANUAL**: emulator nie wystartował (osierocone blokady AVD)
+- [x] 4.6 `CLAUDE.md` bez zdań opisujących stan sprzed zmiany
