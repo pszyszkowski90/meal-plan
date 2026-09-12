@@ -728,6 +728,12 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 - [x] 2.13 Tokeny kont A i B pochodzą z działającej aplikacji — 029517f
 - [x] 2.14 Wymuszony błąd D1 loguje `[api/profile]` bez `userId` i ciała, klient dostaje 500 `internal` — 029517f
 
+> Przegląd implementacji fazy 2 (`reviews/impl-review-phase-2.md`, 2026-09-12) domknął F1–F8.
+> F1, F2, F4 i F6 zmieniły schemat i zachowanie tras, więc **2.4–2.10 wymagają ponownego przebiegu
+> na `wrangler dev`** przed pushem fazy. Kryteria 2.1, 2.2, 2.3, 2.11 i 2.12 zostały w przeglądzie
+> odtworzone i przechodzą; migracja `0002` w docelowym kształcie jest zastosowana `--local`
+> i `--remote`.
+
 ### Phase 3: Ekran profilu i karta celu
 
 #### Automated

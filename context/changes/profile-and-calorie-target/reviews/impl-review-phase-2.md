@@ -4,7 +4,7 @@
 - **Plan**: `context/changes/profile-and-calorie-target/plan.md`
 - **Zakres**: Faza 2 z 4 — „Granica danych profilu na serwerze" (commit `029517f`)
 - **Data**: 2026-09-12
-- **Werdykt**: WYMAGA UWAGI
+- **Werdykt**: WYMAGA UWAGI → wszystkie 8 ustaleń NAPRAWIONE w sortowaniu 2026-09-12
 - **Ustalenia**: 0 krytycznych, 3 ostrzeżenia, 5 obserwacji
 
 ## Werdykty
@@ -75,7 +75,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
   - Kompromis: sprzężenie zostaje, tylko przestaje być niewidoczne; plan staje się ruchomym celem.
   - Pewność: HIGH — to samo repo już rozwiązuje podobne sprzężenia komentarzem nagłówkowym.
   - Martwy punkt: komentarz nie jest wymuszany przez nic — `tsc` nie złapie rozjazdu.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE poprawką A — trzy zakresy liczbowe usunięte z `0002`, zostały tylko `CHECK` na `sex` i `activity_level`; nagłówek migracji nazywa `ProfileBounds` jedynym źródłem prawdy dla granic. Obie bazy przebudowane (`down` + `apply`, `--local` i `--remote`), schemat na produkcji zweryfikowany przez `sqlite_master`.
 
 ### F2 — `GET /api/profile` oddaje dane osobowe bez `Cache-Control: no-store`
 
@@ -104,7 +104,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
     to zakres, którego plan nie przewidział.
   - Pewność: MEDIUM — kształt helpera zależy od tego, czy S-03 będzie potrzebować innych nagłówków.
   - Martwy punkt: nie sprawdzono, czy `health+api.ts` ma zostać poza tym helperem.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE poprawką A — helper `profileJson` w `profile+api.ts` oddaje obie odpowiedzi `ProfileResponse` z `Cache-Control: no-store`.
 
 ### F3 — Komentarz `saveUserProfile` obiecuje bezpieczeństwo limitu zapisów D1, którego nie dowodzi
 
@@ -125,7 +125,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
 - **Poprawka**: Popraw komentarz tak, żeby mówił, co obejmuje rozumowanie (własny klient), a co
   nie (klient skryptowy z ważnym tokenem); rate-limit odnotuj jako świadomie odłożony. Opcjonalnie
   tanio: pomiń upsert, gdy nadesłany `ProfileInput` jest identyczny z wierszem w bazie.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE — komentarz `saveUserProfile` nazywa granicę rozumowania (własny klient vs klient skryptowy z ważnym tokenem) i odnotowuje rate-limit jako świadomie odłożony.
 
 ### F4 — `touchAppUser` na ścieżce zapisu to złe narzędzie: do dwóch rund do D1 i obcy tryb 500
 
@@ -158,7 +158,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
   - Kompromis: zostaje trzecia runda i obcy tryb 500 na ścieżce produktowej.
   - Pewność: HIGH — nic się nie psuje.
   - Martwy punkt: brak znaczących.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE poprawką A — `ensureAppUser(userId)` w `app-users.ts` (`on conflict(id) do nothing`, jedna runda, bez odczytu); `PUT` woła je zamiast `touchAppUser`. Plan zaktualizowany w czterech miejscach.
 
 ### F5 — Interpolacja `${SELECT_COLUMNS}` wewnątrz `prepare(` psuje grep-owy wykrywacz wstrzyknięć
 
@@ -174,7 +174,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
 - **Poprawka**: Albo rozwiń listy kolumn dosłownie, jak w `app-users.ts`, albo zostaw
   `SELECT_COLUMNS` i dopisz w nagłówku jedną linię z regułą: identyfikatory wolno interpolować
   ze stałych modułu, wartości nigdy.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE — nagłówek `user-profile.ts` zapisuje regułę: interpolować wolno wyłącznie identyfikatory ze stałych modułu, wartości nigdy.
 
 ### F6 — `requireUserId` jest awaitowane poza `try`, więc awaria bindingów ucieka bez logu
 
@@ -189,7 +189,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
   `account+api.ts`, ale nowa trasa ją powiela.
 - **Poprawka**: Albo rozszerz `try` tak, żeby objął wywołanie `requireUserId`, albo świadomie tego
   nie rób i zapisz powód w nagłówku pliku, żeby trzecia trasa nie rozstrzygała tego od zera.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE — `requireUserId` jest w obu metodach objęte `try`; w `PUT` osobnym, żeby nie połknął 400 za ciało i za walidację.
 
 ### F7 — Klucz obcy bez `ON DELETE`
 
@@ -203,7 +203,7 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
   opisać tę samą kolejność, więc ograniczenie zaczyna kosztować, a schemat ma dopiero dwie tabele.
 - **Poprawka**: Rozważ `ON DELETE CASCADE` albo odnotuj zamierzoną kolejność usuwania w nagłówku
   `0002` teraz, zanim dojdą preferencje (S-03) i plany (S-04).
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE — `ON DELETE CASCADE` w `0002` plus uzasadnienie w nagłówku; obie bazy przebudowane tym samym ruchem, schemat produkcyjny zweryfikowany.
 
 ### F8 — Część odhaczonych kryteriów nie ma śladu w repo; adnotacje SHA nie są zacommitowane
 
@@ -221,4 +221,4 @@ A i B) oraz 2.13–2.14. Świeży `npx expo export -p web` przerwał się na `EB
   więc zapis fazy istnieje tylko na dysku.
 - **Poprawka**: Zacommituj adnotacje SHA razem z domknięciem ustaleń tego przeglądu; jeśli chcesz
   ślad dla 2.4–2.10, wklej surowe odpowiedzi HTTP do `reviews/` albo do notatek `change.md`.
-- **Decyzja**: OCZEKUJĄCA
+- **Decyzja**: NAPRAWIONE — adnotacje SHA i domknięcie ustaleń idą jednym commitem. Ślad dla 2.4–2.10 nie powstał; poprawki F1/F2/F4/F6 zmieniły schemat i zachowanie tras, więc te kryteria wymagają ponownego przebiegu na `wrangler dev` przed pushem.
