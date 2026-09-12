@@ -3,7 +3,7 @@ project: "MealPlan"
 version: 1
 status: draft
 created: 2026-08-31
-updated: 2026-09-01
+updated: 2026-09-12
 prd_version: 1
 main_goal: speed
 top_blocker: decisions
@@ -64,7 +64,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 | ID    | Change ID                    | Wynik (użytkownik może …)                                          | Wymagania wstępne  | Odnośniki PRD                     | Status   |
 | ----- | ---------------------------- | ------------------------------------------------------------------ | ------------------ | --------------------------------- | -------- |
 | F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | blocked  |
-| S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | in-progress |
+| S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
 | S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | proposed |
 | S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | blocked  |
 | S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | proposed |
@@ -162,7 +162,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   **Tożsamość prowadzi Clerk** (decyzja z 1.09.2026 — `context/changes/account-and-login/change.md`),
   więc D1 nie przechowuje e-maili ani haseł, a `userId` przychodzi z podpisanego tokenu. Ubocznie
   znika wymóg planu Workers Paid dla tego fragmentu: był potrzebny wyłącznie pod hashowanie haseł.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Użytkownik podaje profil i widzi wyliczone zapotrzebowanie
 
@@ -370,4 +370,6 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 
 ## Zrobione
 
-(Pusta — wypełnia `/10x-archive` przy archiwizacji zmian.)
+- **S-01: użytkownik zakłada konto e-mail + hasło, loguje się i widzi ten sam stan na telefonie
+  oraz w przeglądarce; niezalogowany nie dostaje żadnego widoku produktowego** — Zarchiwizowane
+  2026-09-12 → `context/archive/2026-08-31-account-and-login/`. Lekcja: —.
