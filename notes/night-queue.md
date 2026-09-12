@@ -460,3 +460,53 @@ duplikatów zostają jako propozycje w raporcie, zgodnie z zasadą T8.
 Commit: ten
 Do decyzji rano: trzy propozycje z raportu — podnieść trzy reguły niszczące do „Twardych reguł",
 odzyskać 34 linie z bloku `10x-cli`, usunąć duplikaty wartości `Spacing`
+
+---
+
+### 23:52 UTC — PODSUMOWANIE NOCY
+Wynik: kolejka przerobiona w całości (T1–T8); jedno zadanie zablokowane
+
+**Stan repo:** czysty, wszystko wypchnięte na `origin/main`. Produkcja zweryfikowana smoke'iem
+po ostatnim wdrożeniu. Harness lokalny 20/20, `npm test` 32/32, `tsc` i `expo lint` czyste.
+
+| Zadanie | Wynik |
+| --- | --- |
+| Preflight | ok |
+| T1 Plan testów i harness | ok — 13 testów, dwa przebiegi zielone |
+| T2 Harness natywny | **blocked** |
+| T3 Faza 3 | ok — `42b6917` |
+| T4 Weryfikacja + przegląd | ok — 20/20, dwa ostrzeżenia naprawione |
+| T5 Produkcja | ok — wdrożone i odpytane |
+| T6 Briefy (priorytet) | ok — cztery |
+| T7 Otwarte pytania | ok — decyzja + dwa zrecenzowane plany |
+| T8 Zapas | ok — lekcje, testy brzegowe, przegląd reguł |
+
+**Co poszło dobrze:** harness zarobił na siebie tej samej nocy — wyścig, który wykrył jako losową
+czerwień, okazał się defektem aplikacji gubiącym dane użytkownika, nie wadą testu. Przegląd fazy 3
+znalazł drugi defekt (zawieszenie karty celu), którego stos bramek zobaczyć nie mógł. Oba naprawione
+przed wdrożeniem, oba z testem regresji i próbą celowego zepsucia.
+
+**Czego NIE zweryfikowano — pięć rzeczy, żeby rano nie było niespodzianek:**
+1. **Cała warstwa natywna.** Kryteria 3.12 i 4.5 to `BLOCKED-MANUAL`. Emulator nie wystartował,
+   więc hipoteza DNS z D3 **pozostaje niesprawdzona** — blokada leżała wcześniej (osierocone
+   blokady AVD, prawdopodobnie po równoległej sesji, która wciąż była otwarta).
+2. **Pełny przebieg z zapisem na produkcji** (4.4). Świadomie — zasady nocy zabraniają pisania
+   danych testowych do produkcyjnej D1. Przeszły tylko testy tylko-do-odczytu.
+3. **Izolacja między dwoma kontami** (2.9) i **stan „konto bez profilu"** (2.5). Oba wymagają
+   drugiego konta testowego.
+4. **Dwa założenia planu F-01**: transakcje D1 na `--remote` i import `.ts` z `.mjs`. Oznaczone
+   w planie jako do zweryfikowania przed fazą 3.
+5. **Pozostałe 14 briefów z lekcji.** Napisałbym je z parafrazy streszczeń — bez wartości.
+
+**Największe znaleziska do decyzji rano** (pełne opisy wyżej i w `night-decisions.md`):
+- Cel kaloryczny **nie jest przycinany** do 1000–6000, więc skrajny dopuszczalny profil daje
+  **317 kcal dziennie**, a drugi **8508** — produkt pokaże liczbę, której nie pozwoliłby wpisać,
+  a ta liczba zasili guardrail ±10% w S-04.
+- Formularze nie mają nazw dostępnościowych (D11) — czytnik ekranu czyta „pole edycji" cztery razy.
+- Cztery ustalenia przeglądu fazy 3 zostawione jako PENDING (F4, F5, F6, F7).
+- Decyzja **D14** o źródle przepisów czeka na zatwierdzenie — plany są tanie do wyrzucenia, kod nie.
+
+**Decyzje podjęte samodzielnie:** D8–D14, wszystkie z powodem i sposobem cofnięcia.
+**Granica z D7 utrzymana:** zero kodu produktowego na `dish-source-and-seed-pool`
+i `dietary-preferences` — noc zatrzymała się na zrecenzowanych planach.
+Commit: ten
