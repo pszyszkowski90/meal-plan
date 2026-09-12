@@ -3,6 +3,7 @@
 > Pełny plan: `context/changes/dish-source-and-seed-pool/plan.md`
 > Decyzja o źródle: `context/changes/dish-source-and-seed-pool/options.md`
 > Badanie: `context/changes/dish-source-and-seed-pool/research.md`
+> Przegląd planu: `context/changes/dish-source-and-seed-pool/reviews/plan-review.md` (wersja 1: WYMAGA UWAGI)
 
 ## Co i dlaczego
 
@@ -39,16 +40,22 @@ informacja, że nie, wraz z liczbą brakujących dań. Zero kodu generatora.
 | Kroki przygotowania | Osobne rekordy z `position` | FR-016 wymaga przechodzenia krok po kroku; blok tekstu do dzielenia w runtime to pułapka | Plan |
 | Model wykluczeń | Jedna tabela z polem `kind` (`ingredient` / `dish`) | FR-004 i FR-011 zasilają **jedną** listę; „nie jem grzybów" i „nie jem risotto" to różne zdania | options.md |
 | Przepisy jako dane w repo | `seed/dishes/*.json` + zapisany prompt | Pula daje się rozszerzyć powtarzalnie, a przegląd człowieka ma co przeglądać | Plan |
+| Tożsamość dania | `slug` z nazwy pliku, nie nazwa wyświetlana | Poprawka literówki nie może tworzyć drugiego dania ani unieważniać `plan_item.dish_id` w S-04 | Przegląd |
+| Pory posiłku | `dish_meal_slot` wiele-do-wielu | Kolumna dzieliłaby pulę czterokrotnie tam, gdzie wykluczenia już ją przerzedziły | Przegląd |
+| Stan składnika | Zawarty w nazwie („ryż biały, suchy") | Surowy kontra ugotowany to różnica ~180% — przegląd gramatur jej **nie wykrywa** | Przegląd |
+| Bramka przeglądu | `reviewedBy` w JSON, seed odmawia `--remote` bez niego | Obowiązkowy przegląd musi mieć oparcie techniczne, nie tylko dyscyplinę | Przegląd |
+| Kolejność pracy | Pilot 20 dań przed autorstwem reszty | Najdroższa i nieodwracalna praca nie może stać przed bramką, która może ją unieważnić | Przegląd |
 
 ## Zakres
 
-**W zakresie:** schemat czterech tabel + migracja `0003`; `all()` w typie D1; podzbiór USDA
-w `ingredient`; czysty moduł liczący makra z testem; autorstwo i przegląd ≥ 60 dań; walidator
-i skrypt seedujący; repozytorium odczytu puli; pomiar wykonalności ±10%.
+**W zakresie:** schemat pięciu tabel + migracja `0003`; `all()` w typie D1; destylat USDA
+i mapowanie składników; moduły `dish-macros` i `dish-validation` z testami; pilot 20 dań
+z decyzją skalowania; skrypty importu i seeda; pomiar wykonalności ±10% w trzech scenariuszach.
 
-**Poza zakresem:** generator planu i dobór dań (S-04); tabela wykluczeń (S-03 — ten plan dostarcza
-tylko `dish_ingredient`, na którym tamta stanie); ekran przeglądania dań, zdjęcia, oceny;
-wywoływanie modelu w runtime; pełny import USDA; warianty porcji.
+**Poza zakresem:** generator planu i dobór dań (S-04); **repozytorium i trasy API dla puli**
+(nic w tej zmianie by ich nie uruchomiło — idą do S-04); tabela wykluczeń (S-03 — ten plan
+dostarcza `dish_ingredient`, na którym tamta stanie); ekran przeglądania dań, zdjęcia, oceny;
+wywoływanie modelu w runtime; pełny import USDA; warianty porcji (przepis = jedna porcja).
 
 ## Architektura / Podejście
 
@@ -70,13 +77,15 @@ Worker **nigdy nie woła modelu**. W runtime czyta wyłącznie D1.
 
 | Faza | Co dostarcza | Kluczowe ryzyko |
 |---|---|---|
-| 1. Schemat | Migracja `0003`, cztery tabele, `all()` w typie D1 | Brak — addytywna, nie dotyka danych użytkowników |
-| 2. Warstwa makr | Podzbiór USDA + czysty moduł liczący, z testem | Błąd mapowania składnik → USDA daje wiarygodnie wyglądające, ale błędne makra |
-| 3. Pula | ≥ 60 dań z krokami, po przeglądzie człowieka | Model myli gramatury nawet przy poprawnych nazwach — przegląd jest obowiązkowy |
-| 4. Dowód | Odczyt z aplikacji + pomiar wykonalności ±10% | **Może wyjść, że pula jest za mała** — i to jest wartość tej fazy |
+| 1. Schemat | Migracja `0003`, pięć tabel (`dish_meal_slot` wiele-do-wielu), `all()` w typie D1 | Brak — addytywna, nie dotyka danych użytkowników |
+| 2. Czyste moduły | `dish-macros` + `dish-validation` z testami, w `src/lib/` | Brak zależności od treści — faza w całości automatyczna |
+| 3. **Pilot: 20 dań** | Cały potok end-to-end + pomiar + **DECYZJA SKALOWANIA** | Tu wychodzi, czy kierunek się trzyma — **zanim** powstanie reszta puli |
+| 4. Skalowanie | Reszta dań do minimów per pora, seed na produkcję, raport końcowy | Mapowanie składnik → USDA; łagodzone Atwaterem i gęstością energetyczną |
 
 **Wymagania wstępne:** S-01 i S-02 (`done`); plik źródłowy USDA pobrany raz przez człowieka;
 dostęp do modelu do jednorazowego autorstwa (~0,50 USD).
+**Do zweryfikowania przed fazą 3:** czy `wrangler d1 execute --file` przyjmie `BEGIN TRANSACTION`
+na `--remote` i czy Node zaimportuje `.ts` z pliku `.mjs`. Oba są założeniami kontraktu skryptów.
 **Szacowany wysiłek:** ~10–15 h, z czego większość to autorstwo i **przegląd gramatur**, nie kod.
 
 ## Otwarte ryzyka i założenia

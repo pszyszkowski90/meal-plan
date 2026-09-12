@@ -3,6 +3,8 @@
 > Zmiana: `dish-source-and-seed-pool` (F-01 mapy drogowej, kamień M-01) · Odnośniki PRD: FR-008,
 > FR-009, FR-016, Open Questions 1, 2, 4 · Wymaganie wstępne: S-01, S-02 (oba `done`)
 > Decyzja o źródle: [`options.md`](options.md), zapisana jako D14 w `notes/night-decisions.md`.
+> **Wersja 2** (13.09.2026) — po przeglądzie planu, który zwrócił WYMAGA UWAGI z sześcioma
+> ustaleniami krytycznymi. Co się zmieniło: patrz [`reviews/plan-review.md`](reviews/plan-review.md).
 
 ## Przegląd
 
@@ -17,102 +19,89 @@ w granicy ±10%.
 
 **Uwaga: [`research.md`](research.md) powstał 8.09.2026 i jego sekcja o stanie bazy kodu jest
 nieaktualna.** Opisuje repo bez migracji, bez repozytorium i bez tras z tokenem. S-01 i S-02 od
-tego czasu weszły na produkcję. Wnioski badania o **opcjach źródła** pozostają aktualne — zdezaktualizował
-się wyłącznie opis infrastruktury.
+tego czasu weszły na produkcję. Wnioski badania o **opcjach źródła** pozostają aktualne.
 
 Co **jest** dzisiaj:
 
-- **Migracje D1** — [`0001_app_user.sql`](../../../migrations/0001_app_user.sql),
-  [`0002_user_profile.sql`](../../../migrations/0002_user_profile.sql), każda z parą w
-  [`migrations/down/`](../../../migrations/down/). Wzorzec numerowania i pary wstecznej jest ustalony.
-- **Warstwa repozytorium** — [`src/server/repository/`](../../../src/server/repository/), reguła
-  „`userId` pierwszym argumentem, filtrowanie w SQL-u, `prepare(` wyłącznie tutaj".
-- **Moduł liczący** — [`calorie-target.ts`](../../../src/lib/calorie-target.ts) jako wzorzec czystego
-  modułu z testem na `node --test`.
-- **Harness E2E** — [`tests/e2e/`](../../../tests/e2e/), 20 testów.
+- **Migracje D1** — `0001_app_user.sql`, `0002_user_profile.sql`, każda z parą w `migrations/down/`.
+  Komentarz w `0002` uzasadnia, dlaczego zakresy liczbowe **nie** wchodzą do `CHECK`, ale wyliczenia
+  (`sex`, `activity_level`) już tak — ta granica obowiązuje też tutaj.
+- **Warstwa repozytorium** — `src/server/repository/`; **żadna funkcja nie przyjmuje `env`**,
+  wszystkie wołają `getWorkerEnv()` w środku (`app-users.ts`, `user-profile.ts`).
+- **Czysty moduł z testem** — `src/lib/calorie-target.ts` + `.test.ts` na `node --test`.
+- **`npm test`** — `node --test src/lib/*.test.ts`; glob obejmuje **wyłącznie `src/lib/`**.
+- **Harness E2E** — `tests/e2e/`, 20 testów, Playwright poza repo.
 
 Czego **nie ma**, a ta zmiana potrzebuje:
 
-- **`all<T>()` w typie D1.** [`env.ts:21-27`](../../../src/server/env.ts) deklaruje `bind`, `first`
-  i `run`. Pula dań to z definicji **wiele wierszy** — bez `all()` nie da się jej odczytać.
-- Jakiejkolwiek tabeli z danymi nieużytkownika. `app_user` i `user_profile` są per-konto; pula dań
-  jest **współdzielona i tylko do odczytu** dla wszystkich użytkowników. To pierwszy taki byt w repo.
-- Skryptów innych niż `check-lockfile.js` i `reset-project.js`.
+- **`all<T>()` w typie D1.** `src/server/env.ts` deklaruje `bind`, `first` i `run` (interfejs
+  `D1PreparedStatement`, ok. linie 20–24). Pula to wiele wierszy.
+- Tabel z danymi **nieużytkownika**. `app_user` i `user_profile` są per-konto; pula jest
+  współdzielona i tylko do odczytu. To pierwszy taki byt w repo.
+- Skryptów innych niż `check-lockfile.js` i `reset-project.js`. Oba są CommonJS; `package.json`
+  nie ma `"type"`.
 
 ## Pożądany stan końcowy
 
-1. Migracja `0003` tworzy `ingredient`, `dish`, `dish_ingredient`, `dish_step`, z parą w `down/`.
-2. W D1 (lokalnie i na produkcji) leży **co najmniej 60 dań** rozłożonych na pory posiłku,
-   każde z: polską nazwą, czasem przygotowania, listą składników z **gramaturą**, krokami
-   w kolejności i makrami policzonymi z USDA.
-3. Makra dania są sumą makr jego składników — policzoną **skryptem, nie wpisaną ręcznie** i nie
-   pochodzącą od modelu.
-4. `npm test` przypina regułę liczenia makr; zmiana gramatury zmienia wynik w przewidywalny sposób.
-5. Istnieje **zmierzony dowód**, że z tej puli da się złożyć dzień w ±10% dla profili brzegowych
-   (najniższy i najwyższy realny cel kaloryczny) — albo jawna informacja, że nie, wraz z liczbą
-   brakujących dań.
-6. Zero kodu generatora planu.
+1. Migracja `0003` tworzy schemat puli, z parą w `down/`.
+2. W D1 (lokalnie i na produkcji) leży pula dań spełniająca **minima per pora posiłku** (niżej),
+   każde danie z polską nazwą, czasem, składnikami z gramaturą, krokami w kolejności i makrami
+   policzonymi z USDA.
+3. Makra liczy **jeden moduł** (`src/lib/dish-macros.ts`) — nigdy SQL, nigdy skrypt osobno,
+   nigdy model.
+4. Istnieje **zmierzony dowód wykonalności ±10%** w trzech scenariuszach (bez filtrów, z limitem
+   czasu, z limitem czasu i wykluczeniami) — albo jawna informacja, ilu dań brakuje i na której porze.
+5. Zero kodu generatora planu. Zero tras API.
 
 ### Kluczowe odkrycia
 
-- [`env.ts:21-27`](../../../src/server/env.ts) — typ `D1PreparedStatement` **nie ma `all()`**.
-  Rozszerzenie typu jest warunkiem wstępnym fazy 4, nie kosmetyką.
-- [`0002_user_profile.sql`](../../../migrations/0002_user_profile.sql) — wzorzec migracji z
-  ograniczeniami `CHECK`; przegląd fazy 2 S-02 (ustalenie F1) odnotował, że **powielanie granic
-  walidacji w `CHECK`** jest dublowaniem źródła prawdy. Tutaj `CHECK` ma pilnować wyłącznie
-  niezmienników bazy (dodatnia gramatura, kolejność kroków), nie reguł produktowych.
-- [`app-users.ts`](../../../src/server/repository/app-users.ts) — komentarz nagłówkowy nazywa regułę
-  repozytorium. Pula dań jest **wyjątkiem od reguły `userId`**: to dane współdzielone, więc funkcje
-  odczytu puli nie przyjmują `userId`. Ten wyjątek musi być w komentarzu, inaczej kolejny przegląd
-  zgłosi go jako naruszenie izolacji.
-- [`calorie-target.ts`](../../../src/lib/calorie-target.ts) — wzorzec „czysty moduł + test"; liczenie
-  makr z gramatur należy do tej samej kategorii i tam powinno zamieszkać.
-- `research.md` §2 — oczekiwanie na D1 **nie liczy się do limitu 10 ms CPU** Workera; przycinane
-  wyszukiwanie nad ~60 daniami mieści się poniżej 1 ms. Plan Free wystarcza.
+- `src/server/env.ts` — `D1PreparedStatement` **nie ma `all()`**. Warunek wstępny odczytu puli.
+- `src/server/repository/*.ts` — **żadna funkcja nie przyjmuje `env`**. Kontrakt z `env` jako
+  argumentem wprowadziłby drugi styl w dwuplikowym katalogu.
+- `npm test` widzi wyłącznie `src/lib/*.test.ts` — logika warta testu **musi** tam mieszkać,
+  inaczej nie obejmie jej ani test, ani `tsc` (`tsconfig.json` nie zawiera `.js`).
+- `scripts/check-lockfile.js` sprawdza **spójność wewnętrzną** lockfile'a — przechodzi na zielono
+  także po dodaniu zależności. Dowodem „nie dołożyliśmy zależności" jest `git diff --exit-code`.
+- D1 **nie ma jawnych transakcji**; atomową jednostką jest wykonanie/batch. Skrypty nie mają
+  `bind()` poza runtime Workera.
+- `research.md` §2 — oczekiwanie na D1 nie liczy się do limitu 10 ms CPU; przycinane wyszukiwanie
+  nad ~60 daniami mieści się poniżej 1 ms.
 
 ## Czego NIE robimy
 
-- **Generatora planu tygodniowego ani żadnego doboru dań pod cel** — to S-04. Tutaj powstaje
-  wyłącznie pomiar wykonalności, nie algorytm.
-- **Ekranu przeglądania dań, wyszukiwarki, zdjęć** — pula jest na razie niewidoczna dla użytkownika.
-- **Tabeli wykluczeń** — model rozpisany w [`options.md`](options.md) §4, ale implementacja należy
-  do `dietary-preferences` (S-03). F-01 dostarcza `dish_ingredient`, na którym tamta zmiana stanie.
-- **Wywoływania modelu językowego w runtime.** Model autoryzuje przepisy **raz, poza aplikacją**;
-  Worker nigdy nie woła modelu. To jest sedno decyzji D14.
-- **Pełnego importu USDA.** Wchodzi wyłącznie podzbiór składników faktycznie używanych w puli.
-- **Zdjęć dań, ocen, ulubionych, wariantów porcji** — poza MVP.
-
-## Podejście do implementacji
-
-Cztery fazy od danych do dowodu:
-
-1. **Schemat** — migracja i typ D1. Nic nie zależy od treści.
-2. **Warstwa makr** — podzbiór USDA w `ingredient` plus czysty moduł liczący makra dania
-   z gramatur. Deterministyczne i testowalne bez żadnych dań.
-3. **Pula** — autorstwo przez model poza runtime, przegląd człowieka, walidacja, seed.
-4. **Dowód** — odczyt z aplikacji i pomiar wykonalności ±10%.
-
-Kolejność jest celowa: faza 2 jest testowalna **zanim** powstanie choć jedno danie, a faza 4 może
-zaświecić na czerwono („pula za mała") bez psucia niczego, co już działa.
+- **Generatora planu ani doboru dań pod cel w kodzie produkcyjnym** — to S-04. Skrypt pomiarowy
+  z fazy 4 jest **diagnostyką jednorazową**: wolno mu być zachłannym i brzydkim, nie jest
+  przekazywany dalej jako kod. Do S-04 idą **liczby z raportu**, nie algorytm.
+- **Repozytorium i tras API dla puli.** Nic w tej zmianie nie uruchomiłoby `listDishes` —
+  `npm test` widzi tylko `src/lib/`, a tras świadomie nie ma. Odczyt puli z aplikacji należy
+  do S-04, która go pierwsza potrzebuje.
+- **Tabeli wykluczeń** — model w [`options.md`](options.md) §4, implementacja w S-03.
+  F-01 dostarcza `dish_ingredient`, na którym tamta zmiana stanie.
+- **Wywoływania modelu w runtime.** Model autoryzuje przepisy raz, poza aplikacją.
+- **Pełnego importu USDA**, zdjęć dań, ocen, wariantów porcji.
 
 ## Krytyczne szczegóły implementacji
 
-- **Makra liczy skrypt, nigdy model.** To jest cała treść decyzji D14. Jeśli na którymkolwiek etapie
-  liczba kalorii dania pochodzi z odpowiedzi modelu, zmiana straciła sens — guardrail ±10% wróci do
-  sprawdzania liczby, która sama jest błędna (badania: MAPE energii ~36%).
-- **Przegląd ilości przez człowieka jest obowiązkowy, nie zalecany.** Cztery niezależne źródła
-  w `research.md` §7 zbiegają się w tym samym ostrzeżeniu: model myli się w gramaturach nawet wtedy,
-  gdy nazwy składników są poprawne. Faza 3 nie ma prawa zakończyć się bez tego kroku.
-- **Migracja `--remote` przed commitem fazy, która jej używa.** Push na `main` wdraża natychmiast
-  (reguła z `CLAUDE.md`, przećwiczona przy `0001` i `0002`).
-- **Seed nie jest migracją.** Dane puli wchodzą osobnym skryptem, nie plikiem w `migrations/` —
-  inaczej każda zmiana treści dania wymagałaby nowej migracji, a `down/` musiałby umieć ją cofnąć.
+- **Makra liczy `dish-macros.ts`, nigdy nic innego.** Zapytania kontrolne i skrypt pomiarowy
+  **czytają wiersze i wołają ten moduł**. Policzenie makr drugi raz w SQL-u odtworzyłoby dokładnie
+  ten błąd, który przegląd fazy 2 S-02 zgłosił dla zdublowanych `CHECK`-ów — a rozjazd zaokrągleń
+  zapaliłby kryteria na czerwono z powodu artefaktu, nie defektu.
+- **Stan składnika (surowy / ugotowany) jest częścią jego tożsamości.** USDA rozróżnia ryż surowy
+  (~365 kcal/100 g) od ugotowanego (~130). Różnica jest wielokrotnością całego budżetu ±10%,
+  a **ani przegląd gramatur, ani próg górny jej nie wykryje** — gramatura jest poprawna, wynik
+  mieści się w zdroworozsądkowym zakresie. Konwencja: `ingredient.name` **zawsze zawiera stan**
+  („ryż biały, suchy"), a przepisy podają gramaturę produktu **przed obróbką**.
+- **Tożsamość dania to `slug`, nie nazwa wyświetlana.** Poprawka literówki w nazwie nie może tworzyć
+  drugiego dania, a od S-04 `plan_item.dish_id` będzie na to wrażliwy.
+- **Migracja `--remote` przed commitem fazy, która jej używa.** Push na `main` wdraża natychmiast.
+- **Seed nie jest migracją** — dane wchodzą skryptem, więc zmiana treści dania nie wymaga migracji.
 
 ## Faza 1: Schemat puli dań
 
 ### Przegląd
 
-Cztery tabele i rozszerzenie typu D1. Po tej fazie schemat stoi, ale jest pusty.
+Schemat i rozszerzenie typu D1. Po tej fazie schemat stoi, ale jest pusty. Nic tu nie zależy
+od treści dań.
 
 ### Wymagane zmiany
 
@@ -120,31 +109,39 @@ Cztery tabele i rozszerzenie typu D1. Po tej fazie schemat stoi, ale jest pusty.
 
 **Plik**: `migrations/0003_dish_pool.sql` + `migrations/down/0003_dish_pool.down.sql`
 
-**Cel**: schemat dla puli dań — danych **współdzielonych**, bez `user_id`.
+**Cel**: schemat dla puli — danych współdzielonych, bez `user_id`.
 
 **Kontrakt**:
-- `ingredient` — `id`, `name` (polska, unikalna), `usda_fdc_id`, makra **na 100 g**
-  (`kcal`, `protein_g`, `carbs_g`, `fat_g`), `category` (do kategorii sklepowych z FR-013).
-- `dish` — `id`, `name`, `meal_slot` (`breakfast` | `lunch` | `dinner` | `snack`),
-  `prep_minutes`, `servings`, `created_at`. Makra **nie są tu przechowywane** — liczy się je
-  z `dish_ingredient` (ta sama zasada, co cel kaloryczny w S-02: jedno źródło, zero dryfu).
+- `ingredient` — `id`, `name` **UNIQUE** (polska, **zawiera stan**: „ryż biały, suchy”),
+  `usda_fdc_id`, makra **na 100 g** (`kcal`, `protein_g`, `carbs_g`, `fat_g`),
+  `category` **NOT NULL** z `CHECK` na zamkniętej liście (niżej), opcjonalne `grams_per_piece`
+  (do prezentacji „2 jajka" zamiast „110 g" — FR-013/FR-016; `NULL` = produkt ważony).
+- `dish` — `id`, **`slug` NOT NULL UNIQUE** (z nazwy pliku), `name` (wyświetlana, zmienna),
+  `prep_minutes`, `created_at`. **Bez `servings`** — konwencja: *każdy przepis jest na jedną
+  porcję* (patrz „Czego NIE robimy": warianty porcji poza MVP; dwuznaczność `perDish`/`perServing`
+  łamałaby ±10% o cichy czynnik). **Bez kolumny makr** — liczone z `dish_ingredient`.
+- `dish_meal_slot` — `dish_id`, `meal_slot`, klucz główny na parze, `CHECK` na wyliczeniu
+  (`breakfast`/`lunch`/`dinner`/`snack`). **Relacja wiele-do-wielu, nie kolumna na `dish`**:
+  obiad i kolacja to w praktyce ten sam zbiór, a przypisanie dania do jednego slotu dzieli pulę
+  czterokrotnie dokładnie wtedy, gdy wykluczenia i limit czasu już ją przerzedziły.
 - `dish_ingredient` — `dish_id`, `ingredient_id`, `grams`, klucz główny na parze.
-- `dish_step` — `dish_id`, `position`, `text`; unikalność na (`dish_id`, `position`) — FR-016
-  wymaga kroków jako osobnych rekordów z kolejnością, nie bloku tekstu.
-- `CHECK` wyłącznie na niezmiennikach bazy (`grams > 0`, `position >= 1`, `prep_minutes > 0`),
-  **nie** na regułach produktowych — patrz ustalenie F1 przeglądu fazy 2 S-02.
-- Klucze obce z `ON DELETE CASCADE` z `dish` na `dish_ingredient` i `dish_step` (usunięcie dania
-  usuwa jego części; ustalenie F7 tamtego przeglądu dotyczyło braku jawnego `ON DELETE`).
+- `dish_step` — `dish_id`, `position`, `text`, UNIQUE(`dish_id`, `position`).
+- `CHECK` wyłącznie na niezmiennikach bazy (`grams > 0`, `position >= 1`, `prep_minutes` 5–120)
+  **oraz na wyliczeniach** (`meal_slot`, `category`) — granica z komentarza w `0002`.
+- `ON DELETE CASCADE` z `dish` na `dish_meal_slot`, `dish_ingredient`, `dish_step`.
+
+**Zamknięty enum `category`** (roadmapa F-01 wymaga kategorii sklepowej; bez enuma S-07 dostanie
+120 wierszy z `NULL` albo 40 wariantów literowych): `warzywa`, `owoce`, `mieso`, `ryby`, `nabial`,
+`jaja`, `pieczywo`, `suche` (kasze, makarony, ryż, strączki), `tluszcze`, `przyprawy`, `inne`.
 
 #### 2. Typ D1 z odczytem wielu wierszy
 
 **Plik**: `src/server/env.ts`
 
-**Cel**: pula to wiele wierszy; bez `all()` nie da się jej przeczytać.
+**Cel**: pula to wiele wierszy.
 
-**Kontrakt**: dodać `all<T = unknown>(): Promise<{ results: T[] }>` do `D1PreparedStatement`,
-w kształcie zgodnym z runtime D1. Reszta pliku bez zmian — to jedyne miejsce w repo dotykające
-`globalThis`.
+**Kontrakt**: dodać `all<T = unknown>(): Promise<{ results: T[] }>` do `D1PreparedStatement`.
+Reszta pliku bez zmian.
 
 ### Kryteria sukcesu
 
@@ -153,168 +150,225 @@ w kształcie zgodnym z runtime D1. Reszta pliku bez zmian — to jedyne miejsce 
 - `npx wrangler d1 migrations apply mealplan --local` stosuje `0003` bez błędu
 - `npx wrangler d1 migrations list mealplan --local` bez zaległych
 - `npx tsc --noEmit` czyste po rozszerzeniu typu
-- Para wsteczna: ręczne uruchomienie `0003_dish_pool.down.sql` usuwa cztery tabele i wpis
-  z `d1_migrations`
+- Para wsteczna usuwa pięć tabel i wpis z `d1_migrations`; ponowne zastosowanie przechodzi
+- `INSERT` z `category` spoza enuma i z `prep_minutes = 0` jest odrzucony przez bazę
 
 #### Weryfikacja ręczna
 
-- Schemat obejrzany przez `wrangler d1 execute mealplan --local --command ".schema"` — cztery tabele,
-  klucze obce obecne
+- `.schema` obejrzany — pięć tabel, klucze obce i `CHECK`-i obecne
 
 ---
 
-## Faza 2: Warstwa makr z USDA
+## Faza 2: Czyste moduły — makra i walidacja
 
 ### Przegląd
 
-Składniki z prawdziwymi makrami i deterministyczna reguła liczenia makr dania z gramatur.
-Testowalna, zanim powstanie choć jedno danie.
+Cała logika warta testu ląduje w `src/lib/`, gdzie widzi ją `npm test` **i** `tsc`.
+Faza jest w pełni testowalna, zanim powstanie choć jedno danie i zanim cokolwiek dotknie USDA.
 
 ### Wymagane zmiany
 
-#### 1. Moduł liczący
+#### 1. Moduł liczący makra
 
 **Plik**: `src/lib/dish-macros.ts` + `src/lib/dish-macros.test.ts`
 
-**Cel**: z listy (składnik, gramatura) policzyć makra dania i kalorie na porcję.
+**Cel**: z listy (makra na 100 g, gramatura) policzyć makra dania.
 
-**Kontrakt**: `computeDishMacros(items: { per100g: Macros; grams: number }[], servings: number)`
-→ `{ perDish: Macros; perServing: Macros }`. Czysty moduł — zero importów z Reacta, D1 i `@/server`,
-dokładnie jak `calorie-target.ts`. Zaokrąglanie zdefiniowane wprost i **przypięte testem**
-(ta sama lekcja, co w S-02: zaokrąglanie jest częścią kontraktu, nie detalem).
+**Kontrakt**: `computeDishMacros(items: { per100g: Macros; grams: number }[]) → Macros`.
+Czysty moduł — zero importów z Reacta, D1 i `@/server`. Zaokrąglanie zdefiniowane wprost
+i **przypięte testem**.
 
-#### 2. Import podzbioru USDA
+#### 2. Moduł walidacji
 
-**Plik**: `scripts/import-usda.js`
+**Plik**: `src/lib/dish-validation.ts` + `src/lib/dish-validation.test.ts`
 
-**Cel**: wypełnić `ingredient` makrami z USDA FoodData Central (CC0) dla składników używanych w puli.
+**Cel**: orzec, czy danie nadaje się do seeda — **i wyłapać błędy makr, których człowiek nie widzi**.
 
-**Kontrakt**: wejściem jest lista polskich nazw z mapowaniem na `fdcId`; wyjściem `INSERT`-y do
-`ingredient`. Skrypt jest **idempotentny** (`on conflict(name) do update`) i **offline** —
-plik źródłowy USDA pobiera człowiek raz, skrypt go tylko czyta. Bez sieci w trakcie działania,
-żeby dało się go powtórzyć bez dostępu do internetu.
+**Kontrakt**: `validateDish(input, knownIngredients)` → `{ ok: true, value } | { ok: false, errors }`.
+Sprawdza kształt (znane składniki, `grams > 0`, ≥ 1 krok, `prep_minutes` 5–120, ≥ 1 `meal_slot`
+z enuma) **oraz trzy sita energetyczne**:
+1. **Niezmiennik Atwatera**: `kcal ≈ 4·białko + 4·węgle + 9·tłuszcz` (±10%) — na poziomie składnika
+   i dania. Wiersz USDA, który tego nie spełnia, jest prawie zawsze źle zmapowany.
+2. **Próg dolny i górny na porcję** (np. 150–1500 kcal) — sam próg górny łapie wyłącznie błąd ×1000.
+3. **Gęstość energetyczna dania** poza 0,3–5,0 kcal/g — sygnał alarmowy (czysty tłuszcz ≈ 9,
+   warzywa ≈ 0,2).
+
+Te trzy łapią klasy błędów (×10, ×0,1, zły wiersz USDA, składnik zmapowany na wodę), których
+nie wykryje ani przegląd gramatur, ani próg „zdroworozsądkowy”.
 
 ### Kryteria sukcesu
 
 #### Weryfikacja automatyczna
 
-- `npm test` przechodzi z nowym plikiem testu; pokrywa: sumowanie wielu składników, podział na
-  porcje, zaokrąglanie, gramatura 0, pusta lista
+- `npm test` przechodzi; `dish-macros` pokrywa: wiele składników, zaokrąglanie, 0 g, pustą listę
+- `dish-validation` pokrywa: nieznany składnik, `grams = 0`, zero kroków, zły `meal_slot`,
+  `prep_minutes` poza zakresem, **naruszenie Atwatera**, gęstość poza zakresem
+- Wyrocznia liczona **ręcznie z tabeli USDA** dla jednego znanego dania i wpisana jako stała —
+  nigdy odczytana z implementacji
 - `npx tsc --noEmit` i `npx expo lint` czyste
-- Skrypt uruchomiony dwa razy z rzędu daje ten sam stan `ingredient` (idempotencja)
 
 #### Weryfikacja ręczna
 
-- Dla trzech składników sprawdzonych ręcznie w USDA wartości w `ingredient` zgadzają się ze źródłem
-- `npm run check-lock` czyste — import USDA **nie dokłada zależności** do `package.json`
+- Brak — faza jest w całości automatyczna
 
 ---
 
-## Faza 3: Autorstwo i zseedowanie puli
+## Faza 3: Pilot — 20 dań przez cały potok
 
 ### Przegląd
 
-Model autoryzuje przepisy raz, poza aplikacją. Człowiek przegląda ilości. Walidator odrzuca to,
-czego nie da się zseedować. Skrypt wgrywa do D1.
+**Najważniejsza faza tego planu.** Przepuszcza mały podzbiór przez *cały* potok (autorstwo →
+mapowanie USDA → walidacja → seed → pomiar) i kończy się **jawną decyzją**, zanim ktokolwiek
+napisze i przejrzy pozostałe 40 dań.
+
+Powód: przegląd gramatur to większość nakładu tej zmiany i jest nieodwracalny. Jeśli pomiar po
+60 daniach powie „potrzeba 90, w tym 20 więcej śniadań", cały ten nakład trzeba powtórzyć.
+Pilot kosztuje kilka godzin i ratuje całą fazę 4 w złym scenariuszu.
 
 ### Wymagane zmiany
 
-#### 1. Materiał źródłowy puli
+#### 1. Materiał źródłowy i prompt
 
-**Plik**: `seed/dishes/*.json` (nowy katalog, wersjonowany)
+**Pliki**: `seed/dishes/<slug>.json` (20 sztuk), `seed/PROMPT.md`
 
-**Cel**: przepisy jako **dane w repo**, a nie efekt wywołania modelu w nieznanym momencie.
+**Cel**: przepisy jako **dane w repo**, powtarzalnie rozszerzalne.
 
-**Kontrakt**: jeden plik na danie: nazwa, `meal_slot`, `prep_minutes`, `servings`, tablica
-składników (polska nazwa + gramatura), tablica kroków w kolejności. **Zero pól z makrami** —
-makra liczy faza 2. Prompt użyty do autorstwa zapisany obok w `seed/PROMPT.md`, żeby pula dała się
-rozszerzyć powtarzalnie.
+**Kontrakt**: jeden plik na danie; nazwa pliku **jest** `slug`. Pola: `name`, `mealSlots[]`,
+`prepMinutes`, składniki (**polska nazwa ze stanem** + `grams`), kroki w kolejności,
+`reviewedBy` i `reviewedAt` (patrz §4), oraz `modelKcalHint` — **pole jawnie nieautorytatywne**,
+którego seed **nigdy nie zapisuje do D1**. Służy wyłącznie do uszeregowania przeglądu: dania,
+w których deklaracja modelu rozjeżdża się z wyliczeniem z USDA o > 20%, człowiek ogląda najpierw.
+Bez tego przegląd to 480 liczb bez priorytetu. `PROMPT.md` zapisuje regułę stanu składnika
+i zakaz podawania makr jako prawdy.
 
-#### 2. Walidator i seed
+#### 2. Destylat USDA i import
 
-**Plik**: `scripts/seed-dishes.js`
+**Pliki**: `scripts/distill-usda.mjs`, `seed/usda-subset.json`, `scripts/import-usda.mjs`
 
-**Cel**: odrzucić wadliwe dania **przed** wejściem do bazy i wgrać resztę.
+**Cel**: makra składników w repo, odtwarzalne bez internetu i bez plików rzędu setek MB.
 
-**Kontrakt**: waliduje każdy plik (znane składniki, gramatury dodatnie, ≥ 1 krok, `prep_minutes`
-w zakresie, `meal_slot` z listy), **przerywa z listą błędów** zamiast wgrywać połowę, a przy
-powodzeniu wstawia danie, jego składniki i kroki w jednej transakcji. Idempotentny po nazwie dania.
+**Kontrakt**: `distill-usda.mjs` czyta **raz** pobrany przez człowieka plik USDA (poza repo,
+w `.gitignore`) i destyluje go do małego, **wersjonowanego** `seed/usda-subset.json`
+(`fdcId`, nazwa źródłowa, cztery makra na 100 g) dla składników wymienionych w
+`seed/ingredients.json` — mapowania polska nazwa → `fdcId`, które jest osobnym, wersjonowanym
+artefaktem i **głównym nośnikiem ryzyka rezydualnego** tej zmiany. `import-usda.mjs` czyta
+destylat i produkuje SQL. Bez zależności — parser CSV pisany ręcznie, wyłącznie dla potrzebnych
+kolumn.
 
-#### 3. Przegląd człowieka
+#### 3. Seed
 
-**Plik**: `seed/REVIEW.md`
+**Plik**: `scripts/seed-dishes.mjs`
 
-**Cel**: udokumentować, że ilości zostały sprawdzone — krok obowiązkowy z D14.
+**Cel**: wgrać zwalidowane dania; nigdy połowy.
 
-**Kontrakt**: lista dań z datą przeglądu i podpisem osoby; dania nieprzejrzane **nie wchodzą**
-do puli produkcyjnej.
+**Kontrakt**: woła `validateDish` z `src/lib/` (import relatywny — Node zdejmuje typy z `.ts`,
+tak jak już robi to `npm test`; **żadnej logiki walidacji ani liczenia makr w skrypcie**).
+Przy błędzie **przerywa z pełną listą** i nie wgrywa nic. Przy powodzeniu produkuje plik `.sql`
+zapisany przez `fs.writeFileSync(..., 'utf8')` — **nigdy przez przekierowanie powłoki**, które na
+Windowsie dokłada BOM i psuje polskie znaki. Wgranie: `npx wrangler d1 execute mealplan
+--local|--remote --file …`.
+
+**Idempotencja po `slug`**: `on conflict(slug) do update` dla `dish`, a `dish_meal_slot`,
+`dish_ingredient` i `dish_step` **przepisywane w całości** (`delete … where dish_id = ?`
+przed wstawieniem). Bez tego usunięcie składnika z JSON-a zostawia osierocony wiersz, a danie
+zachowuje po cichu stare, błędne kalorie — dokładnie ten tryb awarii, przed którym chroni cała zmiana.
+Escapowanie apostrofów jest obowiązkowe (brak `bind()` poza Workerem).
+
+**Wpisy w `package.json` → `scripts`**: `seed:dishes`, `import:usda`, `distill:usda`.
+
+#### 4. Bramka przeglądu w danych, nie w prozie
+
+**Cel**: uczynić obowiązkowy przegląd gramatur **egzekwowalnym**.
+
+**Kontrakt**: `seed-dishes.mjs` **odmawia** seeda w trybie `--remote` dla dania bez `reviewedBy`
+i `reviewedAt`, i raportuje listę. `seed/REVIEW.md` zostaje jako narracja, ale przestaje być
+jedynym mechanizmem. To jedyne miejsce, gdzie sedno decyzji D14 dostaje techniczne oparcie zamiast
+dyscypliny.
+
+#### 5. Pomiar pilotowy i decyzja
+
+**Plik**: `scripts/check-pool-feasibility.mjs`
+
+**Cel**: odpowiedzieć liczbą, czy kierunek się trzyma — **zanim** powstanie reszta puli.
+
+**Kontrakt**: czyta pulę z D1 (`wrangler d1 execute --json`), woła `computeDishMacros`
+z `src/lib/` (**nie liczy makr sam**) i dla celów 1600/2000/2400/2800/3200 kcal raportuje odsetek
+trafień w ±10% w **trzech scenariuszach**: bez filtrów, z limitem 30 min, z limitem 30 min plus
+3–5 wykluczeń składnikowych. Dodatkowo raportuje **liczbę dań ocalałych na porę posiłku** w każdym
+scenariuszu — to liczba, której S-03 i S-04 potrzebują do ustalenia progu z `options.md` §5.
+Wyszukiwanie przycinane, nie pełna enumeracja.
 
 ### Kryteria sukcesu
 
 #### Weryfikacja automatyczna
 
-- Walidator odrzuca celowo zepsute danie (nieznany składnik, gramatura 0, zero kroków) z czytelnym
-  komunikatem i **niczego nie wgrywa**
-- Po seedzie `--local`: ≥ 60 dań, każde ma ≥ 1 składnik i ≥ 1 krok (zapytanie kontrolne)
-- Żadne danie nie ma makr spoza zakresu zdroworozsądkowego (np. > 2000 kcal na porcję) — zapytanie
-  kontrolne łapie błąd gramatury rzędu ×1000
+- Walidator odrzuca celowo zepsute danie (nieznany składnik, 0 g, zero kroków, naruszenie Atwatera)
+  z czytelną listą i **nic nie wgrywa**
+- Seed uruchomiony dwa razy daje ten sam stan bazy; **usunięcie składnika z JSON-a i ponowny seed
+  usuwa go też z `dish_ingredient`** (test osieroconego wiersza)
+- Seed w trybie `--remote` **odmawia** dla dania bez `reviewedBy`
+- Po seedzie `--local`: 20 dań, każde z ≥ 1 składnikiem, ≥ 1 krokiem i ≥ 1 porą posiłku
+- Polskie znaki w bazie nieuszkodzone (zapytanie kontrolne na nazwie ze znakiem diakrytycznym)
 - `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
+- `git diff --exit-code package-lock.json` — dowód, że nie doszła żadna zależność
+  (`check-lock` tego **nie** mierzy)
 
 #### Weryfikacja ręczna
 
-- **Człowiek przejrzał gramatury** wszystkich dań i podpisał `seed/REVIEW.md`
-- Trzy losowe dania przeczytane jako przepis: czy da się z tego ugotować, czy kroki mają sens
-- Rozkład na pory posiłku jest użyteczny (nie 55 obiadów i 5 śniadań)
+- Człowiek przejrzał gramatury 20 dań, zaczynając od tych z największą rozbieżnością
+  `modelKcalHint`, i wpisał `reviewedBy`/`reviewedAt`
+- Trzy dania przeczytane jako przepis — da się z nich ugotować
+- **DECYZJA SKALOWANIA**: raport pilotowy przeczytany; właściciel rozstrzyga „skalujemy do
+  docelowej puli / zmieniamy rozkład por posiłku / zmieniamy podejście". Faza 4 **nie startuje**
+  bez tej decyzji.
 
 ---
 
-## Faza 4: Dowód, że z puli da się ułożyć dzień
+## Faza 4: Skalowanie puli i pomiar końcowy
 
 ### Przegląd
 
-Odczyt puli z aplikacji i **pomiar**, czy guardrail ±10% jest w ogóle osiągalny. Ta faza ma prawo
-zakończyć się werdyktem „pula za mała" — i to jest jej wartość.
+Dopiero po zielonym pilocie: autorstwo i przegląd reszty dań do rozmiaru wskazanego decyzją
+z fazy 3, seed na produkcję i raport końcowy.
 
 ### Wymagane zmiany
 
-#### 1. Repozytorium puli
+#### 1. Reszta puli
 
-**Plik**: `src/server/repository/dishes.ts`
+**Pliki**: kolejne `seed/dishes/<slug>.json`, `seed/ingredients.json`, `seed/REVIEW.md`
 
-**Cel**: odczyt dań z makrami — jedyne miejsce z SQL-em dla puli.
+**Cel**: pula spełniająca minima per pora posiłku.
 
-**Kontrakt**: `listDishes(env, filter?)` → dania z policzonymi makrami na porcję.
-**Świadomy wyjątek od reguły repozytorium: BRAK argumentu `userId`**, bo pula jest współdzielona
-i tylko do odczytu. Komentarz nagłówkowy musi ten wyjątek nazwać i uzasadnić, inaczej kolejny
-przegląd zgłosi go jako naruszenie izolacji danych.
+**Kontrakt**: bez nowego kodu — ten sam potok. Minima domyślne (do korekty decyzją z fazy 3):
+**≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji, ≥ 12 przekąsek** (dania mogą liczyć się do wielu
+por dzięki `dish_meal_slot`). Walidacja mapowań jest **pętlą**: seed → lista braków → uzupełnienie
+`seed/ingredients.json` → seed.
 
-#### 2. Pomiar wykonalności
+#### 2. Raport końcowy i produkcja
 
-**Plik**: `scripts/check-pool-feasibility.js`
+**Cel**: pula na produkcji plus liczba, na której stanie S-04.
 
-**Cel**: odpowiedzieć liczbą, nie przeczuciem, na pytanie „czy z tej puli da się trafić w ±10%".
-
-**Kontrakt**: dla zestawu celów kalorycznych (np. 1600, 2000, 2400, 2800, 3200 kcal) i typowej
-liczby posiłków szuka kombinacji mieszczącej się w ±10%; raportuje odsetek trafień, medianę
-odchylenia i cele, dla których nie znalazł nic. Wyszukiwanie **przycinane**, nie pełna enumeracja —
-`research.md` §8 ostrzega, że naiwne C(60,4) × 7 może przebić 10 ms CPU; tutaj biegnie poza
-Workerem, ale ten sam algorytm trafi do S-04.
+**Kontrakt**: `migrations apply --remote` przed commitem fazy; seed `--remote` (odmówi dla dań
+nieprzejrzanych); `check-pool-feasibility.mjs` uruchomiony na pełnej puli, raport zapisany
+do `seed/FEASIBILITY.md`.
 
 ### Kryteria sukcesu
 
 #### Weryfikacja automatyczna
 
-- `listDishes` zwraca dania z makrami; wynik zgodny z liczeniem modułu z fazy 2 dla trzech dań
-  sprawdzonych punktowo
-- Pomiar wykonalności kończy się raportem dla wszystkich pięciu celów
-- `npx tsc --noEmit`, `npx expo lint`, `npm test` czyste
-- `npx wrangler d1 migrations list mealplan --remote` bez zaległych **przed** commitem fazy
+- Minima per pora posiłku spełnione (zapytanie kontrolne)
+- Wszystkie dania mają `reviewedBy`; seed `--remote` przechodzi bez odmów
+- `npx wrangler d1 migrations list mealplan --remote` bez zaległych **przed** seedem
+- Raport wykonalności wygenerowany dla pięciu celów × trzech scenariuszy
+- `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste; `git diff --exit-code package-lock.json`
 
 #### Weryfikacja ręczna
 
-- Raport wykonalności przeczytany i **oceniony przez właściciela**: czy odsetek trafień jest
-  akceptowalny, czy pula wymaga rozszerzenia przed S-04
-- Pula zseedowana na produkcji i policzona zapytaniem `--remote`
+- Raport wykonalności **oceniony przez właściciela**: czy odsetek trafień w scenariuszu
+  z wykluczeniami jest akceptowalny dla S-04
+- Pula policzona na produkcji zapytaniem `--remote`
+- `CLAUDE.md` opisuje pulę i skrypty (przy okazji: zdanie „Nie ma runnera testów" jest już
+  nieaktualne)
 
 ---
 
@@ -322,61 +376,56 @@ Workerem, ale ten sam algorytm trafi do S-04.
 
 ### Testy jednostkowe (`npm test`)
 
-- `dish-macros.ts` — sumowanie, porcje, zaokrąglanie, przypadki brzegowe (0 g, pusta lista,
-  jeden składnik, dziesięć składników)
-- Wyrocznia **z wymagania, nie z implementacji**: wartości oczekiwane liczone ręcznie z tabeli USDA
-  dla jednego znanego dania i wpisane jako stałe (lekcja m3l2 — problem wyroczni)
+- `dish-macros` — sumowanie, zaokrąglanie, przypadki brzegowe. Wyrocznia **z tabeli USDA policzonej
+  ręcznie**, nie z implementacji (lekcja m3l2 — problem wyroczni).
+- `dish-validation` — każdy tryb odrzucenia osobno, w tym trzy sita energetyczne.
 
 ### Sprawdzenia skryptami
 
-- Walidator na celowo zepsutych daniach (nieznany składnik, gramatura 0, brak kroków, zły `meal_slot`)
-- Idempotencja: dwa przebiegi seeda dają ten sam stan
-- Zapytania kontrolne po seedzie: liczba dań, rozkład na pory, brak dań bez składników lub kroków
+- Idempotencja seeda **wraz z usuwaniem osieroconych wierszy dzieci**
+- Odmowa seeda `--remote` bez `reviewedBy`
+- Zapytania kontrolne: liczba dań, rozkład na pory, dania bez składników lub kroków, polskie znaki
 
 ### Kroki testowania ręcznego
 
 1. Zastosuj `0003` lokalnie, obejrzyj schemat, cofnij parą z `down/`, zastosuj ponownie
-2. Uruchom import USDA dwa razy, porównaj stan `ingredient`
-3. Zepsuj jedno danie w `seed/dishes/`, sprawdź, że walidator przerywa i nic nie wgrywa
-4. Przeczytaj trzy dania jak przepis i oceń wykonalność w kuchni
-5. Przeczytaj raport wykonalności i zdecyduj, czy pula jest dość duża dla S-04
+2. Zepsuj danie, sprawdź, że walidator przerywa i nic nie wgrywa
+3. Usuń składnik z JSON-a, przeseeduj, sprawdź, że zniknął z bazy
+4. Przeczytaj trzy dania jak przepis
+5. Przeczytaj raport wykonalności i zdecyduj o rozmiarze puli
 
 ## Uwagi dotyczące wydajności
 
-Oczekiwanie na D1 nie liczy się do limitu 10 ms CPU Workera (`research.md` §2), więc odczyt puli
-jest bezpieczny. Ryzyko leży w **doborze dań**, czyli w S-04: naiwna pełna enumeracja
-(C(60,4) × 7 dni ≈ 3,4 mln sprawdzeń) może przebić limit. Skrypt z fazy 4 mierzy to poza Workerem
-i dostarcza S-04 gotowy, przycinany algorytm zamiast domysłu.
+Odczyt puli to I/O, nie CPU — limit 10 ms Workera nie jest zagrożony (`research.md` §2). Ryzyko
+leży w doborze dań w S-04: naiwna pełna enumeracja (C(60,4) × 7 ≈ 3,4 mln sprawdzeń) może przebić
+limit. Skrypt z faz 3–4 mierzy to poza Workerem i przekazuje S-04 **liczby**, nie kod.
 
 ## Uwagi dotyczące migracji
 
-`0003` jest **addytywna** — nie dotyka `app_user` ani `user_profile`, więc nie ma ryzyka dla danych
-użytkowników. Para wsteczna usuwa cztery tabele i wpis z `d1_migrations`. Seed nie jest migracją:
-dane puli wchodzą skryptem, więc zmiana treści dania nie wymaga nowej migracji.
+`0003` jest addytywna — nie dotyka `app_user` ani `user_profile`. Para wsteczna usuwa pięć tabel
+i wpis z `d1_migrations`. Seed nie jest migracją.
 
 ## Otwarte ryzyka i założenia
 
-- **Błąd mapowania składnik → USDA** jest najpoważniejszym ryzykiem rezydualnym: zła pozycja
-  w tabeli daje wiarygodnie wyglądające, ale błędne makra. Łagodzone przeglądem człowieka
-  i zapytaniem kontrolnym na wartości spoza zakresu.
-- **Pula może okazać się za mała** dla skrajnych celów kalorycznych. Faza 4 wykryje to **przed**
-  budową generatora, a nie po.
-- **Nuda** — 60 dań wyczerpuje się po kilku tygodniach. Poza zakresem MVP, ale `seed/PROMPT.md`
-  ma sprawiać, że rozszerzenie puli jest powtarzalne, a nie jednorazowym wysiłkiem.
-- **Zakładam, że licencja USDA CC0 nie zmieni się** w horyzoncie MVP.
+- **Mapowanie polska nazwa → `fdcId` (`seed/ingredients.json`) jest głównym ryzykiem rezydualnym.**
+  Zła pozycja daje wiarygodnie wyglądające, błędne makra. Łagodzone: konwencja stanu składnika,
+  niezmiennik Atwatera, gęstość energetyczna, uszeregowanie przeglądu przez `modelKcalHint`.
+- **Do zweryfikowania eksperymentalnie przed fazą 3** (przegląd planu nie rozstrzygnął): czy
+  `wrangler d1 execute --file` przyjmie `BEGIN TRANSACTION` na `--remote`, oraz czy Node w tej
+  instalacji zaimportuje `.ts` z pliku `.mjs`. Oba są założeniami kontraktu skryptów.
+- Pula może okazać się za mała — faza 3 wykryje to po 20 daniach, nie po 60.
+- Zakładam stabilność licencji USDA CC0 w horyzoncie MVP.
 
 ## Referencje
 
 - Decyzja o źródle: [`options.md`](options.md), D14 w `notes/night-decisions.md`
-- Badanie: [`research.md`](research.md) (sekcja o stanie bazy kodu nieaktualna — patrz wyżej)
-- Wzorzec migracji: [`0002_user_profile.sql`](../../../migrations/0002_user_profile.sql)
-- Wzorzec czystego modułu z testem: [`calorie-target.ts`](../../../src/lib/calorie-target.ts)
-- Wzorzec repozytorium: [`app-users.ts`](../../../src/server/repository/app-users.ts)
+- Przegląd tego planu: [`reviews/plan-review.md`](reviews/plan-review.md)
+- Badanie: [`research.md`](research.md) (sekcja o stanie bazy kodu nieaktualna)
+- Wzorce: `migrations/0002_user_profile.sql`, `src/lib/calorie-target.ts`
 
 ## Progress
 
 > Konwencja: `- [ ]` oczekujące, `- [x]` wykonane. Dodaj ` — <commit sha>` po zakończeniu kroku.
-> Nie zmieniaj nazw kroków.
 
 ### Phase 1: Schemat puli dań
 
@@ -385,50 +434,53 @@ dane puli wchodzą skryptem, więc zmiana treści dania nie wymaga nowej migracj
 - [ ] 1.1 `migrations apply --local` stosuje `0003` bez błędu
 - [ ] 1.2 `migrations list --local` bez zaległych
 - [ ] 1.3 `npx tsc --noEmit` czyste po rozszerzeniu typu D1 o `all()`
-- [ ] 1.4 Para wsteczna usuwa cztery tabele i wpis z `d1_migrations`
+- [ ] 1.4 Para wsteczna usuwa pięć tabel i wpis z `d1_migrations`; ponowne zastosowanie przechodzi
+- [ ] 1.5 `INSERT` z `category` spoza enuma i `prep_minutes = 0` odrzucony przez bazę
 
 #### Manual
 
-- [ ] 1.5 Schemat obejrzany przez `.schema` — cztery tabele, klucze obce obecne
+- [ ] 1.6 `.schema` obejrzany — pięć tabel, klucze obce i `CHECK`-i obecne
 
-### Phase 2: Warstwa makr z USDA
+### Phase 2: Czyste moduły — makra i walidacja
 
 #### Automated
 
-- [ ] 2.1 `npm test` przechodzi z testem `dish-macros`, pokrywa przypadki brzegowe
-- [ ] 2.2 `npx tsc --noEmit` i `npx expo lint` czyste
-- [ ] 2.3 Import USDA uruchomiony dwa razy daje ten sam stan `ingredient`
-- [ ] 2.4 `npm run check-lock` czyste — bez nowych zależności
+- [ ] 2.1 `npm test` przechodzi; `dish-macros` pokrywa przypadki brzegowe i zaokrąglanie
+- [ ] 2.2 `dish-validation` pokrywa każdy tryb odrzucenia, w tym Atwatera i gęstość energetyczną
+- [ ] 2.3 Wyrocznia policzona ręcznie z USDA, nie odczytana z implementacji
+- [ ] 2.4 `npx tsc --noEmit` i `npx expo lint` czyste
 
-#### Manual
-
-- [ ] 2.5 Trzy składniki sprawdzone ręcznie w USDA zgadzają się z `ingredient`
-
-### Phase 3: Autorstwo i zseedowanie puli
+### Phase 3: Pilot — 20 dań przez cały potok
 
 #### Automated
 
-- [ ] 3.1 Walidator odrzuca zepsute danie z czytelnym komunikatem i nic nie wgrywa
-- [ ] 3.2 Po seedzie `--local` ≥ 60 dań, każde z ≥ 1 składnikiem i ≥ 1 krokiem
-- [ ] 3.3 Zapytanie kontrolne nie znajduje dań z makrami spoza zakresu zdroworozsądkowego
-- [ ] 3.4 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
+- [ ] 3.1 Walidator odrzuca zepsute danie z pełną listą błędów i nic nie wgrywa
+- [ ] 3.2 Dwa przebiegi seeda dają ten sam stan bazy
+- [ ] 3.3 Usunięcie składnika z JSON-a usuwa go też z `dish_ingredient` po przeseedowaniu
+- [ ] 3.4 Seed `--remote` odmawia dla dania bez `reviewedBy`
+- [ ] 3.5 Po seedzie `--local` 20 dań, każde z ≥ 1 składnikiem, krokiem i porą posiłku
+- [ ] 3.6 Polskie znaki w bazie nieuszkodzone
+- [ ] 3.7 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
+- [ ] 3.8 `git diff --exit-code package-lock.json` — zero nowych zależności
 
 #### Manual
 
-- [ ] 3.5 Człowiek przejrzał gramatury wszystkich dań i podpisał `seed/REVIEW.md`
-- [ ] 3.6 Trzy losowe dania przeczytane jako przepis — da się z nich ugotować
-- [ ] 3.7 Rozkład na pory posiłku jest użyteczny
+- [ ] 3.9 Gramatury 20 dań przejrzane (od największej rozbieżności `modelKcalHint`), `reviewedBy` wpisane
+- [ ] 3.10 Trzy dania przeczytane jako przepis — da się z nich ugotować
+- [ ] 3.11 DECYZJA SKALOWANIA podjęta przez właściciela na podstawie raportu pilotowego
 
-### Phase 4: Dowód, że z puli da się ułożyć dzień
+### Phase 4: Skalowanie puli i pomiar końcowy
 
 #### Automated
 
-- [ ] 4.1 `listDishes` zwraca makra zgodne z modułem z fazy 2 dla trzech dań
-- [ ] 4.2 Pomiar wykonalności kończy się raportem dla pięciu celów kalorycznych
-- [ ] 4.3 `npx tsc --noEmit`, `npx expo lint`, `npm test` czyste
-- [ ] 4.4 `migrations list --remote` bez zaległych przed commitem fazy
+- [ ] 4.1 Minima per pora posiłku spełnione
+- [ ] 4.2 Wszystkie dania mają `reviewedBy`; seed `--remote` bez odmów
+- [ ] 4.3 `migrations list --remote` bez zaległych przed seedem
+- [ ] 4.4 Raport wykonalności dla pięciu celów × trzech scenariuszy
+- [ ] 4.5 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste; `git diff --exit-code` na lockfile
 
 #### Manual
 
-- [ ] 4.5 Raport wykonalności oceniony przez właściciela
-- [ ] 4.6 Pula zseedowana na produkcji i policzona zapytaniem `--remote`
+- [ ] 4.6 Raport wykonalności oceniony przez właściciela
+- [ ] 4.7 Pula policzona na produkcji zapytaniem `--remote`
+- [ ] 4.8 `CLAUDE.md` opisuje pulę i skrypty
