@@ -330,3 +330,23 @@ ciszę od ostatniego znacznika, więc znacznik z przyszłości kazałby mu uzna�
 Od tego wpisu każdy znacznik pochodzi z `date -u +%H:%M`, nie z oszacowania.
 Commit: ten
 Do decyzji rano: -
+
+### 23:12 UTC — T4 (domknięcie) Przegląd implementacji fazy 3
+Wynik: ok
+Co zrobione: `/10x-impl-review` w dwóch równoległych przeglądach (odchylenia od planu + bezpieczeństwo
+i wzorce). Raport: `context/changes/profile-and-calorie-target/reviews/impl-review-phase-3.md`.
+**Zero ustaleń krytycznych.** Sprawdzone celowo i nieznalezione: wyciek danych osobowych do logów,
+URL-i i pamięci klienta, brak uwierzytelnienia, XSS, sekrety w kodzie. `OfflineError` i
+`NotSignedInError` rozłączne na wszystkich sześciu ścieżkach — offline nie wylogowuje.
+Wszystkie sześć punktów „Wymagane zmiany" to MATCH.
+Dwa ostrzeżenia **naprawiłem przed wdrożeniem** (D12): F1 — początkowy `GET` nadpisywał wpisane
+wartości i pokazywał stare liczby pod „Zapisano"; F2 — karta celu mogła zawisnąć na „Sprawdzam
+profil…" na zawsze przy zmianie tożsamości `authedFetch` (tryb awarii wprowadzony przez samą
+fazę 3). Doszedł test regresji odtwarzający wyścig F1; po usunięciu strażnika świeci czerwono
+(„Expected 44, Received 30"). Zestaw: **20/20**.
+Sprostowanie do raportu: recenzent napisał, że faza 3 jest „wdrożona auto-deployem" — **nie jest**.
+Lokalny `main` był 22 commity przed `origin/main`, nic nie poszło na produkcję.
+Commit: 829d984
+Do decyzji rano: cztery ustalenia zostawione świadomie jako PENDING — F4 (nieliczbowy „Własny cel"
+znika bez komunikatu), F5 (błędne nadpisanie gasi cały podgląd i ukrywa „Wróć do wyliczenia"),
+F6 (pola bez nazw dostępnościowych), F7 (osierocone `explore*.png`)
