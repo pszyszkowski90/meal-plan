@@ -9,12 +9,12 @@ Decyzje i ich uzasadnienia: [night-decisions.md](night-decisions.md). Nadzór ze
 **Zrobione przed startem pętli:** wszystkie 18 lekcji (m2l3 → m5l5) pobrane, 30 skilli
 zainstalowanych, commit `c9d0c70`. Sieć i autoryzacja 10x nie są już do niczego potrzebne.
 
-> **Warunek startu: jedna sesja w tym repozytorium.** O 23:06 commit `e4ae643` powstał z innej,
-> równolegle działającej sesji Claude Code (`ListAgents` pokazał `dieta-2-16`, `dieta-2-2f`,
-> `dieta-2-6b`). Dwie autonomiczne sesje w jednym drzewie plików rozjadą `## Progress`, historię
-> gita i stan tej kolejki. **Zamknij pozostałe sesje przed uruchomieniem pętli.**
+> **Warunek startu: pętlę prowadzi jedna sesja.** Commit `e4ae643` (23:06) pochodzi z równoległej
+> sesji domykającej przegląd fazy 2 — praca zamierzona, nie kolizja. Zanim ruszysz, upewnij się,
+> że tamta sesja skończyła i jest zamknięta: dwie sesje pracujące jednocześnie rozjadą
+> `## Progress`, historię gita i stan tej kolejki.
 
-> **Faza 2 wymaga ponownego przebiegu.** Commit `e4ae643` odnotowuje, że poprawki F1/F2/F4/F6
+> **Faza 2 wymaga ponownego przebiegu.** Przegląd z `e4ae643` odnotowuje, że poprawki F1/F2/F4/F6
 > zmieniły schemat i zachowanie tras, więc kryteria **2.4–2.10** trzeba przejść jeszcze raz na
 > `wrangler dev` — mimo że w `## Progress` są odhaczone. Migracja `0002` jest już zastosowana
 > `--local` i `--remote`, tabela `user_profile` na produkcji zweryfikowana. Wciągnij 2.4–2.10 do
