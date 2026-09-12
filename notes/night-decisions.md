@@ -256,3 +256,41 @@ i `/explore` → 200. Po wdrożeniu fazy 3 musi być odwrotnie. To jednoznaczne 
 
 **Jak cofnąć:** `npx wrangler rollback` cofa **kod, nie schemat D1**. Migracja `0002` jest
 addytywna i już zastosowana `--remote`, więc rollback kodu nie osieroci danych.
+
+### D14 — Otwarte pytania 1, 2, 3 i 4 rozstrzygnięte: hybryda (model autoryzuje raz, USDA liczy)
+
+**Co:** Źródłem przepisów i makr jest **opcja E**: model językowy autoryzuje przepisy jednorazowo
+poza runtime (polskie nazwy, gramatury, kroki, czas), człowiek przegląda ilości, makra liczy
+skrypt deterministycznie z **USDA FoodData Central** (CC0), a runtime czyta wyłącznie D1.
+Wykluczenia dostają **jedną tabelę z polem `kind`** (`ingredient` / `dish`) i wymagają tabeli
+`dish_ingredient` z identyfikatorami składników. Pełne rozpisanie:
+[`options.md`](../context/changes/dish-source-and-seed-pool/options.md).
+
+**Powód:** To jedyna opcja, która **jednocześnie** czyni guardrail ±10% egzekwowalnym, spełnia
+FR-016, pozwala sumować jednostki w liście zakupów, działa offline i jest deterministyczna.
+Rozstrzygające było to, że PRD nazywa ±10% ograniczeniem twardym: opcja A (model na żądanie) daje
+makra z błędem energii rzędu 36%, więc guardrail sprawdzałby liczbę, która sama jest błędna —
+produkt kłamałby o kaloriach, a test i tak by przeszedł.
+
+**Odrzucone i dlaczego:**
+- **A (model na żądanie)** — makra niewiarygodne (13 z 16 składników z błędem > 10%), niedeterminizm
+  (80 różnych odpowiedzi na 1000 wywołań przy temperaturze 0), ~2 minuty ściennego czasu na tydzień
+  planu, jednostki („szczypta", „garść") nie do zsumowania w liście zakupów.
+- **B (ręczna pula)** — poprawna, ale 25–60 h pisania zamiast 10–15 h; hybryda daje ten sam
+  determinizm taniej.
+- **C (same USDA)** — nie jest alternatywą, tylko warstwą makr pod B lub E.
+- **D (API przepisów: Spoonacular, Edamam, TheMealDB, Tasty)** — odpada na **licencji, nie
+  technice**: zakaz przechowywania składników, instrukcji i wartości odżywczych (cache ≤ 1 h) jest
+  nie do pogodzenia z wymaganiem NFR „plan działa offline". Żadna ilość kodu tego nie obejdzie.
+
+**Granica, której nie przekraczam (z D7):** decyzja otwiera **planowanie**, nie implementację.
+Noc dochodzi do zrecenzowanego planu i tam się zatrzymuje. Plan jest tani do wyrzucenia rano,
+zseedowana pula dań już nie.
+
+**Jak cofnąć:** decyzja żyje w dokumentach, zero kodu. Wyrzucenie `options.md` i planu cofa wszystko.
+Gdyby rano wygrała opcja B, `options.md` i tak zostaje użyteczny — model wykluczeń i odpowiedź
+na OP 3 są od wyboru źródła niezależne.
+
+**Uwaga o numeracji:** kolejka prosiła o „OP 1–3", ale opisała treść Otwartego pytania **4** z PRD
+(wykluczenia składnikowe kontra daniowe). Rozstrzygnąłem oba — OP 3 i OP 4 są sprzężone, bo próg
+niewykonalności planu zależy od tego, jak liczone są wykluczenia.
