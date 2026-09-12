@@ -20,6 +20,7 @@ import {
   ActivityMultiplier,
   computeCalorieTarget,
   parseNumberInput,
+  ProfileBounds,
   validateProfile,
   type ActivityLevel,
   type ProfileInput,
@@ -245,5 +246,90 @@ describe('parseNumberInput — wejście z polskiej klawiatury', () => {
   test('"70," (w trakcie pisania) i "1e3" → null', () => {
     assert.equal(parseNumberInput('70,'), null);
     assert.equal(parseNumberInput('1e3'), null);
+  });
+});
+
+/**
+ * Skrajne profile mieszczące się w `ProfileBounds`.
+ *
+ * Te testy **przypinają stan faktyczny, a nie postulowany**: wynik `computeCalorieTarget` nie jest
+ * ograniczany do `ProfileBounds.targetKcal` (1000–6000), mimo że dokładnie ten przedział obowiązuje
+ * ręczne nadpisanie. Produkt policzy więc i pokaże cel, którego użytkownikowi **nie pozwoliłby
+ * wpisać** — a ta liczba zasili ograniczenie ±10% generatora (S-04).
+ *
+ * Czy tak ma zostać, jest decyzją produktową, nie techniczną — patrz Dziennik nocy 12/13.09.2026.
+ * Do czasu jej podjęcia testy pilnują, żeby zachowanie nie zmieniło się przypadkiem.
+ */
+describe('computeCalorieTarget — skrajne profile w granicach walidacji', () => {
+  test('minimalny dopuszczalny profil daje 317 kcal — poniżej dolnej granicy celu ręcznego', () => {
+    const target = computeCalorieTarget({
+      age: 100,
+      weightKg: 30,
+      heightCm: 100,
+      sex: 'female',
+      activityLevel: 1,
+      targetKcalOverride: null,
+    });
+
+    assert.equal(target.bmrKcal, 264);
+    assert.equal(target.computedKcal, 317);
+    // Kontrakt do rozstrzygnięcia: 317 < ProfileBounds.targetKcal.min (1000).
+    assert.ok(target.computedKcal < ProfileBounds.targetKcal.min);
+  });
+
+  test('maksymalny dopuszczalny profil daje 8508 kcal — powyżej górnej granicy celu ręcznego', () => {
+    const target = computeCalorieTarget({
+      age: 18,
+      weightKg: 300,
+      heightCm: 250,
+      sex: 'male',
+      activityLevel: 5,
+      targetKcalOverride: null,
+    });
+
+    assert.equal(target.bmrKcal, 4478);
+    assert.equal(target.computedKcal, 8508);
+    assert.ok(target.computedKcal > ProfileBounds.targetKcal.max);
+  });
+
+  test('profil tuż wewnątrz granic nie wywraca się na zaokrąglaniu wagi', () => {
+    // 29,95 normalizuje się do 30,0 i przechodzi; 300,04 do 300,0 — szczelina jest kontraktem.
+    const low = validateProfile({
+      age: 18,
+      weightKg: 29.95,
+      heightCm: 100,
+      sex: 'female',
+      activityLevel: 1,
+      targetKcalOverride: null,
+    });
+    assert.equal(low.ok, true);
+
+    const high = validateProfile({
+      age: 100,
+      weightKg: 300.04,
+      heightCm: 250,
+      sex: 'male',
+      activityLevel: 5,
+      targetKcalOverride: null,
+    });
+    assert.equal(high.ok, true);
+  });
+
+  test('najniższy i najwyższy poziom aktywności zmieniają cel, nie BMR', () => {
+    const base = {
+      age: 30,
+      weightKg: 80,
+      heightCm: 180,
+      sex: 'male',
+      activityLevel: 1,
+      targetKcalOverride: null,
+    } as const;
+
+    const lowest = computeCalorieTarget(base);
+    const highest = computeCalorieTarget({ ...base, activityLevel: 5 });
+
+    assert.equal(lowest.bmrKcal, highest.bmrKcal);
+    assert.equal(lowest.computedKcal, 2136);
+    assert.equal(highest.computedKcal, 3382);
   });
 });

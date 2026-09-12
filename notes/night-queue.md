@@ -418,3 +418,22 @@ Commit: kilka; ostatni w tej serii dotyczy S-03
 Do decyzji rano: zatwierdzić D14 (albo ją odwrócić — plany są tanie do wyrzucenia); rozstrzygnąć
 dwa założenia oznaczone w planie F-01 jako do zweryfikowania przed fazą 3 (transakcje D1 na
 `--remote`, import `.ts` z `.mjs`)
+
+### 23:47 UTC — T8 Zapas: lekcje i przypadki brzegowe
+Wynik: ok
+Co zrobione:
+1. `context/foundation/lessons.md` — cztery lekcje, każda z **realnej awarii tej nocy**, nie
+   z teorii: zatrzymaj serwer przed przebudową artefaktu (inaczej testy jadą przeciw staremu
+   buildowi i zielony wynik nic nie znaczy); `azp` porównywane jako łańcuch, więc `localhost`
+   to nie `127.0.0.1`; ref o czasie życia komponentu nie może współpracować z flagą z domknięcia
+   efektu (zawieszenie karty); odpowiedź początkowego `GET` nie może nadpisywać wpisanych wartości.
+2. `src/lib/calorie-target.test.ts` — cztery testy skrajnych profili. `npm test`: **32/32**.
+Commit: ten
+Do decyzji rano: **znalezisko produktowe, nie testowe.** Wynik `computeCalorieTarget` **nie jest
+ograniczany** do `ProfileBounds.targetKcal` (1000–6000), mimo że ten przedział obowiązuje ręczne
+nadpisanie. Skutek: profil minimalny dopuszczalny przez walidację (30 kg / 100 cm / 100 lat /
+kobieta / poziom 1) daje **317 kcal dziennie**, a maksymalny (300 kg / 250 cm / 18 lat / mężczyzna
+/ poziom 5) — **8508 kcal**. Produkt pokaże więc jako cel liczbę, której użytkownikowi **nie
+pozwoliłby wpisać ręcznie**, a ta liczba zasili ograniczenie ±10% generatora w S-04. Testy
+przypinają stan faktyczny; czy cel wyliczony ma być przycinany albo opatrzony ostrzeżeniem,
+jest decyzją produktową i świadomie jej nie podjąłem.
