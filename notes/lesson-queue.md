@@ -623,7 +623,7 @@ to jedyny element tej lekcji wykonalny bez łamania reguły lockfile'a; (2) czy 
 Uwaga do tabeli stanu w sekcji 0: jest datowanym zrzutem z 13.09 i **m5l3 nie należy w niej liczyć
 jako domkniętej** — patrz korekta 2.
 
-### 15:46 UTC — decyzje właściciela D20 i D21, obie wdrożone
+### 17:46 UTC — decyzje właściciela D20 i D21, obie wdrożone
 Wynik: ok
 Co zrobione: Właściciel rozstrzygnął dwie blokujące decyzje; obie naniesione.
 
@@ -659,7 +659,7 @@ Do decyzji: zostały tylko rzeczy niezablokowane — F4, indeks `dish_ingredient
 i numeracja migracji, domknięcie m5l3 przez `10x-impl-review-ci`, `ast-grep`, `git add -A`
 do twardych reguł, `actions/*@v5`.
 
-### 16:31 UTC — reszta listy: F4, F7, indeks, reguła, akcje, dwa „nie"
+### 18:03 UTC — reszta listy: F4, F7, indeks, reguła, akcje, dwa „nie"
 Wynik: ok
 Co zrobione: Domknięte wszystko, co zostało po decyzjach D20 i D21.
 
@@ -709,3 +709,11 @@ Commit: 82068e9, bf58102, 06771a0 (+ poniżej)
 Do decyzji: **jedyne, co zostało, wymaga Ciebie** — (1) `gh secret set ANTHROPIC_API_KEY`, jeśli
 chcesz domknąć m5l3; (2) `migrations apply --remote` dla `0004`, gdy będzie potrzebne fazie 4
 albo S-03. Nic innego nie czeka.
+
+> **Korekta znaczników czasu (18:05 UTC).** Dwa powyższe wpisy — D20/D21 oraz „reszta listy" —
+> dostały początkowo znaczniki 15:46 i 16:31, czyli **oszacowane, nie odczytane**. `date -u`
+> zwracało wtedy 17:46 i 18:03. Poprawione. To jest dokładnie ten tryb awarii, który kolejka
+> wymienia w Zasadach („nocna sesja czterokrotnie wpisała czas z przyszłości albo lokalny zamiast
+> UTC") — i powtórzył się, mimo że regułę znałem. Wniosek na przyszłość: znacznik **wklejaj
+> z wyjścia polecenia w tej samej komendzie, w której piszesz wpis**, zamiast przepisywać go
+> z pamięci kilka kroków później.
