@@ -462,10 +462,26 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 
 #### Automated
 
-- [ ] 2.1 `npm test` przechodzi; `dish-macros` pokrywa przypadki brzegowe i zaokrąglanie
-- [ ] 2.2 `dish-validation` pokrywa każdy tryb odrzucenia, w tym Atwatera i gęstość energetyczną
-- [ ] 2.3 Wyrocznia policzona ręcznie z USDA, nie odczytana z implementacji
-- [ ] 2.4 `npx tsc --noEmit` i `npx expo lint` czyste
+- [x] 2.1 `npm test` przechodzi; `dish-macros` pokrywa przypadki brzegowe i zaokrąglanie — 1c10a6a
+- [x] 2.2 `dish-validation` pokrywa każdy tryb odrzucenia, w tym Atwatera i gęstość energetyczną — 1c10a6a
+- [x] 2.3 Wyrocznia policzona ręcznie z USDA, nie odczytana z implementacji — 1c10a6a
+- [x] 2.4 `npx tsc --noEmit` i `npx expo lint` czyste — 1c10a6a
+
+> **Faza wykonana w osobnym `git worktree`** (gałąź `f01-phase2`, scalona przez `78586d8`) —
+> ćwiczenie izolacji pracy z lekcji m2l5. Testy: 66/66 w całym `src/lib/` (było 34).
+>
+> **Ustalenie ponad kryteria — do rozstrzygnięcia PRZED fazą 3.** Sito Atwatera przy tolerancji
+> ±10% **na poziomie składnika** odrzuca warzywa bogate w błonnik z prawdziwymi liczbami USDA.
+> Brokuł surowy: 34 kcal deklarowane wobec 41,17 kcal z ogólnych współczynników (4/4/9) —
+> odchylenie **21%**, ponad dwukrotność tolerancji. Przyczyna nie jest błędem danych: USDA liczy
+> energię wielu warzyw **własnymi** współczynnikami, z odjęciem błonnika, a ogólny wzór Atwatera
+> traktuje cały błonnik jak węglowodany przyswajalne. Sito działa więc zgodnie z kontraktem
+> i jednocześnie odrzuca produkty poprawne.
+>
+> Zachowanie jest **przypięte testem** (`dish-validation.test.ts`, blok „ZNANE OGRANICZENIE"),
+> żeby nie wyszło dopiero przy seedowaniu. Warianty do wyboru: osobna, luźniejsza tolerancja dla
+> produktów niskokalorycznych; wyłączenie sita składnikowego na rzecz samego sita na daniu;
+> albo pole wyjątku na `ingredient`. Nie rozstrzygam — zmienia kontrakt fazy 2.
 
 ### Phase 3: Pilot — 20 dań przez cały potok
 
