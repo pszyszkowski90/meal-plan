@@ -4,6 +4,18 @@
 > FR-007, Open Question 4 · Wymagania wstępne: S-01, S-02 (`done`), **F-01 faza 1** (schemat puli)
 > Model wykluczeń: [`../dish-source-and-seed-pool/options.md`](../dish-source-and-seed-pool/options.md) §4,
 > decyzja D14 w `notes/night-decisions.md`.
+>
+> **Ugruntowany badaniem 13.09.2026: [research.md](research.md).** Trzon planu badanie potwierdziło.
+> Naniesione poprawki: `ingredient.category` **nie** udźwignie wykluczeń (Otwarte ryzyka),
+> `max_prep_minutes` 5–240 nie należy do `CHECK` (faza 1), naprawa dostępności musi objąć także
+> warstwę natywną (faza 2), test inwentarza zakładek `3.13` wymaga rozszerzenia (faza 2).
+> **Przeramowany 13.09.2026: [frame.md](frame.md).** Kontrola krzyżowa wykazała, że pierwotne
+> nazwanie problemu („guardrail będzie łamany") jest **nadinterpretacją**: PRD definiuje guardrail
+> względem **zapisanej listy**, a FR-004 mówi o „potrawach i składnikach", nie o pojęciach.
+> Rzeczywisty problem to **luka wymagań**, nie defekt — więc kolejność brzmi
+> **PRD → schemat → ekran**, a pierwszym artefaktem do zmiany jest Otwarte pytanie 4 PRD.
+> **Faza 1 jest zablokowana** do czasu rozstrzygnięcia przez właściciela warstwy grup
+> wykluczeniowych — [research.md](research.md), Otwarte pytania 1.
 
 ## Przegląd
 
@@ -94,6 +106,15 @@ Czego **nie ma**:
 **Kontrakt**:
 - `user_preferences` — `user_id` (PK, FK → `app_user`), `max_prep_minutes`, `meals_per_day`,
   `updated_at`. `CHECK` tylko na niezmiennikach (`meals_per_day` 3–6, `max_prep_minutes` 5–240).
+
+  > **Skorygowane badaniem 13.09.2026** ([research.md](research.md) §4.3): ten zapis łamie
+  > precedens, który plan sam cytuje dwie sekcje wyżej (ustalenie F1 przeglądu S-02 — „nie powielaj
+  > granic walidacji w `CHECK`"). `meals_per_day` 3–6 broni się jako **enumeracja** czterech
+  > dopuszczalnych wartości i zostaje. `max_prep_minutes` 5–240 to **zakres liczbowy** — dokładnie
+  > to, czego zakazuje komentarz w `migrations/0002_user_profile.sql:29-34`, bo SQLite nie ma
+  > `ALTER TABLE … DROP CONSTRAINT`, a rozjazd wychodzi użytkownikowi jako 500 zamiast błędu pod
+  > polem. **Zakres przenieś do `src/lib/preferences.ts`**, w DDL zostaw najwyżej niezmiennik
+  > strukturalny (`max_prep_minutes > 0`), analogicznie do `prep_minutes` w `0003`.
 - `exclusion` — `id`, `user_id` (FK), `kind` (`CHECK` na `'ingredient'|'dish'`),
   `ingredient_id` (FK → `ingredient`, NULL dla `kind='dish'`), `dish_id` (FK → `dish`,
   NULL dla `kind='ingredient'`), `source` (`CHECK` na `'preferences'|'plan'`), `created_at`.
@@ -133,7 +154,20 @@ czasu. To jedyna funkcja tej zmiany, którą przejmie S-04.
 - `GET` zwraca `Cache-Control: no-store`
 - Konto A nie widzi wykluczeń konta B (test na dwóch tożsamościach)
 - **`listAllowedDishes` odsiewa danie, którego NAZWA nie zawiera wykluczonego składnika** —
-  test na „risotto z borowikami" przy wykluczeniu „grzyby"
+  test na „risotto z borowikami" przy wykluczeniu `ingredient_id` dla „borowiki, suszone"
+
+  > **Przeredagowane 13.09.2026** ([frame.md](frame.md), wymiar F; [research.md](research.md) §4.3).
+  > Poprzednie brzmienie żądało wykluczenia **„grzyby"** — a w modelu tego planu
+  > (`kind='ingredient'` → `ingredient_id`) **nie ma czego wskazać**: w `ingredient` są „pieczarki,
+  > świeże" i „borowiki, suszone", bo nazwa niesie stan (`migrations/0003_dish_pool.sql:23-27`).
+  > Kryterium dało się zaliczyć wyłącznie wykluczając wprost borowiki, co **zakłada wiedzę, której
+  > kryterium miało dowieść**, i przechodziło na zielono, dowodząc jedynie, że `JOIN` łączy.
+  > Obecne brzmienie mierzy to, co faktycznie mierzy: **złączenie po identyfikatorze, nie po
+  > nazwie**. Zdolność użytkownika do wyrażenia pojęcia „grzyby" to **osobne** kryterium, które
+  > powstanie razem z rozstrzygnięciem Otwartego pytania 1 — patrz 1.10 niżej.
+- **Wyrażenie pojęcia szerokiego** — kryterium do napisania po decyzji właściciela o warstwie
+  grup. Nie da się go sformułować, zanim nie wiadomo, czy pojęcie jest wpisem w `exclusion`,
+  rozwinięciem przy seedowaniu, czy świadomie pominiętą dziurą MVP.
 - `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
 
 #### Weryfikacja ręczna
@@ -157,6 +191,14 @@ błędu, `aria-invalid` na polu w błędzie; nazwa dla `radiogroup` w `ChoiceFie
 harness może adresować pola przez `getByRole`, a obejścia pozycyjne w
 `tests/e2e/support/profile-form.ts` znikają.
 
+> **Uzupełnione badaniem 13.09.2026** ([research.md](research.md) §4.3). Same `aria-*` **nie
+> wystarczą**: `TextField` renderuje się także natywnie, gdzie te atrybuty nie działają — tam nazwę
+> nadaje `accessibilityLabel`. Naprawa musi obsłużyć **obie** platformy, inaczej czytnik ekranu na
+> urządzeniu zostaje z „pole edycji" mimo zielonego kryterium 2.8, które jest testem
+> **przeglądarkowym**. Stan wyjściowy potwierdzony: `TextField` nie ustawia dziś **żadnego**
+> atrybutu dostępności (`src/components/ui/text-field.tsx:23-45`), a `ChoiceField` ma poprawne role
+> i brakuje mu wyłącznie nazwy grupy (`src/components/ui/choice-field.tsx:45-58`).
+
 #### 2. Ekran
 
 **Plik**: `src/app/(app)/preferences.tsx`
@@ -175,6 +217,15 @@ po `ingredient` z wyborem z listy; jedna lista wykluczeń z oznaczeniem rodzaju 
 **Kontrakt**: `NativeTabs.Trigger name="preferences"` (nazwa = nazwa pliku trasy) z ikoną PNG
 `renderingMode="template"`; na webie `TabTrigger name="preferences" href="/preferences"`.
 **Edycja obu plików** — inaczej trasa jest nieosiągalna na jednej platformie.
+
+> **Uzupełnione badaniem 13.09.2026** ([research.md](research.md) §2.7, §3.1). Po pierwsze: obie
+> reguły potwierdza dokumentacja Expo — `name` jest wymagane w pliku layoutu i nie ma efektu
+> w pliku ekranu, a na webie lista triggerów „defines what routes are present in the `Tabs`",
+> czyli brak wpisu znaczy, że trasa **nie istnieje**, a nie że jest niewidoczna. Po drugie, rzecz
+> pominięta w planie: **test `3.13` w `tests/e2e/profile-screen.spec.ts:240-250` jest inwentarzem
+> zakładek** i trzecia zakładka go zepsuje — jego oczekiwania trzeba rozszerzyć w tej samej
+> zmianie. Po trzecie: web **nie ma ikon**, więc PNG w trzech gęstościach dotyczy wyłącznie
+> warstwy natywnej.
 
 ### Kryteria sukcesu
 
@@ -211,7 +262,10 @@ po `ingredient` z wyborem z listy; jedna lista wykluczeń z oznaczeniem rodzaju 
 
 ### Kroki testowania ręcznego
 
-1. Dodaj wykluczenie „grzyby", sprawdź, że `listAllowedDishes` odsiewa risotto z borowikami
+1. Wyklucz „borowiki, suszone" (po identyfikatorze) i sprawdź, że `listAllowedDishes` odsiewa
+   risotto z borowikami — danie, którego nazwa o składniku nie mówi. **Osobno zanotuj, ilu wpisów
+   wymagałoby wyrażenie „nie jem grzybów"** nad realną pulą; to jest pomiar do Otwartego pytania 1,
+   nie kryterium zaliczenia.
 2. Ustaw limit 20 minut i sprawdź, ile dań zostaje
 3. Wyloguj się i zaloguj na drugie konto — wykluczenia nie przeciekają
 
@@ -223,10 +277,38 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 ## Otwarte ryzyka i założenia
 
 - **Wyszukiwarka składników jest UX-owym ryzykiem tej zmiany.** Użytkownik myśli „nie jem grzybów",
-  a w `ingredient` są „pieczarki, świeże" i „borowiki, suszone". Bez warstwy synonimów albo
-  kategorii wykluczenie będzie dziurawe — do rozstrzygnięcia w fazie 2, ewentualnie przez
-  wykluczanie na poziomie `ingredient.category`.
-- Zakładam, że F-01 faza 1 wejdzie przed tą zmianą.
+  a w `ingredient` są „pieczarki, świeże" i „borowiki, suszone". Bez warstwy grup wykluczenie
+  będzie dziurawe.
+
+  > **Poprawione badaniem 13.09.2026** ([research.md](research.md) §4.1–§4.2). Poprzednia wersja
+  > tego akapitu wskazywała `ingredient.category` jako możliwe wyjście „ewentualnie" i była
+  > **błędna**. Enum tej kolumny to jedenaście **kategorii sklepowych** wprowadzonych pod listę
+  > zakupów (`migrations/0003_dish_pool.sql:50-53`): grzyby są w `warzywa`, orzechy w `suche`.
+  > Wykluczenie po kategorii wycięłoby wszystkie warzywa albo wszystkie produkty suche. `nabial`
+  > i `ryby` akurat zadziałają — czyli mechanizm **wygląda** na działający, co jest najgorszym
+  > możliwym układem. Kategorie USDA FoodData Central zawodzą identycznie (grzyby w „Vegetables
+  > and Vegetable Products"), a trzy niezależne źródła zewnętrzne zgadzają się, że taksonomia
+  > zbudowana pod jeden cel nie obsługuje drugiego.
+  >
+  > **Konsekwencja dla faz:** to jest decyzja **modelu danych**, nie UI, więc należy do **fazy 1**,
+  > a nie — jak zakładał plan — do fazy 2. Ekran pokaże tylko to, co model umie wyrazić. Doszedł
+  > też argument terminowy: `ingredient` jest dziś **pusta**, więc warstwa grup kosztuje migrację;
+  > po zaseedowaniu i ręcznym przejrzeniu puli kosztuje backfill przez człowieka.
+  >
+  > **Blokada:** wybór wariantu modyfikuje kontrakt z decyzji D14 (jedna tabela, `kind` o dwóch
+  > wartościach), więc **wymaga decyzji właściciela** — trzy warianty wyłożone w
+  > [research.md](research.md), Otwarte pytania 1. Do czasu rozstrzygnięcia faza 1 nie jest gotowa
+  > do implementacji.
+
+- **Zakres `max_prep_minutes` wymaga pogodzenia z `dish.prep_minutes`.** Ten plan daje 5–240,
+  a F-01 zamierza dla dania 5–120 (dziś w bazie tylko `> 0`; zakres trafia do
+  `src/lib/dish-validation.ts` w fazie 2 F-01). Jeśli żadne danie nie przekracza 120 minut,
+  preferencja z przedziału 121–240 jest sufitem, który nigdy nie zwiąże. Ustalone badaniem
+  13.09.2026.
+- ~~Zakładam, że F-01 faza 1 wejdzie przed tą zmianą.~~ **Potwierdzone 13.09.2026:** F-01 faza 1
+  weszła (commit `c848474`), migracja `0003` zastosowana `--local` i `--remote`. Tabele istnieją,
+  ale są **puste** — kryterium 1.7 („risotto z borowikami") wymaga własnych danych testowych,
+  bo pula dań powstanie dopiero w fazach 2–4 F-01.
 
 ## Referencje
 
@@ -248,12 +330,14 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 - [ ] 1.4 `GET`/`PUT /api/preferences` bez tokenu i z podrobionym tokenem → 401
 - [ ] 1.5 `GET` zwraca `Cache-Control: no-store`
 - [ ] 1.6 Konto A nie widzi wykluczeń konta B
-- [ ] 1.7 `listAllowedDishes` odsiewa danie, którego nazwa nie zawiera wykluczonego składnika
-- [ ] 1.8 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
+- [ ] 1.7 `listAllowedDishes` odsiewa danie, którego nazwa nie zawiera wykluczonego składnika —
+      wykluczenie po `ingredient_id` („borowiki, suszone"), nie po słowie „grzyby"
+- [ ] 1.8 Wyrażenie pojęcia szerokiego — kryterium do napisania po decyzji z Otwartego pytania 1
+- [ ] 1.9 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
 
 #### Manual
 
-- [ ] 1.9 `migrations apply --remote` wykonane przed commitem fazy
+- [ ] 1.10 `migrations apply --remote` wykonane przed commitem fazy
 
 ### Phase 2: Ekran preferencji
 

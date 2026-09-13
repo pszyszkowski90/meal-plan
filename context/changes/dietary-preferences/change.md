@@ -21,3 +21,23 @@ archived_at: null
   Po decyzji D14 wykluczenia składnikowe wskazują na **identyfikatory z tabeli `ingredient`**
   (dopasowanie po nazwie łamie guardrail — „risotto z borowikami"), więc S-03 potrzebuje schematu
   z F-01. Kolejność: F-01 faza 1 → S-03.
+- **Badanie przeprowadzone 13.09.2026** — [research.md](research.md), warstwa wewnętrzna
+  (baza kodu) i zewnętrzna (dokumentacja Expo, publikacje o modelach wykluczeń, USDA/FoodOn)
+  oznaczone osobno. Plan poprawiony w czterech miejscach.
+- **Wymaganie wstępne spełnione:** F-01 faza 1 weszła (commit `c848474`), migracja `0003`
+  zastosowana `--local` i `--remote`. Tabele `ingredient`, `dish`, `dish_ingredient` istnieją,
+  ale są puste — pula powstaje w fazach 2–4 F-01.
+- **Nowa blokada, zgłoszona badaniem:** wykluczenie składnikowe wskazujące pojedynczy
+  `ingredient_id` pokrywa tylko część przypadków FR-004 („grzyby" kontra „pieczarki, świeże"),
+  a `ingredient.category` tego nie ratuje — to kategorie sklepowe. Warstwa grup wykluczeniowych
+  wymaga decyzji właściciela, bo modyfikuje kontrakt z D14. Trzy warianty w
+  [research.md](research.md), Otwarte pytania 1.
+- **Przeramowanie 13.09.2026** — [frame.md](frame.md). Kontrola krzyżowa (niezależny przebieg bez
+  podanej hipotezy) obaliła pierwotne nazwanie problemu: guardrail PRD jest zdefiniowany względem
+  **zapisanej listy**, a FR-004 mówi o „potrawach i składnikach", nie o pojęciach — więc to
+  **luka wymagań**, nie defekt. Kolejność: **PRD (Otwarte pytanie 4) → schemat → ekran**.
+  Waga niższa, niż wyglądała: `prd.md:203-205` wyklucza alergie kliniczne, więc stawką jest
+  zaufanie, nie bezpieczeństwo.
+- **Naniesione niezależnie od decyzji właściciela:** kryterium 1.7 przeredagowane. W poprzednim
+  brzmieniu żądało wykluczenia „grzyby", czego model tego planu nie potrafi wyrazić, więc
+  przechodziło na zielono, dowodząc jedynie, że `JOIN` łączy.

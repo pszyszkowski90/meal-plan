@@ -305,3 +305,32 @@ Co zrobione: Drzewo czyste (`git status --short` pusty, HEAD `288916a`). Trzy br
 Co zacommitowane: notes/lesson-queue.md
 Commit: (poniżej)
 Do decyzji: -
+
+### 11:17 UTC — A1 m2l4: badanie zewnętrzne i `/10x-frame`
+Wynik: ok
+Co zrobione: `/10x-research dietary-preferences` — `research.md` (508 linii) z **rozdzielonymi**
+warstwami: wewnętrzną (baza kodu, każde ustalenie z `plik:linia`) i zewnętrzną (Context7 na
+expo-router, exa.ai na modele wykluczeń, USDA FoodData Central i FoodOn). Oba źródła zewnętrzne
+użyte, zgodnie z wymaganiem zadania. Badanie **skorygowało plan w pięciu miejscach**, z czego
+najważniejsze: zdanie o `ingredient.category` jako kole ratunkowym dla ryzyka „grzyby kontra
+pieczarki" jest **błędne** — to jedenaście kategorii sklepowych, więc grzyby siedzą w `warzywa`,
+a orzechy w `suche`; kategorie USDA zawodzą identycznie. `/10x-frame` uruchomiony **nie dla
+kompletu**: plan przedstawiał obserwację i rozwiązanie jako jeden fakt, a badanie pokazało, że
+wyszukiwarka po nazwie nie adresuje obserwacji („grzyb" nie jest podłańcuchem „pieczarki").
+Krok 5 (niezależna kontrola krzyżowa **bez podanej wiodącej hipotezy**) **obalił moje pierwotne
+nazwanie problemu** — guardrail PRD jest zdefiniowany względem zapisanej listy, a FR-004 mówi
+o „potrawach i składnikach", nie o pojęciach, więc to **luka wymagań, nie defekt**. Sprostowanie
+naniesione do `research.md`. Znaleziona przy okazji wewnętrzna sprzeczność planu: kryterium 1.7
+żądało wykluczenia „grzyby", czego model tego planu nie potrafi wyrazić — przechodziłoby na
+zielono, dowodząc jedynie, że `JOIN` łączy. Przeredagowane.
+Bramki: `check-conventions` czysto (39 plików), `tsc --noEmit` 0 błędów, `npm test` 34/34,
+`git diff package-lock.json` pusty.
+Co zacommitowane: context/changes/dietary-preferences/research.md,
+context/changes/dietary-preferences/frame.md, context/changes/dietary-preferences/plan.md,
+context/changes/dietary-preferences/change.md, notes/lesson-decisions.md, notes/lesson-queue.md
+Commit: (poniżej)
+Do decyzji: **D17 — który wariant warstwy grup wykluczeniowych** (osobna tabela / rozwinięcie przy
+seedowaniu / świadoma dziura nazwana w PRD). Modyfikuje kontrakt z D14, więc należy do właściciela.
+**Faza 1 S-03 jest do tego czasu zablokowana.** Dowody przechylają się ku wariantowi z osobną
+tabelą, bo rozwinięcie przy seedowaniu przecieka przy rosnącej puli. Kolejność zmian:
+PRD (Otwarte pytanie 4) → schemat → ekran.
