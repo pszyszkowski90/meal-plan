@@ -354,3 +354,19 @@ tłumaczy `accessibilityState={{ checked }}` na `aria-checked`, więc chipy grup
 w `ChoiceField` od S-02, czyli obejmowała też płeć i poziom aktywności w profilu. Naprawione
 u źródła plus test regresyjny. Znalazł ją skrypt zrzutów, który przez ten brak przełączał grupę
 w złą stronę przy każdym przebiegu — dokładnie ta sama informacja, której brakowało czytnikowi.
+
+### 22:27 UTC — Kolejka zamknięta
+Wynik: ok
+Co zrobione: **C1–C6 wykonane**, sześć PR-ów (#6–#11), każdy scalony po zielonej bramce jakości
+i zielonym przeglądzie implementacji. Ostatnie wdrożenie Workers Builds z 22:26 UTC zweryfikowane
+smoke testem: `/` 200 text/html, nieznana ścieżka 404, `/api/health` `{"ok":true,"d1":true}`,
+cztery trasy API bez nagłówka 401, `/preferences`, `/profile` i `/sign-in` 200, a zasób bundla
+wzięty z **wdrożonego** HTML-a pobiera się z kodem 200. Stan wyjściowy `mvp-check` był 3/5;
+kryterium 1 (CRUD) zamknęła faza 1 S-03, kryterium 5 (dokumentacja) — nowy README.
+Co zacommitowane: `notes/cert-queue.md`
+PR: #12
+Do decyzji: zostaje punkt 4 kolejki — **rzeczy, które właściciel robi sam**: odblokowanie dostępu
+dla oceniających (współpracownik `przeprogramowani` albo publiczne repo), zrzut terminala
+z `npm test` i formularz 10xBuilder. Pozostałe cztery zrzuty leżą w `~/mealplan-zrzuty/`.
+Niesprawdzone i jawnie odnotowane w planie: kryterium **1.6** (izolacja dwóch kont — brak drugiego
+konta testowego), **2.9** (Expo Go) i **2.10** (czytelność listy przy 20 wpisach).
