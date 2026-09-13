@@ -3,7 +3,12 @@
 Sesja autonomiczna ma mandat na rozstrzyganie. Każdy wpis ma **powód** i **jak cofnąć**.
 Nic tutaj nie jest nieodwracalne bez wyraźnego zaznaczenia.
 
-Punkt przywracania przed startem: **`974e38b`**.
+Punkt przywracania przed startem: **`aea480d`**.
+
+**Audyt stanu kursu (13.09.2026):** 25 lekcji — 6 domkniętych (narzędzie + brief), 7 przerobionych
+bez briefu (cały łańcuch M1 i M2), 2 częściowo, 10 nietkniętych. Pełna tabela w sekcji 0
+[lesson-queue.md](lesson-queue.md). Wcześniejsza liczba „4 z 18" krążąca w rozmowie była błędna —
+liczyła briefy napisane w nocnej sesji, a nie lekcje przerobione na projekcie.
 
 Format: `### D<n> — <tytuł>` + Co / Powód / Jak cofnąć / Status.
 
