@@ -118,3 +118,100 @@ więc zostawienie ich do rana byłoby zostawieniem pułapki.
 `10x-cli` i dwóch zdań dokumentacyjnych (Sprawdzenie 4), odchudzenie duplikatów `Spacing`
 i wariantów `ThemedText` (Sprawdzenie 2). To są zmiany **projektu reguł**, nie faktów — a zadanie
 T8 wprost zabrania samodzielnej edycji reguł.
+
+---
+
+# Przegląd reguł nr 2: `CLAUDE.md` — po wykonaniu propozycji
+
+- **Data**: 2026-09-13, zadanie B2 kolejki lekcji (m4l1)
+- **Zakres**: ten sam plik, ten sam zestaw pięciu sprawdzeń
+- **Tryb**: raport **plus wykonanie** trzech propozycji, które przegląd nr 1 zostawił właścicielowi
+- **Po co drugi przegląd**: karta wyników porównana z poprzednią jest **dowodem**, że zmiana coś
+  dała. Deklaracja „poprawiłem" dowodem nie jest.
+
+## Karta wyników — porównanie
+
+| # | Sprawdzenie | Przegląd 1 | Przegląd 2 | Zmiana |
+|---|---|---|---|---|
+| 1 | Długość | **WARN** (272) | **WARN** (332) | ↔ próg nadal przekroczony; patrz niżej |
+| 2 | Osadzony kod | **OK** | **OK** | ↔ nadal dwa bloki `sh`, oba to sekwencje poleceń |
+| 3 | Precyzja języka | **OK** (3 miękkie) | **OK** (2 miękkie) | ↗ dwa zniknęły z blokiem `10x-cli` |
+| 4 | Redundancja | **WARN** | **OK** | ↗ **naprawione** |
+| 5 | Kolejność | **WARN** | **WARN** | ↗ poprawione, nie domknięte |
+| — | Aktualność (dodatkowe) | **WARN** | **OK** | ↗ naprawione |
+
+**Dwa sprawdzenia poprawione z WARN na OK, jedno poprawione bez domknięcia, jedno bez zmian.**
+
+## Co zostało wykonane
+
+Wszystkie trzy propozycje przeglądu nr 1, plus jedna poprawka aktualności, którą **sam wprowadziłem
+wcześniej tego dnia**:
+
+1. **Blok `10x-cli` usunięty** — 44 linie (30 niepustych). Pułapka z przeglądu nr 1 była już
+   rozbrojona: wskaźnik do `lessons.md` przeniesiono do „Dokumentów projektu" w nocy, więc
+   usunięcie bloku niczego nie urwało. Blok jest **generowany**, więc wróci przy następnym
+   `10x get` — a ta operacja jest w tej sesji zakazana i teraz stoi jako reguła numer jeden.
+2. **Trzy reguły najbardziej niszczące podniesione na czoło „Twardych reguł"**, uszeregowane
+   kosztem złamania: `10x get` (niszczy same reguły), warunek produkcyjny przed commitem
+   (produkcja zwraca 500), `expo start --web` nie jest testem wdrożenia. Rozwinięcia zostały
+   w miejscu; w dwóch przypadkach oryginał skrócono do tego, czego nagłówek nie niesie,
+   żeby podniesienie nie było duplikatem.
+3. **Duplikaty wartości usunięte** — liczby skali `Spacing` (`half=2 … six=64` → `half … six`)
+   i pełna lista wariantów `ThemedText` zastąpiona odnośnikiem do komponentu. Oba dryfowały
+   od źródła przy każdej zmianie motywu.
+4. **Dwa zdania z dokumentacji frameworka usunięte** — „Metro rozwiązuje `foo.web.tsx` przed
+   `foo.tsx`" i mechanizm `NativeTabs.Trigger name`. Zostało to, co lokalne: **konsekwencja**
+   (ta sama zakładka nazywa się `index` natywnie i `home` na webie).
+5. **Poprawka aktualności, której przegląd nr 1 nie mógł znać:** reguła o importach względnych
+   mówiła „tylko rodzeństwo w `src/components/` (5 wystąpień) oraz **plik testu** w `src/lib/`".
+   Faza 2 F-01 dołożyła import w module **nietestowym** (`dish-validation.ts` → `./dish-macros.ts`),
+   więc reguła czyniła naruszeniem własny kod repo. Przepisana na „wszędzie w `src/lib/`,
+   z jawnym rozszerzeniem", z powodem: `node --test` nie zna aliasu `@/`.
+
+## Sprawdzenie 1 — Długość (WARN, 332)
+
+Liczby, żeby nie było złudzeń: **272 → 370 → 332**.
+
+Środkowa liczba jest istotna. Między przeglądami plik **urósł o 98 linii** z powodu dwóch zadań
+tej samej sesji, które dołożyły reguły oparte na realnych awariach: sekcja o pracy równoległej
+i worktree (A3) oraz czwarta warstwa bramek i ograniczenie `typedRoutes` w CI (B1). B2 zdjął
+**38 linii** — więcej, niż przewidywała propozycja (30 z bloku `10x-cli`), bo doszło skrócenie
+sekcji o worktree i usunięcie duplikatów.
+
+Uczciwy wniosek: **samo usunięcie bloku `10x-cli` nigdy nie miało szans zejść poniżej 200**
+— przegląd nr 1 pisał to wprost. Plik jest długi, bo repo ma dużo nietrywialnych ograniczeń,
+a każde z nich pochodzi z nazwanej awarii. Realne zejście poniżej progu wymaga **podziału na pliki
+zagnieżdżone** (np. reguły serwerowe bliżej `src/server/`), a nie dalszego skracania zdań.
+
+## Sprawdzenie 5 — Kolejność (WARN, poprawione bez domknięcia)
+
+Trzy najbardziej niszczące reguły są teraz w liniach 41–50, czyli w pierwszym ekranie po sekcji
+produktowej. Zostały **dwie reguły krytyczne bez kotwicy na górze**, obie w sekcji o pracy
+równoległej:
+
+| Reguła | Linia | Koszt złamania |
+|---|---|---|
+| „Stage'uj po ścieżkach, nigdy `git add -A`" | 341 | 13.09 wciągnęło na `main` cudzy niedokończony plik |
+| „Odepnij złącze, ZANIM usuniesz worktree" | 337 | skasowanie `node_modules` drzewa głównego |
+
+**Świadomie ich nie podnoszę w tym samym przebiegu.** Krok 5e tej umiejętności mówi wprost: zmiany
+strukturalne stosuje się pojedynczo, bo inaczej nie da się przypisać zmiany zachowania agenta do
+konkretnej edycji. W jednym zadaniu wykonałem już przeniesienie trzech reguł, usunięcie bloku
+i dwie zmiany treści — czwarta zmiana kolejności zaciemniłaby wynik. Zostaje jako pierwsza pozycja
+listy działań.
+
+## 3 najważniejsze działania
+
+1. **Podnieś regułę o `git add -A` do „Twardych reguł"** — to jedyna pozostała reguła krytyczna
+   bez kotwicy na górze, a jej złamanie już raz kosztowało cudzy plik na `main`. Jedna linia,
+   osobny commit, w kolejnej sesji.
+2. **Rozważ podział pliku, nie dalsze skracanie.** Przy 332 liniach i rosnącym repo zdania są już
+   gęste; próg 200 osiągnie się wyłącznie przez wydzielenie reguł serwerowych i testowych do
+   plików bliżej kodu.
+3. **Uważaj na powrót bloku `10x-cli`.** Pierwsze `10x get` przywróci 30 linii i może nadpisać
+   ten plik. Reguła numer jeden już o tym mówi — ale po każdym takim uruchomieniu sprawdź
+   `git diff CLAUDE.md`, zanim cokolwiek zacommitujesz.
+
+> **Przypomnienie o atomowej zmianie.** Zmiana kolejności pliku reguł to zmiana kształtu kontekstu;
+> jej wpływ widać dopiero przy następnym realnym zadaniu agenta. Kolejne poprawki (podniesienie
+> `git add -A`, podział pliku) stosuj pojedynczo i obserwuj zachowanie między nimi.

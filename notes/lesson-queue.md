@@ -451,3 +451,43 @@ notes/lesson-decisions.md, notes/10x-lesson-m5l3-brief.md, notes/lesson-queue.md
 Commit: a7f553a, 3265236 (+ poniżej)
 Do decyzji: ostrzeżenie GitHuba, że `actions/checkout@v4` i `actions/setup-node@v4` celują
 w Node 20 (wymuszany Node 24). Nie blokuje; podbicie do `@v5` przy okazji.
+
+### 12:36 UTC — B2 m4l1: skalowanie kontekstu
+Wynik: ok
+Co zrobione: Wykonane **wszystkie trzy** propozycje przeglądu reguł, które noc zostawiła
+właścicielowi, plus jedna poprawka aktualności, której przegląd nr 1 nie mógł znać.
+Drugi przegląd zapisany w `notes/claude-md-rule-review.md` **obok pierwszego**, z kartą wyników
+w formie porównania — bo to jest dowód, a nie deklaracja.
+
+**Karta wyników, przegląd 1 → 2:** Długość WARN→WARN (272 → 370 → **332**), Osadzony kod OK→OK,
+Precyzja OK→OK (3 → 2 zwroty miękkie), **Redundancja WARN→OK**, Kolejność WARN→WARN (poprawione,
+nie domknięte), **Aktualność WARN→OK**. Dwa sprawdzenia podniesione z WARN na OK.
+
+Co wykonane: (1) blok `10x-cli` usunięty — 30 linii niepustych; pułapka była już rozbrojona, bo
+wskaźnik do `lessons.md` przeniesiono do „Dokumentów projektu" w nocy, więc nic się nie urwało;
+(2) trzy reguły najbardziej niszczące podniesione na czoło „Twardych reguł", uszeregowane **kosztem
+złamania**, z `10x get` na pierwszym miejscu — a oryginały skrócone do tego, czego nagłówek nie
+niesie, żeby podniesienie nie było duplikatem; (3) duplikaty `Spacing` i listy wariantów
+`ThemedText` zastąpione odnośnikami; dwa zdania z dokumentacji frameworka usunięte, została
+konsekwencja lokalna; (4) **poprawka, którą sam sprowokowałem w A3**: reguła importów względnych
+mówiła „tylko plik testu w `src/lib/`", a faza 2 F-01 dołożyła import w module **nietestowym**
+(`dish-validation.ts` → `./dish-macros.ts`) — reguła czyniła naruszeniem własny kod repo.
+
+**Uczciwie o długości:** 332 to nadal WARN. Między przeglądami plik urósł o **98 linii** przez
+A3 (worktree) i B1 (czwarta warstwa bramek), więc B2 zdjął 38 i wyszedł na +60 względem nocy.
+Samo usunięcie bloku `10x-cli` nigdy nie miało szans zejść poniżej 200 — przegląd nr 1 pisał to
+wprost. Zejście poniżej progu wymaga **podziału na pliki zagnieżdżone**, nie dalszego skracania zdań.
+
+**Czego świadomie NIE zrobiłem:** nie podniosłem czwartej reguły krytycznej (`git add -A`, linia
+341) ani ostrzeżenia o złączu (337), choć obie są poniżej linii 200. Krok 5e umiejętności mówi
+wprost, że zmiany strukturalne stosuje się **pojedynczo** — w jednym zadaniu zrobiłem już
+przeniesienie trzech reguł, usunięcie bloku i dwie zmiany treści; czwarta zaciemniłaby przypisanie
+skutku. Zostaje jako pozycja 1 listy działań w przeglądzie.
+
+Bramki: `tsc` 0, `npm test` 66/66, `expo lint` 0, `check-conventions` czysto (43 pliki),
+lockfile pusty.
+Co zacommitowane: CLAUDE.md (`6cb76de`), notes/claude-md-rule-review.md, notes/lesson-queue.md
+Commit: 6cb76de (+ poniżej)
+Do decyzji: podniesienie reguły `git add -A` do „Twardych reguł" (jedna linia, osobny commit,
+w kolejnej sesji) oraz czy dzielić `CLAUDE.md` na pliki zagnieżdżone, żeby realnie zejść poniżej
+progu 200 linii.
