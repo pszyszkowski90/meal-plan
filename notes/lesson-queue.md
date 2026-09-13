@@ -622,3 +622,39 @@ to jedyny element tej lekcji wykonalny bez łamania reguły lockfile'a; (2) czy 
 `check-conventions.js` z regexów na `ast-grep`.
 Uwaga do tabeli stanu w sekcji 0: jest datowanym zrzutem z 13.09 i **m5l3 nie należy w niej liczyć
 jako domkniętej** — patrz korekta 2.
+
+### 15:46 UTC — decyzje właściciela D20 i D21, obie wdrożone
+Wynik: ok
+Co zrobione: Właściciel rozstrzygnął dwie blokujące decyzje; obie naniesione.
+
+**D20 — tolerancja Atwatera.** Wybrany wariant to „luźniejszy próg dla niskokalorycznych", ale
+**moja propozycja tego wariantu (25% poniżej 60 kcal/100 g) okazała się błędna** — zmierzyłem ją
+na prawdziwych wierszach USDA, zanim cokolwiek napisałem: szpinak 28,1%, pieczarka 29,4%. Próg
+procentowy musiałby sięgnąć ~35% i przestałby cokolwiek łapać. Przyczyna jest **matematyczna**,
+nie dziedzinowa: tolerancja względna załamuje się blisko zera. Zaimplementowany próg
+**bezwzględny** obok względnego: `|zadeklarowane − Atwater| ≤ max(10% × zadeklarowane, 12 kcal)`.
+Działa, bo skala szukanego błędu jest o rząd wielkości większa niż nadwyżka błonnikowa (224 kcal
+i 166 kcal kontra 7,2 kcal). Sprawdzone dla 8, 10 i 12 — zero błędnych werdyktów w każdym.
+Zero kcal zostaje przypadkiem ostrym. Blok „ZNANE OGRANICZENIE" **zastąpiony**: cztery warzywa
+przechodzą, trzy klasy błędów odrzucane. Celowe zepsucie (próg = 0) zaczerwieniło **dokładnie
+cztery testy warzywne**. `npm test` **77/77** (było 66). **F-01 faza 3 odblokowana.**
+
+**D21 — model wykluczeń.** Wchodzi osobna tabela grup: `kind='group'` + `exclusion_group`
++ `ingredient_group`. D14 **rozszerzone, nie cofnięte** — nadal jedna tabela `exclusion`
+i jeden mechanizm z FR-004 i FR-011. Zaktualizowany kontrakt migracji `0004`, `CHECK` spójności,
+unikalność i opis „trzy rodzaje wpisu" w czterech miejscach planu. **Kryterium 1.8 dało się
+wreszcie napisać** (wyklucz grupę „grzyby", sprawdź odsiew dania z borowikami, nie wymieniając
+borowików), doszło 1.9 na przeciek, przez który odrzucono wariant z rozwinięciem przy seedowaniu.
+Indeks na `ingredient_group(group_id)` wpisany od razu, żeby nie powtórzyć ustalenia F1
+z przeglądu fazy 1 F-01. Otwarte pytanie 1 w `research.md` zamknięte, blokada w `change.md` zdjęta.
+**S-03 faza 1 odblokowana** — nie implementowana, to zadanie dla `/10x-implement`.
+
+Bramki: `tsc` 0, `npm test` 77/77, `expo lint` 0, `check-conventions` czysto (43 pliki),
+lockfile pusty.
+Co zacommitowane: src/lib/dish-macros.ts, src/lib/dish-macros.test.ts, src/lib/dish-validation.ts,
+src/lib/dish-validation.test.ts, context/changes/dish-source-and-seed-pool/plan.md (`63378f8`);
+context/changes/dietary-preferences/{plan,research,change}.md, notes/lesson-decisions.md (`dcfa433`)
+Commit: 63378f8, dcfa433
+Do decyzji: zostały tylko rzeczy niezablokowane — F4, indeks `dish_ingredient(ingredient_id)`
+i numeracja migracji, domknięcie m5l3 przez `10x-impl-review-ci`, `ast-grep`, `git add -A`
+do twardych reguł, `actions/*@v5`.
