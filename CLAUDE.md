@@ -37,6 +37,17 @@ nie powstanie pula dań — nie ma z czego wybierać ani czym liczyć kalorii. P
 
 ## Twarde reguły
 
+Trzy pierwsze są uszeregowane kosztem złamania, nie tematem. Rozwinięcia zostały tam, gdzie były.
+
+- **`10x get <ref>` kasuje `.claude/skills/` i przepisuje TEN plik.** Nie dokłada kumulatywnie,
+  tylko synchronizuje do manifestu żądanej lekcji — a lekcje modułu 4 deklarują zero skilli.
+  To jedyna operacja w repo, po której **nie da się przeczytać, co się zepsuło**, bo niszczy same
+  reguły. Uruchamiaj wyłącznie przy czystym `git status` (szczegóły: Pułapki).
+- **Warunek produkcyjny wchodzi PRZED commitem fazy, która go potrzebuje** — sekret, zmienna
+  buildu, `migrations apply --remote`. Push na `main` wdraża natychmiast, więc kod czekający na
+  sekret lub tabelę stoi na produkcji i zwraca 500 (szczegóły: Komendy i weryfikacja).
+- **`npx expo start --web` nie jest testem wdrożenia** — uruchamia trasy API w Node. Wierność
+  runtime'u daje wyłącznie `npx wrangler dev` na zbudowanym `dist/` (szczegóły: Komendy i weryfikacja).
 - **Expo się zmieniło.** Zanim napiszesz kod Expo, sprawdź wersjonowaną dokumentację
   <https://docs.expo.dev/versions/v57.0.0/> zamiast polegać na pamięci o starszych SDK.
 - **Router mieszka w `src/app/`, nie w `app/`.** Nowy ekran = nowy plik w [src/app/](src/app/),
@@ -93,16 +104,17 @@ nie powstanie pula dań — nie ma z czego wybierać ani czym liczyć kalorii. P
   [migrations/down/](migrations/down/) to migracje wstecz, których wrangler nie widzi i które
   uruchamia wyłącznie człowiek. Nie ustawiaj `migrations_pattern` w `wrangler.jsonc` — zjadłby `down/`.
 - Nazwy plików kebab-case (`themed-text.tsx`), nazwy eksportów PascalCase / camelCase.
-- Importy przez aliasy: `@/*` → `src/*`, `@/assets/*` → `assets/*`. Względne `./` tylko dla
-  rodzeństwa wewnątrz `src/components/` (5 wystąpień) oraz dla pliku testu obok modułu
-  w `src/lib/` (`calorie-target.test.ts` → `./calorie-target.ts`; Node nie zgaduje rozszerzeń
-  w ESM). Zero `../` w całym `src/` — `../` w imporcie to błąd.
+- Importy przez aliasy: `@/*` → `src/*`, `@/assets/*` → `assets/*`. Względne `./` wolno **tylko**
+  dla rodzeństwa w `src/components/` (5 wystąpień) oraz **wszędzie w `src/lib/`**, z jawnym
+  rozszerzeniem `.ts` — bo `npm test` to `node --test`, a Node w ESM nie zna aliasu `@/`
+  ani nie zgaduje rozszerzeń. Alias w `src/lib/` wywraca testy, nie typecheck.
+  Zero `../` w całym `src/` — `../` w imporcie to błąd.
 - **Zero surowych kolorów i odstępów w `StyleSheet`.** Kolor bierz z `useTheme()`, odstęp i promień
-  z `Spacing` ([theme.ts](src/constants/theme.ts)) — to skala nazwana słownie (`half`=2, `one`=4 …
-  `six`=64), nie liczby.
+  z `Spacing` ([theme.ts](src/constants/theme.ts)) — to skala nazwana słownie (`half` … `six`),
+  nie liczby.
 - **Tekst i tło przez `ThemedText` / `ThemedView`**, nie `Text` / `View`. Wariant wybiera prop
-  `type` (`title`, `subtitle`, `small`, `code`, `link`… / `background`, `backgroundElement`,
-  `backgroundSelected`), a nie własny styl inline.
+  `type`, a nie własny styl inline; listę wariantów ma
+  [themed-text.tsx](src/components/themed-text.tsx).
 - **`useColorScheme` bierz z [`@/hooks/use-color-scheme`](src/hooks/use-color-scheme.ts), nie
   z `react-native`.** Web renderuje HTML po stronie serwera (`app.json` → `web.output: "server"`),
   więc wariant webowy odracza odczyt schematu do hydracji; hook z `react-native` daje niezgodność
@@ -112,18 +124,18 @@ nie powstanie pula dań — nie ma z czego wybierać ani czym liczyć kalorii. P
   `contentInset`; dolny pasek nawigacji nie jest w layoucie flexbox. Bez tego ostatni element
   chowa się pod zakładkami.
 - **Wariant platformowy = osobny plik `foo.web.tsx`**, gdy zmienia drzewo komponentów albo
-  importowane API (jak `app-tabs`: `NativeTabs` vs `expo-router/ui`). Metro rozwiązuje `foo.web.tsx`
-  przed `foo.tsx`. `Platform.OS` / `Platform.select` zostaw dla pojedynczej wartości — liczby,
-  stringa, jednego stylu.
+  importowane API (jak `app-tabs`: `NativeTabs` vs `expo-router/ui`). `Platform.OS` /
+  `Platform.select` zostaw dla pojedynczej wartości — liczby, stringa, jednego stylu.
 
 ## Architektura
 
 **Warstwa nawigacji jest rozdwojona.** [(app)/_layout.tsx](src/app/(app)/_layout.tsx) montuje jeden
 komponent `AppTabs` (root [_layout.tsx](src/app/_layout.tsx) montuje tylko `ClerkProvider`,
-`ThemeProvider`, nakładkę splash i `Stack`), ale Metro podstawia inny plik na każdą platformę: natywnie `NativeTabs`
-z `expo-router/unstable-native-tabs`, gdzie `NativeTabs.Trigger name` **musi** odpowiadać nazwie
-pliku trasy; na webie headless `Tabs` / `TabList` / `TabTrigger` z `expo-router/ui`, gdzie `name`
-jest dowolne, a wiąże `href`. Dlatego zakładka „Home" nazywa się tam `home`, a natywnie `index`.
+`ThemeProvider`, nakładkę splash i `Stack`), ale Metro podstawia inny plik na każdą platformę:
+natywnie `NativeTabs` z `expo-router/unstable-native-tabs`, na webie headless `Tabs` / `TabList` /
+`TabTrigger` z `expo-router/ui`. **Konsekwencja lokalna:** natywnie `name` musi być nazwą pliku
+trasy, a na webie wiąże `href` — dlatego ta sama zakładka nazywa się `index` natywnie i `home`
+na webie.
 
 **Motyw** jest jednokierunkowy: `Colors` (light/dark) → `useTheme()` → `ThemedText` / `ThemedView` →
 ekrany. [theme.ts](src/constants/theme.ts) importuje [global.css](src/global.css) efektem ubocznym —
@@ -261,9 +273,8 @@ npx wrangler d1 migrations list mealplan --remote    # zaległe na produkcji
 npx wrangler d1 migrations apply mealplan --remote   # produkcja — PRZED commitem fazy, która jej używa
 ```
 
-- **Warunek produkcyjny wchodzi przed commitem fazy, która go potrzebuje** — zmienna buildu
-  w Workers Builds, `wrangler secret put`, `migrations apply --remote`. Push na `main` wdraża
-  natychmiast, więc kod czekający na sekret lub tabelę stałby na produkcji i zwracał 500.
+- **Warunek produkcyjny wchodzi przed commitem fazy** (Twarde reguły) — tu konkretnie: zmienna
+  buildu w Workers Builds, `wrangler secret put`, `migrations apply --remote`.
 - Migracje wstecz w `migrations/down/` uruchamia wyłącznie człowiek, po `npx wrangler d1 export
   mealplan --remote --output kopia.sql`. Plik `down` usuwa też wpis z `d1_migrations`, inaczej
   `migrations apply` nie odtworzy tabeli. `wrangler rollback` cofa **kod, nie schemat**.
@@ -279,8 +290,7 @@ npx wrangler dev                                      # bramka: workerd lokalnie
 npx wrangler deploy                                   # produkcja
 ```
 
-- **`npx expo start --web` nie jest testem wdrożenia** — uruchamia trasy API w Node. Wierność
-  runtime'u daje tylko `npx wrangler dev` na zbudowanym `dist/`. To bramka przed każdym deployem.
+- **`npx wrangler dev` na zbudowanym `dist/` to bramka przed każdym deployem** (Twarde reguły).
 - Smoke test po wdrożeniu: `/` zwraca HTML, nieznana ścieżka zwraca 404, `/api/health` zwraca
   `{"ok":true,"d1":true,…}` (`d1:true` znaczy „tabela `app_user` istnieje", nie tylko „binding
   działa"), a `/api/account` bez nagłówka `Authorization` zwraca 401. Jeśli HTML działa, a trasa API
@@ -317,38 +327,20 @@ druga osoba, cokolwiek, co może mieć własne pliki w `git status`. 13.09 `git 
 na `main` niedokończony plik innej sesji; to jedyny znany sposób, żeby to się nie powtórzyło.
 Dla zmiany w pojedynkę worktree jest opcjonalny i zwykle nie warty kosztu (niżej).
 
-```sh
-git worktree add <ścieżka-poza-repo> -b <gałąź>    # nowa gałąź w osobnym katalogu
-git worktree list                                   # co jest podpięte
-git worktree remove <ścieżka>                       # sprzątanie po scaleniu
-```
+Świeży worktree to czysty checkout, więc **nie ma nic z `.gitignore`** — zmierzone 13.09.2026:
 
-**Trzy rzeczy, których świeży worktree NIE ma — zmierzone 13.09.2026:**
+- **`node_modules`.** `npm test` działa (wbudowany runner Node), ale `tsc` i `eslint` nie mają
+  czym ruszyć, więc **`pre-commit` zatrzymuje commit na eslincie**, a `--no-verify` jest zakazane.
+  Zamiast `npm ci` w worktree podepnij złącze:
+  `cmd /c mklink /J "<worktree>\node_modules" "C:\Prywatne\Dieta 2\node_modules"`.
+  **Odepnij je (`cmd /c rmdir …`) ZANIM usuniesz worktree** — narzędzie, które pójdzie *przez*
+  złącze zamiast je odpiąć, skasuje `node_modules` drzewa głównego.
+- **`.expo/types/`** z typami tras. Bez nich `tsc` przechodzi, ale `typedRoutes` milczy (Pułapki).
+- **`.env.local` i `.dev.vars`** — bez nich `wrangler dev` i klient natywny nie wystartują.
 
-1. **`node_modules`.** Worktree to czysty checkout. `npm test` **działa** (to `node --test`,
-   runner wbudowany w Node, zero zależności), ale `tsc` i `eslint` nie mają czym się uruchomić —
-   więc **hook `pre-commit` zatrzymuje commit na eslincie**, a `--no-verify` jest zakazane.
-   Nie uruchamiaj tam `npm ci` (drugie drzewo zależności na dysku i ryzyko dla lockfile'a) —
-   podepnij złącze katalogowe do drzewa głównego:
-   ```sh
-   # PowerShell albo cmd, w katalogu worktree — złącze katalogowe, nie kopia:
-   cmd /c mklink /J "<worktree>\node_modules" "C:\Prywatne\Dieta 2\node_modules"
-   ```
-   **Złącze usuń, ZANIM usuniesz worktree**, i wyłącznie jako katalog-link
-   (`cmd /c rmdir "<worktree>\node_modules"`). Narzędzie, które pójdzie *przez* złącze zamiast
-   je odpiąć, skasuje `node_modules` **drzewa głównego** — a to w tym repo znaczy `npm ci`
-   i ryzyko dla lockfile'a, czyli dokładnie to, czego unikamy.
-2. **Plików generowanych, bo są w `.gitignore`** — `.expo/types/` z typami tras. Bez nich `tsc`
-   **przechodzi**, ale `typedRoutes` milczy, więc zła ścieżka w `<Link href>` nie zostanie
-   złapana (patrz Pułapki). Skopiuj katalog z drzewa głównego albo uruchom tam raz Metro.
-   Deklaracje `.css` nie są już problemem — daje je [expo-types.d.ts](expo-types.d.ts) z repo.
-3. **Konfiguracji lokalnej** — `.env.local` i `.dev.vars` też są w `.gitignore`. Bez nich
-   `wrangler dev` i klient natywny nie wystartują; skopiuj świadomie, nie commituj.
-
-**Stage'owanie w dzielonym drzewie: zawsze po ścieżkach, nigdy `git add -A` ani `git add .`.**
-Przed commitem przeczytaj `git status --short` i wypisz w opisie tylko te pliki, które sam
-zmieniłeś. Cudzą zmianę poznasz po tym, że jej nie pamiętasz — to wystarczający powód, żeby jej
-nie stage'ować. `git diff --stat package-lock.json` po każdym zadaniu: ma być pusty.
+**Stage'uj po ścieżkach, nigdy `git add -A` ani `git add .`.** Przed commitem przeczytaj
+`git status --short`; cudzą zmianę poznasz po tym, że jej nie pamiętasz — to wystarczający powód,
+żeby jej nie stage'ować. `git diff --stat package-lock.json` ma być pusty.
 
 **Równoległość ogranicza przepustowość przeglądu, nie liczba agentów.** Więcej równoległych
 gałęzi to więcej nieprzejrzanego kodu, a nie więcej gotowej pracy — to repo ma już dowód, że
@@ -383,48 +375,3 @@ w stanie **przejrzeć**, i ani jednego więcej.
   `setState` w ciele efektu jest **błędem lintu**, nie ostrzeżeniem. Jedyne odstępstwo w repo to
   hydracja w [use-color-scheme.web.ts](src/hooks/use-color-scheme.web.ts) — wyciszona punktowo
   z uzasadnieniem. Nowy `setState` w efekcie prawie zawsze znaczy, że efekt jest niepotrzebny.
-
-<!-- BEGIN @przeprogramowani/10x-cli -->
-
-## 10xDevs AI Toolkit - Moduł 2, Lekcja 3
-
-Przejrzyj kod wygenerowany przez AI przed scaleniem za pomocą **łańcucha przeglądu implementacji**:
-
-```
-/10x-implement -> /10x-impl-review -> triage -> (/10x-lesson | fix | skip | disagree)
-```
-
-`/10x-impl-review` to główny temat lekcji. Przegląd jest bramką jakości, a nie instrukcją do naprawienia każdego znalezionego problemu.
-
-### Router zadań - Od czego zacząć
-
-| Umiejętność | Użyj, gdy |
-| --- | --- |
-| **Przegląd kodu (główny temat lekcji)** | |
-| `/10x-impl-review <change-id>` | Zaimplementowałeś kod i chcesz przeprowadzić ustrukturyzowany przegląd przed scaleniem. Umiejętność sprawdza zgodność z planem, dyscyplinę zakresu, bezpieczeństwo i jakość, architekturę, spójność wzorców i kryteria sukcesu, a następnie przedstawia wyniki do triażu. |
-| **Powtarzający się wynik lekcji** | |
-| `/10x-lesson` | Znaleziony problem ujawnia powtarzającą się regułę projektu lub wzorzec błędu agenta. Zapisz go w `context/foundation/lessons.md` zamiast traktować jako jednorazową notatkę. |
-
-### Dyscyplina triażu
-
-- Ważność mówi, jak zły jest problem. Wpływ mówi, jak ważna jest decyzja teraz.
-- Prawidłowe wyniki: napraw teraz, napraw inaczej, pomiń, zaakceptuj jako ryzyko, zapisz jako powtarzającą się regułę (`/10x-lesson`), nie zgadzam się.
-- Napraw krytyczne problemy. Nie marnuj godzin na obserwacje o niskim wpływie tylko dlatego, że agent je znalazł.
-- Świadome pomijanie problemów o niskim wpływie jest prawidłowym wynikiem przeglądu, a nie zaniedbaniem.
-- Jeśli nie zgadzasz się z problemem, zapisz dlaczego. Błędne rozumowanie agenta również jest sygnałem.
-
-### Granice przeglądu
-
-- Ta lekcja dotyczy przeglądu zaimplementowanego kodu. Nie tworzy planu, nie wykonuje nowych faz ani nie uczy przeglądu CI.
-- Strategia testowania i bramki jakości zostaną wprowadzone w Module 3.
-- Nie używaj `/10x-contract` jako wyniku triażu w tej lekcji.
-
-### Ścieżki używane w tej lekcji
-
-- `context/changes/<change-id>/plan.md` - oczekiwana umowa implementacji
-- `context/changes/<change-id>/reviews/` - wynik przeglądu
-- `context/foundation/lessons.md` - powtarzające się lekcje
-
-Umiejętności nie mogą zapisywać do `context/archive/`. Zarchiwizowane zmiany są niezmienne; jeśli rozwiązana ścieżka docelowa zaczyna się od `context/archive/`, przerwij z komunikatem: "This change is archived. Open a new change with `/10x-new` instead."
-
-<!-- END @przeprogramowani/10x-cli -->
