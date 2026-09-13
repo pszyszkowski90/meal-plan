@@ -31,6 +31,16 @@ interface D1PreparedStatement {
 
 interface D1Database {
   prepare(query: string): D1PreparedStatement;
+  /**
+   * Wiele zapytań w JEDNEJ transakcji. Dołożone dla listy wykluczeń (S-03), którą zapis
+   * doprowadza do stanu: najpierw kasuje wpisy z ekranu preferencji, potem wstawia nadesłane.
+   * Bez transakcji nieudane wstawienie zostawiłoby konto z pustą listą — czyli bez guardraila,
+   * o którym użytkownik nie wie, że zniknął.
+   *
+   * Zwracany kształt jest zadeklarowany jako `unknown[]`, bo repo z niego nie korzysta —
+   * ta sama zasada co przy `run()`.
+   */
+  batch(statements: D1PreparedStatement[]): Promise<unknown[]>;
 }
 
 export interface WorkerEnv {

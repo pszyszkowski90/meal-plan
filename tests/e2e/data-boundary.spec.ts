@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
  */
 test.use({ storageState: { cookies: [], origins: [] } });
 
-const DataRoutes = ['/api/account', '/api/profile'] as const;
+const DataRoutes = ['/api/account', '/api/profile', '/api/preferences'] as const;
 
 test.describe('Ryzyko #1 — granica danych', () => {
   for (const route of DataRoutes) {
@@ -26,6 +26,9 @@ test.describe('Ryzyko #1 — granica danych', () => {
       const body = await response.text();
       expect(body).not.toMatch(/user_/);
       expect(body).not.toMatch(/"(weight|height|age|sex)"/);
+      // Wykluczenia żywieniowe potrafią ujawnić wyznanie albo stan zdrowia — 401 nie ma prawa
+      // przepuścić ani listy, ani ustawień.
+      expect(body).not.toMatch(/"(exclusions|maxPrepMinutes|mealsPerDay)"/);
     });
 
     test(`${route} z podrobionym tokenem odmawia`, async ({ request }) => {
@@ -47,6 +50,14 @@ test.describe('Ryzyko #1 — granica danych', () => {
   test('PUT /api/profile bez tożsamości nie zapisuje', async ({ request }) => {
     const response = await request.put('/api/profile', {
       data: { weightKg: 80, heightCm: 180, age: 30, sex: 'male', activityLevel: 3 },
+    });
+
+    expect(response.status()).toBe(401);
+  });
+
+  test('PUT /api/preferences bez tożsamości nie zapisuje', async ({ request }) => {
+    const response = await request.put('/api/preferences', {
+      data: { preferences: { maxPrepMinutes: 30, mealsPerDay: 4 }, exclusions: [] },
     });
 
     expect(response.status()).toBe(401);
