@@ -45,6 +45,10 @@ permissions:
   # dopiero po tym, jak sekret zaczął mieć prawdziwą wartość. Wcześniej krok był pomijany,
   # więc ten brak nie miał jak wyjść.
   id-token: write
+  # Pozwala recenzentowi czytać stan sprawdzeń CI tego PR (serwer MCP `github_ci`).
+  # Bez tego akcja zgłasza ostrzeżenie i pomija instalację tego serwera — przegląd działa,
+  # ale nie widzi, czy bramka jakości przeszła. Zmierzone na pierwszym realnym przebiegu.
+  actions: read
 
 jobs:
   review:
