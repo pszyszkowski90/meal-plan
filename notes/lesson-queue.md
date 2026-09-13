@@ -538,3 +538,37 @@ notes/10x-lesson-m2l3-brief.md, notes/lesson-queue.md
 Commit: (poniżej)
 Do decyzji: indeks `dish_ingredient(ingredient_id)` — kiedy wchodzi i pod jakim numerem migracji
 (`0004` jest zajęty przez preferencje w planie S-03). Moja rekomendacja: przed fazą 4 F-01.
+
+### 12:56 UTC — C2 m1l1–m1l3, m1l5, m2l1, m2l2: briefy z dowodów
+Wynik: ok (jeden plik zamiast sześciu — świadomie)
+Co zrobione: Zamiast sześciu briefów napisałem **jeden**:
+`notes/10x-lesson-m1-m2-fundamenty-brief.md`. Kolejka dopuszczała trzy wyniki (sześć / jeden /
+pominięcie) i podaję powód wyboru, żeby dało się go podważyć.
+
+**Rozstrzygające ustalenie:** granic między tymi lekcjami **nie da się ustalić z repozytorium**.
+`.claude/.10x-cli-manifest.json` wymienia skille, ale **nie mapuje ich na lekcje**. Jedyne
+wiarygodne źródło to zachowany blok lekcji m1l4 w `10x-lesson-m1l4-brief.md`, który mówi tyle:
+łańcuch PRD → tech-stack → bootstrap pochodzi z **Lekcji 1–3 jako grupy**, projekt powstał
+w Lekcji 3, a Lekcja 5 dokłada infrastrukturę. Gdzie kończy się m1l1, a zaczyna m1l2 — repo nie
+wie; to samo dla m2l1 kontra m2l2. Sześć plików wymagałoby **wymyślenia tych granic**, czyli
+dokładnie tego, przed czym kolejka ostrzega („dokument, który udaje wiedzę").
+
+Drugi powód: artefakty są większe i lepsze niż brief o nich — `roadmap.md` 384 linie,
+`infrastructure.md` 414, `prd.md` 233, `shape-notes.md` 269. Plik mówiący „m1l2 zostawiła
+`prd.md`" nie dodaje nic ponad otwarcie `prd.md`.
+
+Brief opisuje **co z każdego artefaktu obowiązuje dziś**, z dwoma nietrywialnymi obserwacjami:
+(1) `has_ai: false` w `tech-stack.md` **nadal jest prawdą** po decyzji D14, bo model autoryzuje
+przepisy poza runtime, a Worker nigdy go nie woła — pozorna sprzeczność, która się rozwiązuje;
+(2) wyzwanie sokratejskie przy FR-004 („wykluczenia składnikowe i daniowe to dwa różne poziomy")
+jest **jedynym powodem**, dla którego model wykluczeń ma dziś pole `kind` — jedno zdanie z etapu
+wymagań rozstrzygnęło kształt tabeli dwa tygodnie i trzy zmiany później.
+Brief ma też sekcję „czego NIE da się sprawdzić" — proces, odrzucone wymagania, mapowanie
+lekcja→skill.
+
+Koszt wyboru zapisany w briefie jawnie: rejestr nie będzie miał sześciu osobnych pozycji.
+Bramki: `check-conventions` czysto.
+Co zacommitowane: notes/10x-lesson-m1-m2-fundamenty-brief.md, notes/lesson-queue.md
+Commit: (poniżej)
+Do decyzji: czy ten jeden plik wystarcza za sześć pozycji rejestru. Jeśli wolisz sześć osobnych —
+powiedz, ale wtedy granice m1l1/m1l2 i m2l1/m2l2 będą moim zgadywaniem, nie faktem z repo.
