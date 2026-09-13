@@ -572,3 +572,53 @@ Co zacommitowane: notes/10x-lesson-m1-m2-fundamenty-brief.md, notes/lesson-queue
 Commit: (poniżej)
 Do decyzji: czy ten jeden plik wystarcza za sześć pozycji rejestru. Jeśli wolisz sześć osobnych —
 powiedz, ale wtedy granice m1l1/m1l2 i m2l1/m2l2 będą moim zgadywaniem, nie faktem z repo.
+
+### 13:09 UTC — D: siedem briefów wykluczeniowych + DWIE KOREKTY
+Wynik: ok
+Co zrobione: **Znalazłem treść lekcji.** Kolejka mówiła, że materiał m2l3→m5l5 jest
+„w scratchpadzie sesji nocnej"; moja sesja ma własny katalog tymczasowy, więc przeszukałem
+`AppData/Local/Temp/claude` i trafiłem na `scratchpad/lessons/*.json` **poprzedniej** sesji
+(19 plików, m2l3–m5l5). Dzięki temu siedem briefów grupy D stoi na **rzeczywistej treści**,
+a nie na tabeli z kolejki.
+
+Napisane siedem osobnych briefów (m4l2, m4l3, m4l4, m4l5, m5l1, m5l2, m5l4), każdy w układzie
+z kolejki: co wprowadza → dlaczego nie tutaj → co musiałoby być prawdą → co zabieram mimo to.
+Tu **siedem plików jest uzasadnione**, w przeciwieństwie do C2: granice lekcji są jednoznaczne
+(jeden plik JSON na lekcję), więc nic nie muszę zgadywać.
+
+**Wszystkie siedem wykluczeń podtrzymane**, ale z trzema realnymi znaleziskami:
+- **m4l3** — `ast-grep` rozwiązuje problem, na który wpadłem dziś dwa razy: `grep` po `dist/`
+  fałszywie alarmował na polskich znakach, a `check-conventions.js` **ręcznie usuwa komentarze**
+  (`:36-103`), żeby regexy nie wywracały bramki. To jest obejście czegoś, co AST ma z definicji.
+  Zapisane jako decyzja do rozważenia, nie rekomendacja — koszt to kolejna zależność, czyli ryzyko
+  dla lockfile'a.
+- **m4l5** — prompt „niezmiennik → agregat-strażnik" opisuje to, co zbudowałem dziś w fazie 2 F-01,
+  nie wiedząc, że ma nazwę. Stąd wniosek: **jeśli niezmiennik ma strażnika, to musi być dokładnie
+  jeden** — i to jest dokładnie warunek, który dopisałem przy odstępstwie `prep_minutes`.
+- **m5l2** — warunek wykluczenia („sensowne dopiero razem z B1") **częściowo odpadł**, bo B1 jest
+  zrobione. Miejsce do wpięcia agenta istnieje. Nadal nie robię, bo drugi warunek (zespół, wąskie
+  gardło przeglądu) nie zaszedł.
+
+**KOREKTA 1 — brief m3l5.** Twierdził „treści lekcji nie ma lokalnie". Nieprawda. Uzupełniony
+o rzeczywistą treść: lekcja nazywa **cztery** źródła dowodu (moja ocena „mamy trzy z czterech"
+była trafna), ma ramę „jeden przepływ, cztery wejścia", a jej sednem jest tryb awarii
+**połkniętych błędów** (puste `catch`, OWASP A10:2025), którego w ogóle nie opisałem. Repo wypada
+tu dobrze i teraz wiadomo dlaczego.
+
+**KOREKTA 2 — brief m5l3, poważniejsza.** Lekcja jest o **przeniesieniu agenta recenzującego
+z m5l2 do GHA** (Composite Action przypięta do SHA, wejścia z ładunku PR, DoD z etykietami
+`ai-cr:*`, promptfoo, drabina sprawczości, skill `10x-impl-review-ci`). Bramka `tsc`/lint/testy,
+którą zbudowałem, jest w lekcji **fundamentem, nie tematem**. Dopisana tabela „czego ten brief NIE
+domyka" — sześć elementów, z czego pięć niezrobionych. **Nie nazywam już m5l3 domkniętą.**
+Najtańsza droga do domknięcia: skill `10x-impl-review-ci` **jest zainstalowany i nieużyty**,
+a w odróżnieniu od agenta z m5l2 **nie wymaga nowych zależności**, więc nie łamie reguły lockfile'a.
+
+Bramki: `check-conventions` czysto (43 pliki).
+Co zacommitowane: notes/10x-lesson-m4l2-brief.md, m4l3, m4l4, m4l5, m5l1, m5l2, m5l4 (nowe),
+notes/10x-lesson-m3l5-brief.md, notes/10x-lesson-m5l3-brief.md (korekty), notes/lesson-queue.md
+Commit: (poniżej)
+Do decyzji: (1) czy domykać m5l3 przez `10x-impl-review-ci` na runnerze — moim zdaniem tak, bo
+to jedyny element tej lekcji wykonalny bez łamania reguły lockfile'a; (2) czy przepisywać reguły
+`check-conventions.js` z regexów na `ast-grep`.
+Uwaga do tabeli stanu w sekcji 0: jest datowanym zrzutem z 13.09 i **m5l3 nie należy w niej liczyć
+jako domkniętej** — patrz korekta 2.

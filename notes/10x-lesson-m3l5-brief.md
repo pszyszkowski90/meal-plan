@@ -1,9 +1,13 @@
 # Brief: Moduł 3, Lekcja 5 — debugowanie ze zbieżnością dowodów
 
 > Brief pisany **po** przejściu pełnej pętli na realnym defekcie (ustalenie F5 przeglądu fazy 3),
-> 13.09.2026. Treści lekcji nie ma lokalnie — pobrane zostały skille, nie materiał. Część
-> „co lekcja wprowadza" opisuje więc **metodę tak, jak ją zastosowałem**, na podstawie opisu
-> zadania w [lesson-queue.md](lesson-queue.md), a nie relację z materiału, którego nie widziałem.
+> 13.09.2026.
+>
+> **Sprostowanie z tego samego dnia.** Pierwsza wersja tego briefu twierdziła, że „treści lekcji
+> nie ma lokalnie". **To była nieprawda** — materiał leżał w katalogu tymczasowym **poprzedniej**
+> sesji (`scratchpad/lessons/m3l5-final.json`) i znalazłem go dopiero przy zadaniu grupy D.
+> Sekcja „co lekcja wprowadza" jest poniżej **uzupełniona o rzeczywistą treść**, a to, co napisałem
+> z praktyki, zostaje — zgadza się z materiałem.
 
 ## Co lekcja wprowadza
 
@@ -13,6 +17,25 @@ to diagnoza. Domknięciem jest zamiana defektu w **czerwony test**, a dopiero po
 żeby to, co naprawione, zostało naprawione na stałe.
 
 Pętla: reprodukcja → czerwony test → poprawka → zielony → **próba celowego zepsucia**.
+
+**Uzupełnione z treści lekcji** (po znalezieniu materiału):
+
+- Lekcja nazywa **cztery** źródła dowodu: monitoring produkcyjny (Sentry), logi aplikacji,
+  reprodukcja w Playwrighcie i sam kod. Moja ocena, że mamy tu **trzy** z czterech, była trafna —
+  brakuje dokładnie monitoringu.
+- **„Jeden przepływ, cztery wejścia"**: niezależnie od tego, czy sygnał pojawi się najpierw
+  w monitoringu, w logu, w chwiejnym teście E2E, czy w stacktrace — droga jest ta sama. To wyjaśnia,
+  dlaczego moje wejście „od raportu przeglądu i kodu" nie było odstępstwem, tylko piątym wariantem
+  tego samego startu.
+- **Tryb awarii, którego nie opisałem, a który jest sednem lekcji: połknięte błędy** — puste bloki
+  `catch`, zignorowane odrzucenia obietnic (OWASP A10:2025, awarie logowania i monitoringu).
+  Połknięty błąd niszczy **dokładnie ten dowód**, którego debugowanie potrzebuje. To repo wypada
+  tu dobrze i warto wiedzieć dlaczego: każdy `catch` w `profile.tsx` **rozgałęzia się** na
+  `OfflineError`, `NotSignedInError` i resztę, a `internalError` w trasie **loguje** przed
+  zwróceniem 500. Nie ma ani jednego pustego `catch`.
+- Lekcja **nie dowozi własnego artefaktu** — dziedziczy cały łańcuch narzędzi Modułu 3. Dlatego
+  nie przyszedł z nią żaden skill i dlatego jej „wykonanie" musi być zmierzone realnym defektem,
+  a nie obecnością pliku.
 
 ## Ile źródeł naprawdę mamy w tym projekcie
 

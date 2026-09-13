@@ -1,16 +1,39 @@
 # Brief: Moduł 5, Lekcja 3 — bramka jakości w CI
 
 > Brief pisany po zbudowaniu i **uruchomieniu** bramki na prawdziwym pushu, 13.09.2026.
-> Treści lekcji nie ma lokalnie (pobrane zostały skille, nie materiał), więc sekcja „co lekcja
-> wprowadza" opisuje metodę tak, jak ją zastosowałem, na podstawie opisu zadania
-> w [lesson-queue.md](lesson-queue.md) — a nie relację z materiału, którego nie widziałem.
+>
+> **Sprostowanie z tego samego dnia — ważniejsze niż przy m3l5.** Pierwsza wersja twierdziła, że
+> treści lekcji nie ma lokalnie. Nieprawda: materiał leżał w katalogu tymczasowym **poprzedniej**
+> sesji (`scratchpad/lessons/m5l3.json`). Po przeczytaniu okazało się, że **lekcja jest o czymś
+> węższym, niż zakładała kolejka i niż zbudowałem** — patrz sekcja „Czego ten brief NIE domyka".
+> Zostawiam opis tego, co faktycznie zrobiłem, bo ma wartość sam w sobie, ale **nie nazywam już
+> tej lekcji domkniętą**.
 
-## Co lekcja wprowadza
+## Co lekcja wprowadza — z rzeczywistej treści
 
-Bramka jakości w CI jako warstwa, **której nie da się pominąć**. Lokalne hooki są szybkie
-i wygodne, ale każdy z nich da się obejść: `--no-verify`, świeży klon bez `npm run hooks:install`,
-push z innej maszyny, agent działający w kontenerze bez konfiguracji. CI widzi każdy commit
-niezależnie od tego, co było zainstalowane na maszynie autora.
+Lekcja nie jest o bramce `tsc` / lint / testy. Jest o **przeniesieniu agenta recenzującego
+z Modułu 5 Lekcji 2 z localhosta na ścieżkę do produkcji**, przez GitHub Actions:
+
+- **podstawy GHA** (workflow, wyzwalacz, job, krok, akcja, runner) i minimalny `review.yml`
+  na każdym PR;
+- wyodrębnienie agenta do **Composite Action**, żeby jeden agent pilnował wielu repozytoriów —
+  **przypiętej do SHA, nie do ruchomego tagu**;
+- podłączenie trzech realnych wejść (tytuł PR, opis, `git diff`) z ładunku wyzwalacza do `inputs`
+  akcji;
+- zamiana miękkiego wyniku w **twarde Definition of Done**: bramka scalania plus etykiety
+  `ai-cr:passed` / `ai-cr:failed`;
+- zestawienie ścieżki „zbuduj sam" z **Claude Code Action** Anthropica (gotowy recenzent sterowany
+  promptem);
+- **promptfoo** do ewaluacji zmian promptu i modelu na stałym zbiorze przypadków
+  (asercje `is-json`, `llm-rubric`, `javascript`) zamiast oceniania „na oko" jednego PR-a;
+- **drabina sprawczości** — od jednorazowego oceniacza po prawdziwą pętlę narzędziową;
+- Deep Dive: skill **`10x-impl-review-ci`**, uruchamiany na runnerze GHA.
+
+Wątek, który faktycznie zbudowałem — bramka jakości jako warstwa, **której nie da się pominąć** —
+jest w lekcji **fundamentem**, nie tematem. Lokalne hooki da się obejść (`--no-verify`, świeży klon
+bez `npm run hooks:install`, push z innej maszyny), a CI widzi każdy commit niezależnie od tego,
+co było zainstalowane na maszynie autora. To prawda i to działa, ale to punkt wyjścia lekcji,
+a nie jej sedno.
 
 ## Co powstało w MealPlanie
 
@@ -114,3 +137,27 @@ kroki nie ruszyły. PR zamknięty bez scalania, gałąź skasowana.
    jest zapisane.
 3. **Dobrze zrobione warstwy lokalne utrudniają testowanie warstwy zdalnej.** Droga wyjścia to
    odtworzyć warunki, dla których zdalna warstwa powstała — nie wyłączyć lokalne.
+
+## Czego ten brief NIE domyka — dopisane po przeczytaniu treści lekcji
+
+Uczciwie: **wykonałem fundament lekcji, nie jej temat.** Zbudowana bramka uruchamia `npm ci`,
+`tsc`, `expo lint`, `npm test`, `check-conventions` i `check-lock` — czyli **deterministyczne
+narzędzia**. Lekcja uczy wpięcia w to miejsce **agenta recenzującego** i wszystkiego, co z tego
+wynika. Nie zrobione zostało:
+
+| Element lekcji | Stan |
+|---|---|
+| Agent recenzujący w pipeline | **nie** — wymaga artefaktu z m5l2, świadomie pominiętego |
+| Composite Action przypięta do SHA | **nie** — mam jeden workflow, nie akcję wielokrotnego użytku |
+| Wejścia z ładunku PR (tytuł, opis, diff) | **nie** — bramka nie czyta diffa |
+| DoD: bramka scalania + etykiety `ai-cr:*` | **częściowo** — bramka blokuje, ale bez etykiet i bez oceny |
+| promptfoo na stałym zbiorze przypadków | **nie** — nie ma promptu do ewaluacji |
+| Skill `10x-impl-review-ci` na runnerze | **nie** — skill jest zainstalowany i nieużyty |
+
+**Skill `10x-impl-review-ci` leży w `.claude/skills/` i jest nieużyty.** To najtańsza droga
+do domknięcia tej lekcji: uruchamia przegląd implementacji nieinteraktywnie na PR, zapisuje raport
+do `context/changes/<id>/reviews/` i komentuje PR. W przeciwieństwie do agenta z m5l2 **nie
+wymaga nowych zależności w `package.json`**, czyli nie łamie reguły lockfile'a, która wykluczyła m5l2.
+
+**Zostaje jako rekomendacja, nie jako zrobione.** Warunek jest ten sam, co przy m5l2: przegląd musi
+być realnym wąskim gardłem. Przy jednej osobie i jedenastu przeglądach w historii projektu nie jest.
