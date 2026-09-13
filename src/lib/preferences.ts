@@ -75,6 +75,32 @@ export interface Exclusion extends ExclusionInput {
   createdAt: string;
 }
 
+/**
+ * Składnik na liście wyboru. Kontrakt `GET /api/catalog`.
+ *
+ * Ekran POTRZEBUJE tej listy, bo wykluczenie wskazuje `ingredient_id`, nigdy tekst — użytkownik
+ * musi wybrać z puli, a nie wpisać nazwę. Makra nie wchodzą: ekran preferencji ich nie pokazuje,
+ * a każde pole wysłane „na zapas" jest polem, które trzeba potem utrzymywać.
+ */
+export interface IngredientOption {
+  id: number;
+  name: string;
+  category: string;
+}
+
+/** Grupa wykluczeniowa na liście wyboru — słownik współdzielony, ten sam dla wszystkich kont. */
+export interface ExclusionGroupOption {
+  id: number;
+  slug: string;
+  name: string;
+}
+
+/** Kontrakt przewodowy `GET /api/catalog` — to, z czego ekran preferencji pozwala wybierać. */
+export interface CatalogResponse {
+  ingredients: IngredientOption[];
+  groups: ExclusionGroupOption[];
+}
+
 /** Kontrakt przewodowy `GET` i `PUT /api/preferences` — jeden kształt, klient niczego nie scala. */
 export interface PreferencesResponse {
   preferences: (PreferencesInput & { updatedAt: string }) | null;
