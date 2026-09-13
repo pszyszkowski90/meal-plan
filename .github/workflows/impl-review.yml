@@ -19,6 +19,14 @@
 # innego workflow, od zera.
 # ─────────────────────────────────────────────────────────────────────────────
 #
+# WŁASNOŚĆ, KTÓRA ZASKAKUJE: zmiana TEGO pliku wyłącza recenzenta na TYM PR-ze.
+#
+# `claude-code-action` odmawia uruchomienia, jeśli workflow nie jest **identyczny** z wersją
+# na gałęzi domyślnej — i słusznie, bo inaczej każdy z prawem zapisu mógłby w PR podmienić ten
+# plik i kazać agentowi zrobić cokolwiek. Skutek praktyczny: PR modyfikujący ten workflow zawsze
+# wyjdzie zielono z notką „Skipping action due to workflow validation", a zmiana zacznie działać
+# dopiero po scaleniu. To nie jest usterka i nie ma czego debugować.
+#
 # BEZ SEKRETU TEN WORKFLOW PRZECHODZI NA ZIELONO, POMIJAJĄC KROKI.
 #
 # To jest świadomy wybór, nie zaniedbanie. Workflow, który pada na każdym PR, bo brakuje sekretu,
