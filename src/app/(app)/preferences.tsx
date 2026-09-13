@@ -395,6 +395,9 @@ export default function PreferencesScreen() {
                 key={group.slug}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked }}
+                // Jak w `ChoiceField`: `aria-checked` trzeba podać wprost, inaczej chip nie
+                // ogłasza stanu i zostaje sam kolor tła.
+                aria-checked={checked}
                 accessibilityLabel={group.name}
                 aria-label={group.name}
                 onPress={() => toggleGroup(group)}

@@ -332,3 +332,25 @@ przez co lokator `div[tabindex]` przestał trafiać i logowanie w harnessie się
 `control()` przyjmuje teraz obie formy — to naprawa, nie obejście, ale warto o tym wiedzieć przy
 następnym prymitywie. Kryteria **2.9** (Expo Go) i **2.10** (czytelność przy 20 wpisach) zostają
 niesprawdzone: warstwy natywnej harness nie pokrywa.
+
+### 22:21 UTC — C6 Wdrożenie i finalne zrzuty
+Wynik: ok
+Co zrobione: `expo export` (5 tras API), `wrangler deploy --dry-run` — **15 modułów, zero
+z `node_modules`**, bramka `wrangler dev` na zbudowanym `dist/` przeszła, E2E **39/39**.
+**`wrangler deploy` ŚWIADOMIE pominięty**: produkcję wdrożył już Workers Builds po scaleniu
+PR #10 (`/preferences` 200, `/api/catalog` 401 zamiast 404 — trasa istnieje), a drugi deploy
+tego samego commita to wyścig, przed którym ostrzega `CLAUDE.md`. Smoke test produkcji czysty:
+`/` 200 text/html, nieznana ścieżka 404, `/api/health` `{"ok":true,"d1":true}`, cztery trasy API
+bez nagłówka 401, `/preferences`, `/profile` i `/sign-in` 200. Zasób bundla wzięty
+**z wdrożonego HTML-a** (hash inny niż lokalny — udokumentowana niedeterministyczność Metro)
+pobiera się z kodem 200. Pięć zrzutów odtworzone z finalnego buildu, dwa przebiegi pod rząd dały
+ten sam wynik.
+Co zacommitowane: `src/app/(app)/preferences.tsx`, `src/components/ui/choice-field.tsx`,
+`tests/e2e/preferences-screen.spec.ts`, `notes/cert-queue.md`
+PR: #11
+Do decyzji: przy odtwarzaniu zrzutów wyszła **realna usterka dostępności**: React Native Web nie
+tłumaczy `accessibilityState={{ checked }}` na `aria-checked`, więc chipy grup i opcje
+`ChoiceField` **nie ogłaszały stanu wyboru** — zostawał sam kolor tła. Luka siedziała
+w `ChoiceField` od S-02, czyli obejmowała też płeć i poziom aktywności w profilu. Naprawione
+u źródła plus test regresyjny. Znalazł ją skrypt zrzutów, który przez ten brak przełączał grupę
+w złą stronę przy każdym przebiegu — dokładnie ta sama informacja, której brakowało czytnikowi.
