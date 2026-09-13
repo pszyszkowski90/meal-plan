@@ -15,8 +15,10 @@ import {
   ActivityLabel,
   ActivityLevels,
   computeCalorieTarget,
+  isUnparsableNumberInput,
   parseNumberInput,
   ProfileBounds,
+  UnparsableNumberMessage,
   validateProfile,
   type ActivityLevel,
   type ProfileFieldErrors,
@@ -164,10 +166,23 @@ export default function ProfileScreen() {
   const validation = validateProfile(candidate);
   const target = validation.ok ? computeCalorieTarget(validation.value) : null;
 
+  /**
+   * Nieliczbowy tekst w polu nadpisania (ustalenie F4).
+   *
+   * `validateProfile` tego nie zobaczy: dostaje już `null`, a `null` znaczy „brak nadpisania".
+   * Rozróżnienie „pusto" kontra „bzdura" istnieje wyłącznie nad surowym tekstem, więc mieszka tu.
+   */
+  const overrideUnparsable = isUnparsableNumberInput(overrideText);
+
   function errorFor(field: keyof ProfileInput): string | null {
     const fromServer = serverFieldErrors?.[field];
     if (fromServer) {
       return fromServer;
+    }
+    // Błąd odczytu wyprzedza walidację: pole, którego nie da się przeczytać, nie ma jeszcze
+    // wartości, o której `validateProfile` mogłoby cokolwiek orzec.
+    if (field === 'targetKcalOverride' && overrideUnparsable) {
+      return submitted || blurred[field] ? UnparsableNumberMessage : null;
     }
     if (validation.ok) {
       return null;
@@ -199,6 +214,13 @@ export default function ProfileScreen() {
     setSubmitted(true);
     setServerFieldErrors(null);
     setSaveNotice(null);
+
+    if (overrideUnparsable) {
+      // Zapis MUSI się zatrzymać, choć `validateProfile` przepuściłoby ten profil: nieczytelne
+      // nadpisanie dotarłoby do serwera jako `null`, czyli „skasuj nadpisanie", i użytkownik
+      // straciłby wpisaną wartość bez śladu. To jest sedno ustalenia F4.
+      return;
+    }
 
     if (!validation.ok) {
       // Żądanie nie wychodzi: błędy są już pod polami, a serwer powiedziałby dokładnie to samo.

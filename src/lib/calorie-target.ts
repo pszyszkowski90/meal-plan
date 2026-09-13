@@ -119,6 +119,30 @@ export function parseNumberInput(text: string): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
+/**
+ * Komunikat dla pola, w którym coś stoi, ale nie da się tego odczytać jako liczby.
+ *
+ * Mieszka tutaj razem z komunikatami `validateProfile`, choć nie pochodzi z walidacji profilu:
+ * `validateProfile` widzi już **liczbę albo `null`** i z definicji nie odróżni „pusto" od
+ * „bzdura". To rozróżnienie da się zrobić wyłącznie nad surowym tekstem, czyli w ekranie.
+ */
+export const UnparsableNumberMessage = 'Podaj liczbę albo zostaw pole puste.';
+
+/**
+ * Czy w polu coś stoi, ale `parseNumberInput` tego nie odczyta.
+ *
+ * Powód istnienia — ustalenie F4 przeglądu fazy 3: `parseNumberInput('abc')` zwraca `null`,
+ * a `null` w `targetKcalOverride` znaczy „brak nadpisania". Bez tego predykatu nieliczbowy tekst
+ * był **milcząco** traktowany jak puste pole: zapis przechodził, a użytkownik tracił wpisaną
+ * wartość bez jednego słowa wyjaśnienia.
+ *
+ * Świadomie nie rozszerzam `ProfileValidation` — kontrakt `PUT /api/profile` przyjmuje liczby,
+ * nie tekst z formularza, więc serwer tego stanu nigdy nie zobaczy i nie ma o czym orzekać.
+ */
+export function isUnparsableNumberInput(text: string): boolean {
+  return text.trim() !== '' && parseNumberInput(text) === null;
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }

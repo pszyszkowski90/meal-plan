@@ -278,6 +278,59 @@ test.describe('Faza 3 — ekran profilu w przeglądarce', () => {
     await expect(page.getByText('Wróć do wyliczenia')).toBeVisible();
   });
 
+  /**
+   * Ustalenie **F4** przeglądu fazy 3 (`impl-review-phase-3.md:90-100`), zostawione jako PENDING
+   * i odblokowane dopiero poprawką F5.
+   *
+   * `parseNumberInput("abc")` zwraca `null`, a `null` znaczy „brak nadpisania" — więc nieliczbowy
+   * tekst był **milcząco** traktowany jak puste pole. Zapis wychodził bez błędu, a użytkownik
+   * tracił to, co wpisał, nie dostając ani słowa wyjaśnienia.
+   *
+   * Kolejność napraw była wymuszona: gdyby F4 wszedł przed F5, pokazanie błędu zgasiłoby `target`
+   * i zabrało użytkownikowi wyjście z nadpisania — czyli pogorszyłoby produkt.
+   */
+  test('F4 nieliczbowy tekst w „Własny cel" daje błąd, a nie ciche zniknięcie', async ({ page }) => {
+    await openProfile(page);
+    await fillReferenceProfile(page);
+
+    await overrideField(page).fill('abc');
+    await overrideField(page).blur();
+
+    // Widoczny błąd pod polem — to jest sedno F4.
+    await expect(page.getByText(/Podaj liczbę albo zostaw pole puste/)).toBeVisible();
+
+    // I wpisana wartość NIE znika.
+    await expect(overrideField(page)).toHaveValue('abc');
+  });
+
+  test('F4 zapis jest zatrzymany przed siecią, gdy nadpisanie jest nieliczbowe', async ({ page }) => {
+    const writes: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/api/profile') && r.method() !== 'GET') writes.push(r.method());
+    });
+
+    await openProfile(page);
+    await fillReferenceProfile(page);
+    await overrideField(page).fill('abc');
+
+    await control(page, 'Zapisz').click();
+
+    await expect(page.getByText(/Popraw zaznaczone pola|Podaj liczbę albo zostaw pole puste/)).toBeVisible();
+    expect(writes).toEqual([]);
+  });
+
+  /** Puste pole nadal znaczy „brak nadpisania" — poprawka nie może tego zepsuć. */
+  test('F4 puste pole nadal znaczy brak nadpisania, bez błędu', async ({ page }) => {
+    await openProfile(page);
+    await fillReferenceProfile(page);
+
+    await overrideField(page).fill('');
+    await overrideField(page).blur();
+
+    await expect(page.getByText(/Podaj liczbę albo zostaw pole puste/)).toHaveCount(0);
+    await expect(page.getByText(/= *2759 kcal dziennie/)).toBeVisible();
+  });
+
   test('3.13 zakładki to MealPlan, Home i Profil — bez Docs', async ({ page }) => {
     await page.goto('/');
 

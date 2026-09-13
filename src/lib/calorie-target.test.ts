@@ -19,6 +19,7 @@ import {
   ActivityLevels,
   ActivityMultiplier,
   computeCalorieTarget,
+  isUnparsableNumberInput,
   parseNumberInput,
   ProfileBounds,
   validateProfile,
@@ -370,5 +371,30 @@ describe('computeCalorieTarget — skrajne profile w granicach walidacji', () =>
     assert.equal(lowest.bmrKcal, highest.bmrKcal);
     assert.equal(lowest.computedKcal, 2136);
     assert.equal(highest.computedKcal, 3382);
+  });
+});
+
+describe('isUnparsableNumberInput — odróżnia „pusto" od „bzdura" (ustalenie F4)', () => {
+  test('pusto i same białe znaki to NIE jest błąd', () => {
+    assert.equal(isUnparsableNumberInput(''), false);
+    assert.equal(isUnparsableNumberInput('   '), false);
+  });
+
+  test('tekst nieliczbowy to błąd', () => {
+    assert.equal(isUnparsableNumberInput('abc'), true);
+    assert.equal(isUnparsableNumberInput('2200 kcal'), true);
+    assert.equal(isUnparsableNumberInput('1e3'), true);
+  });
+
+  test('liczba w polskim zapisie nie jest błędem', () => {
+    assert.equal(isUnparsableNumberInput('2200'), false);
+    assert.equal(isUnparsableNumberInput('70,5'), false);
+    assert.equal(isUnparsableNumberInput(' 80 '), false);
+  });
+
+  test('„70," w trakcie pisania JEST błędem — i to jest świadome', () => {
+    // Stan przejściowy, ale pole pokazuje błąd dopiero po `blur` albo po próbie zapisu,
+    // więc użytkownik nie zobaczy go w trakcie wpisywania.
+    assert.equal(isUnparsableNumberInput('70,'), true);
   });
 });
