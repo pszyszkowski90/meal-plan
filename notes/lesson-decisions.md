@@ -35,6 +35,81 @@ Pełny raport: `context/archive/2026-09-12-profile-and-calorie-target/reviews/im
 
 <!-- KOLEJNE DECYZJE PONIŻEJ -->
 
+### D20 — Sito Atwatera dostaje próg BEZWZGLĘDNY obok względnego (12 kcal/100 g)
+
+**Co:** `atwaterWithinTolerance(macros, 10%, 12 kcal)` w `src/lib/dish-macros.ts`, użyte w obu sitach
+`dish-validation.ts` (na składniku i na daniu). Warunek: `|zadeklarowane − Atwater| ≤ max(10% ×
+zadeklarowane, 12 kcal)`. **Zero kilokalorii zostaje przypadkiem ostrym** — produkt zadeklarowany
+jako bezkaloryczny z niezerowymi makrami jest zawsze odrzucany, próg bezwzględny tam nie działa.
+
+**Powód:** Właściciel wybrał wariant „luźniejszy próg dla niskokalorycznych". **Moja pierwotna
+propozycja (25% poniżej 60 kcal/100 g) była błędna** — zmierzyłem ją na prawdziwych wierszach USDA
+i nie wystarcza: szpinak ma 28,1% odchylenia, pieczarka 29,4%. Próg procentowy musiałby sięgnąć
+~35%, a wtedy przestaje cokolwiek łapać.
+
+Przyczyna jest matematyczna, nie dziedzinowa: **tolerancja względna załamuje się blisko zera**.
+Przy 23 kcal nadwyżka 6,5 kcal to 28%, choć w kilokaloriach jest to nic. Próg bezwzględny naprawia
+dokładnie ten efekt, nie dotykając produktów wysokokalorycznych.
+
+**Zmierzone (pełna tabela w scratchpadzie sesji, wartości z USDA):**
+
+| Produkt | kcal | Atwater | odchylenie | różnica |
+|---|---:|---:|---:|---:|
+| brokuł surowy | 34 | 41,2 | 21,1% | 7,2 |
+| szpinak surowy | 23 | 29,5 | 28,1% | 6,5 |
+| pieczarka surowa | 22 | 28,5 | 29,4% | 6,5 |
+| ogórek surowy | 15 | 18,1 | 20,7% | 3,1 |
+| **BŁĄD:** ryż ugotowany pod nazwą suchego | 130 | 354,3 | 172,5% | **224,3** |
+| **BŁĄD:** niskokaloryczny zawyżony ×10 | 20 | 186,0 | 830,0% | **166,0** |
+
+Skala błędu, którego szukamy, jest o rząd wielkości większa niż nadwyżka błonnikowa — dlatego próg
+bezwzględny rozdziela te dwa przypadki czysto. Sprawdzone dla progów 8, 10 i 12 kcal: **zero
+błędnych werdyktów w każdym**. Wybrano 12 — najgorszy uczciwy przypadek to 7,2 kcal, więc zapas
+jest 66-procentowy, a koszt przeoczenia ograniczony z góry: 12 kcal/100 g przy 300 g warzyw to
+36 kcal, poniżej 2% dziennego budżetu i wewnątrz guardraila ±10%.
+
+**Weryfikacja:** blok testowy „ZNANE OGRANICZENIE" **zastąpiony** testami, w których cztery warzywa
+z prawdziwymi liczbami USDA **przechodzą**, a trzy klasy błędów nadal są odrzucane. Celowe
+zepsucie (próg = 0, czyli stan sprzed decyzji) zaczerwieniło **dokładnie cztery testy warzywne**
+i żadnego innego. `npm test` 77/77 (było 66).
+
+**Jak cofnąć:** `atwaterFloorKcal: 0` w `DishBounds` przywraca poprzednie zachowanie; testy warzywne
+wtedy czerwienią się i trzeba je usunąć.
+
+**Status:** wdrożone. **F-01 faza 3 odblokowana.**
+
+### D21 — Wykluczenia dostają osobną tabelę grup (wariant a); D14 rozszerzone
+
+**Co:** Model wykluczeń z decyzji D14 zostaje rozszerzony o **trzeci rodzaj wpisu** `kind='group'`
+oraz dwie tabele: `exclusion_group` (słownik grup po polsku — grzyby, orzechy, nabiał, ryby, owoce
+morza, strączki, gluten, wieprzowina…) i `ingredient_group` (przypisanie składnika do grupy,
+wiele do wielu). Wykluczenie grupowe obejmuje **każdy** składnik należący do grupy, także dodany
+do puli później.
+
+**Powód:** Wybór właściciela po badaniu S-03. Wariant „rozwinięcie przy seedowaniu" zachowywał
+dwuwartościowe `kind` zgodnie z D14, ale **przecieka przy rosnącej puli**: zbiór identyfikatorów
+jest migawką, a faza 4 F-01 celuje w ≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji i ≥ 12 przekąsek —
+składnik dodany po rozwinięciu nie zostałby objęty i **nikt by się o tym nie dowiedział**.
+Wariant „świadoma dziura w PRD" był uczciwy, ale zostawiał FR-004 działające tylko dla części
+przypadków.
+
+**Dlaczego nie `ingredient.category`:** to jedenaście **kategorii sklepowych** (grzyby → `warzywa`,
+orzechy → `suche`). Wykluczenie po kategorii wycięłoby wszystkie warzywa albo wszystkie produkty
+suche. Kategorie USDA zawodzą identycznie. Szczegóły: `research.md` §4.1.
+
+**Dlaczego nie FoodOn:** hierarchia 9 600 klas do MVP z pulą rzędu stu dań jest nieproporcjonalna.
+
+**Koszt zmiany D14 jest dziś niski na mocy samej D14** („decyzja żyje w dokumentach, zero kodu")
+— a `ingredient` jest **pusta**, więc to migracja, nie backfill przez człowieka. Po zaseedowaniu
+i ręcznym przejrzeniu gramatur ta sama zmiana kosztowałaby ręczne przypisanie każdego składnika.
+
+**Jak cofnąć:** zero kodu napisane — decyzja żyje w `plan.md` S-03, `research.md` i tutaj.
+Powrót do dwuwartościowego `kind` to cofnięcie tych akapitów.
+
+**Status:** rozstrzygnięte. **S-03 faza 1 odblokowana**, kontrakt migracji `0004` do uzupełnienia
+o dwie tabele. Nie implementowane — to zadanie dla `/10x-implement`.
+
+
 ### D19 — Bramka jakości w GitHub Actions jako czwarta warstwa, bez wdrażania i bez E2E
 
 **Co:** `.github/workflows/quality-gate.yml` na pushu i PR do `main`: `npm ci`, `tsc --noEmit`,

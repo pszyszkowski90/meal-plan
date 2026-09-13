@@ -14,8 +14,9 @@
 > względem **zapisanej listy**, a FR-004 mówi o „potrawach i składnikach", nie o pojęciach.
 > Rzeczywisty problem to **luka wymagań**, nie defekt — więc kolejność brzmi
 > **PRD → schemat → ekran**, a pierwszym artefaktem do zmiany jest Otwarte pytanie 4 PRD.
-> **Faza 1 jest zablokowana** do czasu rozstrzygnięcia przez właściciela warstwy grup
-> wykluczeniowych — [research.md](research.md), Otwarte pytania 1.
+> **Faza 1 odblokowana 13.09.2026** decyzją **D21**: wchodzi wariant z osobną tabelą grup
+> (`kind='group'` + `exclusion_group` + `ingredient_group`). Kontrakt migracji `0004` niżej
+> uwzględnia już te dwie tabele.
 
 ## Przegląd
 
@@ -23,7 +24,8 @@ Użytkownik wskazuje, **czego nie chce jeść**, ile najwyżej chce gotować i n
 dzień. To trzy ostatnie wejścia, których brakuje generatorowi planu (S-04): cel kaloryczny dała
 S-02, dania dała F-01, a tutaj powstaje reszta ograniczeń.
 
-Sednem jest **jedna lista wykluczeń** o dwóch rodzajach wpisu — składnikowym i daniowym.
+Sednem jest **jedna lista wykluczeń** o trzech rodzajach wpisu — składnikowym, daniowym
+i grupowym (decyzja D21).
 
 ## Analiza stanu obecnego
 
@@ -52,12 +54,15 @@ Czego **nie ma**:
 ## Pożądany stan końcowy
 
 1. Zakładka **Preferencje** na obu platformach.
-2. Użytkownik dodaje i usuwa wykluczenia dwóch rodzajów; ekran pokazuje **jedną listę**
-   z oznaczeniem rodzaju, nie dwie osobne sekcje.
+2. Użytkownik dodaje i usuwa wykluczenia trzech rodzajów; ekran pokazuje **jedną listę**
+   z oznaczeniem rodzaju, nie trzy osobne sekcje. Wykluczenie grupowe („grzyby") jest wpisem
+   jak każdy inny, nie osobnym mechanizmem.
 3. Ustawia maksymalny czas przygotowania i liczbę posiłków dziennie (3–6).
 4. `GET`/`PUT /api/preferences` z jednym kontraktem; granica danych jak w `/api/profile`.
 5. Wykluczenie składnikowe odsiewa **każde** danie zawierające ten składnik — dowiedzione testem
-   na daniu, którego nazwa o składniku nie mówi.
+   na daniu, którego nazwa o składniku nie mówi. Wykluczenie **grupowe** odsiewa każde danie
+   zawierające **którykolwiek** składnik z grupy, łącznie ze składnikiem dodanym do puli po
+   zapisaniu wykluczenia.
 6. Zero kodu generatora planu.
 
 ### Kluczowe odkrycia
@@ -90,8 +95,10 @@ Czego **nie ma**:
   guardrail przy pierwszym „risotto z borowikami" — to jest dokładnie ten tryb awarii, przed którym
   ostrzega wyzwanie sokratejskie przy FR-004. Konsekwencja: ekran potrzebuje wyszukiwarki po
   `ingredient`, a nie pola tekstowego.
-- **Jedna tabela, dwa rodzaje wpisu.** `kind` rozstrzyga, które z `ingredient_id` / `dish_id` jest
-  wypełnione. Dwie osobne tabele oznaczałyby dwa mechanizmy — PRD wymaga jednego.
+- **Jedna tabela, trzy rodzaje wpisu.** `kind` rozstrzyga, które z `ingredient_id` / `dish_id` /
+  `group_id` jest wypełnione. Osobne tabele na rodzaj wykluczenia oznaczałyby wiele mechanizmów —
+  PRD wymaga jednego. `exclusion_group` i `ingredient_group` **nie łamią tej zasady**: to słownik
+  i przypisanie, dane współdzielone bez `user_id`, a nie druga lista wykluczeń użytkownika.
 - **Preferencje to osobna tabela od profilu.** `user_profile` ma kontrakt pilnowany przez
   `validateProfile` i wzór kaloryczny; dołożenie tam `meals_per_day` rozjechałoby S-02.
 
@@ -115,12 +122,20 @@ Czego **nie ma**:
   > `ALTER TABLE … DROP CONSTRAINT`, a rozjazd wychodzi użytkownikowi jako 500 zamiast błędu pod
   > polem. **Zakres przenieś do `src/lib/preferences.ts`**, w DDL zostaw najwyżej niezmiennik
   > strukturalny (`max_prep_minutes > 0`), analogicznie do `prep_minutes` w `0003`.
-- `exclusion` — `id`, `user_id` (FK), `kind` (`CHECK` na `'ingredient'|'dish'`),
-  `ingredient_id` (FK → `ingredient`, NULL dla `kind='dish'`), `dish_id` (FK → `dish`,
-  NULL dla `kind='ingredient'`), `source` (`CHECK` na `'preferences'|'plan'`), `created_at`.
-- `CHECK` spójności: dokładnie jedno z `ingredient_id` / `dish_id` niepuste, zgodnie z `kind`.
-- Unikalność: (`user_id`, `kind`, `ingredient_id`, `dish_id`) — dwukrotne wykluczenie tego samego
-  nie tworzy duplikatu.
+- `exclusion` — `id`, `user_id` (FK), `kind` (`CHECK` na `'ingredient'|'dish'|'group'`),
+  `ingredient_id` (FK → `ingredient`, NULL poza `kind='ingredient'`), `dish_id` (FK → `dish`,
+  NULL poza `kind='dish'`), `group_id` (FK → `exclusion_group`, NULL poza `kind='group'`),
+  `source` (`CHECK` na `'preferences'|'plan'`), `created_at`.
+- **`exclusion_group`** (decyzja D21) — `id`, `slug` (UNIQUE), `name` (nazwa po polsku, np.
+  „grzyby"). Dane **współdzielone**, bez `user_id` — jak pula dań w `0003`; wypełnia je seed.
+- **`ingredient_group`** (decyzja D21) — `ingredient_id` + `group_id`, `PRIMARY KEY` na parze,
+  wiele do wielu. **Indeks na `group_id`** — odsiew pyta „które składniki należą do tej grupy",
+  czyli po drugiej kolumnie klucza; bez indeksu będzie `SCAN` (ten sam błąd, co ustalenie F1
+  przeglądu fazy 1 F-01).
+- `CHECK` spójności: dokładnie jedno z `ingredient_id` / `dish_id` / `group_id` niepuste,
+  zgodnie z `kind`.
+- Unikalność: (`user_id`, `kind`, `ingredient_id`, `dish_id`, `group_id`) — dwukrotne wykluczenie
+  tego samego nie tworzy duplikatu.
 - Indeks na `user_id` — każde zapytanie odsiewające startuje od niego.
 
 #### 2. Repozytorium i trasa
@@ -165,9 +180,13 @@ czasu. To jedyna funkcja tej zmiany, którą przejmie S-04.
   > Obecne brzmienie mierzy to, co faktycznie mierzy: **złączenie po identyfikatorze, nie po
   > nazwie**. Zdolność użytkownika do wyrażenia pojęcia „grzyby" to **osobne** kryterium, które
   > powstanie razem z rozstrzygnięciem Otwartego pytania 1 — patrz 1.10 niżej.
-- **Wyrażenie pojęcia szerokiego** — kryterium do napisania po decyzji właściciela o warstwie
-  grup. Nie da się go sformułować, zanim nie wiadomo, czy pojęcie jest wpisem w `exclusion`,
-  rozwinięciem przy seedowaniu, czy świadomie pominiętą dziurą MVP.
+- **Wykluczenie grupowe odsiewa danie przez składnik, którego użytkownik nie wskazał** — wyklucz
+  grupę „grzyby" (jednym wpisem `kind='group'`) i sprawdź, że `listAllowedDishes` odsiewa danie
+  z „borowikami, suszonymi", **nigdy nie wymieniając borowików**. To jest kryterium, którego
+  poprzednia wersja 1.7 nie potrafiła wyrazić.
+- **Składnik dodany do grupy PO zapisaniu wykluczenia też jest odsiewany** — dopisz nowy składnik
+  do `ingredient_group` i powtórz odsiew bez dotykania `exclusion`. To jest dokładnie ten przeciek,
+  przez który odrzucono rozwinięcie przy seedowaniu (decyzja D21).
 - `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
 
 #### Weryfikacja ręczna
@@ -295,10 +314,20 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
   > też argument terminowy: `ingredient` jest dziś **pusta**, więc warstwa grup kosztuje migrację;
   > po zaseedowaniu i ręcznym przejrzeniu puli kosztuje backfill przez człowieka.
   >
-  > **Blokada:** wybór wariantu modyfikuje kontrakt z decyzji D14 (jedna tabela, `kind` o dwóch
-  > wartościach), więc **wymaga decyzji właściciela** — trzy warianty wyłożone w
-  > [research.md](research.md), Otwarte pytania 1. Do czasu rozstrzygnięcia faza 1 nie jest gotowa
-  > do implementacji.
+  > **ROZSTRZYGNIĘTE 13.09.2026 — decyzja D21. Faza 1 odblokowana.**
+  >
+  > Wchodzi **wariant z osobną tabelą grup**: trzeci rodzaj wpisu `kind='group'` plus
+  > `exclusion_group` (słownik grup po polsku) i `ingredient_group` (przypisanie składnika do grupy,
+  > wiele do wielu). Wykluczenie grupowe obejmuje **każdy** składnik należący do grupy — także
+  > dodany do puli później.
+  >
+  > Odrzucone „rozwinięcie przy seedowaniu": zachowywało dwuwartościowe `kind` zgodnie z D14, ale
+  > zbiór identyfikatorów jest **migawką**, a faza 4 F-01 celuje w ≥ 12 śniadań, ≥ 18 obiadów,
+  > ≥ 18 kolacji i ≥ 12 przekąsek. Składnik dodany po rozwinięciu nie zostałby objęty wykluczeniem
+  > i **nikt by się o tym nie dowiedział** — cicha awaria guardraila, którego ta zmiana ma pilnować.
+  >
+  > D14 zostaje **rozszerzone, nie cofnięte**: nadal jedna tabela `exclusion` i jeden mechanizm
+  > zasilany z dwóch miejsc (FR-004 i FR-011), zgodnie z PRD.
 
 - **Zakres `max_prep_minutes` wymaga pogodzenia z `dish.prep_minutes`.** Ten plan daje 5–240,
   a F-01 zamierza dla dania 5–120 (dziś w bazie tylko `> 0`; zakres trafia do
@@ -332,12 +361,13 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 - [ ] 1.6 Konto A nie widzi wykluczeń konta B
 - [ ] 1.7 `listAllowedDishes` odsiewa danie, którego nazwa nie zawiera wykluczonego składnika —
       wykluczenie po `ingredient_id` („borowiki, suszone"), nie po słowie „grzyby"
-- [ ] 1.8 Wyrażenie pojęcia szerokiego — kryterium do napisania po decyzji z Otwartego pytania 1
-- [ ] 1.9 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
+- [ ] 1.8 Wykluczenie grupowe „grzyby" odsiewa danie z borowikami, bez wymieniania borowików
+- [ ] 1.9 Składnik dopisany do grupy PO zapisaniu wykluczenia też jest odsiewany
+- [ ] 1.10 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
 
 #### Manual
 
-- [ ] 1.10 `migrations apply --remote` wykonane przed commitem fazy
+- [ ] 1.11 `migrations apply --remote` wykonane przed commitem fazy
 
 ### Phase 2: Ekran preferencji
 

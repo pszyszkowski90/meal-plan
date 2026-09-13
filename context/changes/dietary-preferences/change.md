@@ -27,11 +27,12 @@ archived_at: null
 - **Wymaganie wstępne spełnione:** F-01 faza 1 weszła (commit `c848474`), migracja `0003`
   zastosowana `--local` i `--remote`. Tabele `ingredient`, `dish`, `dish_ingredient` istnieją,
   ale są puste — pula powstaje w fazach 2–4 F-01.
-- **Nowa blokada, zgłoszona badaniem:** wykluczenie składnikowe wskazujące pojedynczy
-  `ingredient_id` pokrywa tylko część przypadków FR-004 („grzyby" kontra „pieczarki, świeże"),
-  a `ingredient.category` tego nie ratuje — to kategorie sklepowe. Warstwa grup wykluczeniowych
-  wymaga decyzji właściciela, bo modyfikuje kontrakt z D14. Trzy warianty w
-  [research.md](research.md), Otwarte pytania 1.
+- ~~**Nowa blokada, zgłoszona badaniem:** warstwa grup wykluczeniowych wymaga decyzji
+  właściciela.~~ **ZDJĘTA 13.09.2026 — decyzja D21.** Wchodzi wariant z osobną tabelą grup
+  (`kind='group'` + `exclusion_group` + `ingredient_group`); D14 zostaje **rozszerzone, nie
+  cofnięte** — nadal jedna tabela `exclusion` i jeden mechanizm zasilany z FR-004 i FR-011.
+  Odrzucone rozwinięcie przy seedowaniu: przecieka przy rosnącej puli.
+  **Faza 1 jest gotowa do implementacji.**
 - **Przeramowanie 13.09.2026** — [frame.md](frame.md). Kontrola krzyżowa (niezależny przebieg bez
   podanej hipotezy) obaliła pierwotne nazwanie problemu: guardrail PRD jest zdefiniowany względem
   **zapisanej listy**, a FR-004 mówi o „potrawach i składnikach", nie o pojęciach — więc to

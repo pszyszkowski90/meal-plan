@@ -513,7 +513,12 @@ usprawnieniem.
 
 ## Open Questions
 
-1. **Czy model wykluczeń dostaje warstwę grup — i w jakiej postaci?** Dowody z §3.2, §3.3 i §4.1
+1. ~~**Czy model wykluczeń dostaje warstwę grup — i w jakiej postaci?**~~
+   **ROZSTRZYGNIĘTE 13.09.2026 — decyzja D21: wariant (a), osobna tabela grup.** Powód wyboru:
+   wariant (b) przecieka przy rosnącej puli — zbiór identyfikatorów jest migawką, a faza 4 F-01
+   celuje w ≥ 60 dań, więc składnik dodany po rozwinięciu nie zostałby objęty i nikt by się o tym
+   nie dowiedział. Kontrakt migracji w [plan.md](plan.md), faza 1. Poniżej oryginalne brzmienie
+   pytania, dla śladu rozumowania: Dowody z §3.2, §3.3 i §4.1
    mówią, że bez niej FR-004 działa tylko dla części przypadków. Trzy warianty:
    (a) trzeci rodzaj wpisu `kind='group'` plus tabele `exclusion_group` i `ingredient_group`;
    (b) grupa rozwijana **przy seedowaniu** do listy `ingredient_id` — `exclusion` zostaje wtedy
