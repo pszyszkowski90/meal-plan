@@ -228,6 +228,20 @@ Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`, `check-
 - „Przetestowane" znaczy: `npx tsc --noEmit` i `npm test` przechodzą, a zmiana została **zobaczona
   w działaniu** — harnessem albo na realnej platformie. Warstwy natywnej harness nie pokrywa.
 - Tematy commitów: tryb rozkazujący, zdaniowa wielkość liter, bez prefiksu.
+- **Praca idzie przez pull request, nie prosto na `main`** (od 13.09.2026). Gałąź → push → PR →
+  zielona bramka → merge. Powód jest taki sam, jak przy czwartej warstwie bramek: `main` wdraża
+  **natychmiast**, więc commit wypchnięty wprost jest jednocześnie wdrożeniem, którego nikt nie
+  widział. PR daje miejsce na przeczytanie diffu **zanim** to się stanie, a bramka jakości i tak
+  już wyzwala się na `pull_request`.
+  ```sh
+  git checkout -b <nazwa-galezi>
+  git push -u origin <nazwa-galezi>
+  gh pr create --base main --fill     # albo --title/--body
+  gh pr checks --watch                 # bramka jakości
+  gh pr merge --squash --delete-branch
+  ```
+  **Wyjątek, świadomy:** poprawka, która naprawia **czerwoną produkcję**, może iść prosto na `main` —
+  wtedy PR jest kosztem, nie zabezpieczeniem. Każdy inny pośpiech nie jest wyjątkiem.
 - Konfiguracja lokalna: `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` w `.env.local` (w CI: zmienna buildu
   Workers Builds), `CLERK_JWT_KEY` w `.dev.vars` dla `wrangler dev` (w produkcji: `wrangler secret`).
   Klient natywny w trybie dev **wymaga** `EXPO_PUBLIC_API_URL` w `.env.local` — adres

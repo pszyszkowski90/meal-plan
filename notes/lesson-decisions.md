@@ -35,6 +35,31 @@ Pełny raport: `context/archive/2026-09-12-profile-and-calorie-target/reviews/im
 
 <!-- KOLEJNE DECYZJE PONIŻEJ -->
 
+### D24 — Praca idzie przez pull request, nie prosto na `main`
+
+**Co:** Od 13.09.2026 zmiany wchodzą gałęzią → PR → zielona bramka → merge. Zapisane
+w `CLAUDE.md` („Komendy i weryfikacja") razem z sekwencją poleceń `gh`.
+
+**Powód:** Decyzja właściciela. Uzasadnienie jest to samo, co przy czwartej warstwie bramek:
+`main` wdraża **natychmiast**, więc commit wypchnięty wprost jest jednocześnie wdrożeniem,
+którego nikt nie przeczytał. Dziś poszły tak **24 commity**, w tym poprawka widoczna dla
+użytkownika i migracja schematu.
+
+**Co to zmienia oprócz nawyku:** bramka jakości (`quality-gate.yml`) wyzwala się **już teraz**
+na `pull_request` — ten tryb był skonfigurowany od początku i dotąd odpalił się dokładnie raz,
+przy moim celowym zepsuciu. Od tej decyzji zaczyna być używany do tego, po co powstał.
+
+**Wyjątek:** poprawka naprawiająca **czerwoną produkcję** może iść prosto na `main`. Wtedy PR jest
+kosztem, nie zabezpieczeniem. Pośpiech z innego powodu wyjątkiem nie jest.
+
+**Czego świadomie NIE robię:** nie włączam ochrony gałęzi `main` w ustawieniach GitHuba. To zmiana
+konfiguracji repozytorium, nie kodu — należy do właściciela, a bez niej reguła nadal działa,
+tylko opiera się na dyscyplinie zamiast na blokadzie. **Jeśli chcesz twardo:** Settings → Branches
+→ dodaj regułę na `main` z wymaganym sprawdzeniem „Typy, lint, testy, konwencje, lockfile".
+
+**Jak cofnąć:** usuń akapit z `CLAUDE.md`. Zero wpływu na kod.
+
+
 ### D22 — `ast-grep` w `check-conventions.js`: NIE, i to jest rekomendacja przeciw
 
 **Co:** Nie przepisuję reguł `check-conventions.js` z wyrażeń regularnych na `ast-grep`.
