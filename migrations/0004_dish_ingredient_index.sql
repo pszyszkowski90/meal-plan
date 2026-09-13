@@ -1,0 +1,27 @@
+-- Migration number: 0004 	 2026-09-13T16:10:00.000Z
+--
+-- Indeks pod ODSIEW WYKLUCZEŃ — ustalenie F1 przeglądu fazy 1 F-01
+-- (`context/changes/dish-source-and-seed-pool/reviews/impl-review-phase-1.md`).
+--
+-- `dish_ingredient` ma `PRIMARY KEY (dish_id, ingredient_id)`, czyli indeks z `dish_id` jako
+-- PIERWSZĄ kolumną. Zapytanie „które dania zawierają ten składnik" — a to jest cały odsiew
+-- wykluczeń w `listAllowedDishes` (S-03) i w generatorze (S-04) — filtruje po `ingredient_id`,
+-- czyli po drugiej kolumnie. SQLite nie może użyć takiego indeksu jako prefiksu.
+--
+-- Zmierzone `EXPLAIN QUERY PLAN` przed tą migracją:
+--
+--   WHERE ingredient_id = ?  ->  SCAN dish_ingredient USING COVERING INDEX ...
+--   WHERE dish_id = ?        ->  SEARCH dish_ingredient USING COVERING INDEX ... (dish_id=?)
+--
+-- SCAN kontra SEARCH. Przy pustej tabeli to bez znaczenia, przy stu daniach (~800 wierszy)
+-- prawdopodobnie też — ale generator odpytuje odsiew WIELOKROTNIE na jeden plan, a Otwarte
+-- pytanie mapy drogowej o budżet 10 ms CPU planu darmowego Workers nie jest jeszcze zamknięte.
+-- Indeks ma stać, ZANIM padnie pierwszy pomiar w fazie 4.
+--
+-- Dlaczego osobna migracja, a nie poprawka `0003`: `0003` jest zastosowana na produkcji.
+-- Migracji zastosowanej się nie edytuje — wrangler rozpoznaje je po nazwie w `d1_migrations`
+-- i nie zauważyłby zmiany treści.
+--
+-- Cofnięcie: `migrations/down/0004_dish_ingredient_index.down.sql`.
+
+CREATE INDEX idx_dish_ingredient_ingredient ON dish_ingredient(ingredient_id);

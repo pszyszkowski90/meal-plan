@@ -15,7 +15,7 @@
 > Rzeczywisty problem to **luka wymagań**, nie defekt — więc kolejność brzmi
 > **PRD → schemat → ekran**, a pierwszym artefaktem do zmiany jest Otwarte pytanie 4 PRD.
 > **Faza 1 odblokowana 13.09.2026** decyzją **D21**: wchodzi wariant z osobną tabelą grup
-> (`kind='group'` + `exclusion_group` + `ingredient_group`). Kontrakt migracji `0004` niżej
+> (`kind='group'` + `exclusion_group` + `ingredient_group`). Kontrakt migracji `0005` niżej
 > uwzględnia już te dwie tabele.
 
 ## Przegląd
@@ -108,7 +108,7 @@ Czego **nie ma**:
 
 #### 1. Migracja
 
-**Plik**: `migrations/0004_preferences.sql` + para w `down/`
+**Plik**: `migrations/0005_preferences.sql` + para w `down/`
 
 **Kontrakt**:
 - `user_preferences` — `user_id` (PK, FK → `app_user`), `max_prep_minutes`, `meals_per_day`,
@@ -162,7 +162,7 @@ czasu. To jedyna funkcja tej zmiany, którą przejmie S-04.
 
 #### Weryfikacja automatyczna
 
-- `migrations apply --local` stosuje `0004`; para wsteczna cofa; `migrations list --local` czysto
+- `migrations apply --local` stosuje `0005`; para wsteczna cofa; `migrations list --local` czysto
 - `INSERT` łamiący `CHECK` spójności (`kind='ingredient'` z `dish_id`) odrzucony przez bazę
 - Podwójne wykluczenie tego samego składnika nie tworzy drugiego wiersza
 - `GET`/`PUT /api/preferences` bez `Authorization` → 401; z podrobionym tokenem → 401
@@ -290,7 +290,8 @@ po `ingredient` z wyborem z listy; jedna lista wykluczeń z oznaczeniem rodzaju 
 
 ## Uwagi dotyczące migracji
 
-`0004` jest addytywna. Klucze obce do `ingredient` i `dish` **wymagają schematu z F-01 fazy 1** —
+`0005` jest addytywna (numer `0004` zajął indeks `dish_ingredient(ingredient_id)` z ustalenia F1
+przeglądu fazy 1 F-01). Klucze obce do `ingredient` i `dish` **wymagają schematu z F-01 fazy 1** —
 to jedyna twarda zależność kolejnościowa tej zmiany.
 
 ## Otwarte ryzyka i założenia
@@ -353,7 +354,7 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 
 #### Automated
 
-- [ ] 1.1 `migrations apply --local` stosuje `0004`; para wsteczna cofa; `list --local` czysto
+- [ ] 1.1 `migrations apply --local` stosuje `0005`; para wsteczna cofa; `list --local` czysto
 - [ ] 1.2 `INSERT` łamiący `CHECK` spójności odrzucony przez bazę
 - [ ] 1.3 Podwójne wykluczenie tego samego składnika nie tworzy duplikatu
 - [ ] 1.4 `GET`/`PUT /api/preferences` bez tokenu i z podrobionym tokenem → 401
