@@ -17,9 +17,24 @@ import { expect, type Page } from '@playwright/test';
  * jedynym miejscem do zmiany.
  */
 
-/** Klikalny element interfejsu o dokładnie tej etykiecie. */
+/**
+ * Klikalny element interfejsu o dokładnie tej etykiecie — dwiema drogami, bo repo jest w trakcie
+ * naprawy dostępności.
+ *
+ * Od S-03 `ActionButton` ma `accessibilityRole="button"`, a React Native Web renderuje to jako
+ * PRAWDZIWY element `<button>` — nie `div[tabindex]`, którego szukała poprzednia wersja tego
+ * helpera. Zmierzone 13.09.2026: po dołożeniu roli logowanie przestawało się klikać, bo lokator
+ * nie trafiał w nic.
+ *
+ * Droga pierwsza (`getByRole`) obsługuje prymitywy już naprawione; druga zostaje dla elementów,
+ * które roli jeszcze nie mają — linków „Nie pamiętam hasła" i „Nie mam jeszcze konta". Gdy i one
+ * dostaną role, zostanie sama pierwsza.
+ */
 export function control(page: Page, label: string) {
-  return page.locator('div[tabindex]').filter({ hasText: new RegExp(`^${label}$`) }).first();
+  const byRole = page.getByRole('button', { name: label, exact: true });
+  const byText = page.locator('div[tabindex]').filter({ hasText: new RegExp(`^${label}$`) });
+
+  return byRole.or(byText).first();
 }
 
 export function emailField(page: Page) {

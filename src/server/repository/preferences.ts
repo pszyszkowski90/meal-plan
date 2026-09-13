@@ -15,9 +15,11 @@
  */
 import type {
   Exclusion,
+  ExclusionGroupOption,
   ExclusionInput,
   ExclusionKind,
   ExclusionSource,
+  IngredientOption,
   MealsPerDay,
   PreferencesInput,
 } from '@/lib/preferences';
@@ -247,4 +249,33 @@ export async function listAllowedDishes(userId: string): Promise<AllowedDish[]> 
     name: row.name,
     prepMinutes: row.prep_minutes,
   }));
+}
+
+/**
+ * Pula, z której ekran preferencji pozwala wybierać — składniki i grupy.
+ *
+ * **Bez `userId` i to jest celowe.** Obie tabele są danymi WSPÓŁDZIELONYMI, jak pula dań w `0003`:
+ * nie należą do żadnego konta, wypełnia je skrypt seedujący, a czytają wszyscy. Reguła warstwy
+ * mówi o danych użytkownika; tu nie ma czego filtrować, a udawany parametr `userId` sugerowałby
+ * izolację, której nie ma.
+ *
+ * Sortowanie po nazwie, a nie po `id`: kolejność wstawiania przez seed nie jest kolejnością,
+ * w której człowiek szuka składnika.
+ */
+export async function listCatalog(): Promise<{
+  ingredients: IngredientOption[];
+  groups: ExclusionGroupOption[];
+}> {
+  const db = getWorkerEnv().DB;
+
+  const [ingredients, groups] = await Promise.all([
+    db
+      .prepare(`select id, name, category from ingredient order by name`)
+      .all<{ id: number; name: string; category: string }>(),
+    db
+      .prepare(`select id, slug, name from exclusion_group order by name`)
+      .all<{ id: number; slug: string; name: string }>(),
+  ]);
+
+  return { ingredients: ingredients.results, groups: groups.results };
 }

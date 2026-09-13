@@ -46,7 +46,16 @@ export function ChoiceField<T extends string | number>({
         {label}
       </ThemedText>
 
-      <ThemedView style={styles.options} accessibilityRole="radiogroup">
+      {/*
+        Grupa miała poprawną ROLĘ, ale nie miała NAZWY (ustalenie F6): czytnik ekranu mówił
+        „grupa przycisków radio", nie zdradzając, czego dotyczy wybór. Nazwa idzie dwiema drogami
+        z tego samego powodu co w `TextField` — `aria-*` nie działa natywnie.
+      */}
+      <ThemedView
+        style={styles.options}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={label}
+        aria-label={label}>
         {options.map((option) => {
           const checked = option.value === value;
 

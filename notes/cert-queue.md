@@ -309,3 +309,26 @@ Do decyzji: C5 będzie potrzebował trasy odczytu składników i grup do wyszuki
 zakłada wyszukiwanie po `ingredient`, a takiej trasy jeszcze nie ma. Dołożę ją w C5.
 Przy okazji: smoke test produkcji po C3 wyszedł czysto — `/` 200, `/api/health`
 `{"ok":true,"d1":true}`, `/api/preferences` bez tokenu 401, nieznana ścieżka 404.
+
+### 21:51 UTC — C5 S-03 faza 2: ekran preferencji
+Wynik: ok
+Co zrobione: ekran `/preferences` z jedną listą wykluczeń (składnik, grupa, danie), limitem czasu
+i liczbą posiłków; zakładka w **obu** plikach `app-tabs` plus ikona w trzech gęstościach
+(wygenerowana skryptem, bez zależności); trasa `GET /api/catalog` ze składnikami i grupami — bez
+niej wyszukiwarka nie ma z czego wybierać. **Dostępność naprawiona u źródła** (ustalenie F6):
+`TextField`, `ChoiceField` i `ActionButton` nadają nazwy dwiema drogami — `accessibilityLabel`
+natywnie, `aria-label` na webie. Osiem z dziesięciu kryteriów fazy odhaczone (sha `f20aea5`);
+E2E 38/38, w tym nowa specyfikacja ekranu adresująca **wszystko przez `getByRole`**.
+Zrzut `05-funkcjonalnosc-preferencje.png` pokazuje niepustą listę: grupa „grzyby" plus dwa
+składniki. Skrypt zrzutów rozszerzony o piątą pozycję, więc powtórka po C6 to nadal jedna komenda.
+Co zacommitowane: `src/app/(app)/preferences.tsx`, `src/app/api/catalog+api.ts`,
+`src/lib/preferences.ts`, `src/server/repository/preferences.ts`, trzy prymitywy w
+`src/components/ui/`, oba `src/components/app-tabs*`, trzy PNG w `assets/images/tabIcons/`,
+`tests/e2e/preferences-screen.spec.ts`, `tests/e2e/profile-screen.spec.ts`,
+`tests/e2e/support/sign-in.ts`, `context/changes/dietary-preferences/plan.md`, `notes/cert-queue.md`
+PR: #10
+Do decyzji: rola w `ActionButton` sprawiła, że React Native Web renderuje **prawdziwy `<button>`**,
+przez co lokator `div[tabindex]` przestał trafiać i logowanie w harnessie się wywróciło. Wspólny
+`control()` przyjmuje teraz obie formy — to naprawa, nie obejście, ale warto o tym wiedzieć przy
+następnym prymitywie. Kryteria **2.9** (Expo Go) i **2.10** (czytelność przy 20 wpisach) zostają
+niesprawdzone: warstwy natywnej harness nie pokrywa.

@@ -31,6 +31,13 @@ export function ActionButton({
     <Pressable
       disabled={busy}
       onPress={onPress}
+      // Dopełnienie naprawy dostępności z S-03: bez ROLI czytnik ekranu ogłaszał ten element jako
+      // zwykły tekst, a harness E2E musiał szukać `div[tabindex]` po widocznej etykiecie. Nazwa
+      // idzie dwiema drogami, bo `aria-*` nie działa natywnie (patrz `TextField`).
+      accessibilityRole="button"
+      accessibilityState={{ disabled: busy }}
+      accessibilityLabel={busy ? (busyLabel ?? label) : label}
+      aria-label={busy ? (busyLabel ?? label) : label}
       style={({ pressed }) => [styles.action, (pressed || busy) && styles.actionMuted]}>
       <ThemedView type={type} style={styles.surface}>
         <ThemedText type="small">{busy ? (busyLabel ?? label) : label}</ThemedText>

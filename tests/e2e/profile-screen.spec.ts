@@ -331,12 +331,18 @@ test.describe('Faza 3 — ekran profilu w przeglądarce', () => {
     await expect(page.getByText(/= *2759 kcal dziennie/)).toBeVisible();
   });
 
-  test('3.13 zakładki to MealPlan, Home i Profil — bez Docs', async ({ page }) => {
+  /**
+   * INWENTARZ ZAKŁADEK. Rozszerzany przy KAŻDEJ nowej zakładce — trzecia („Preferencje", S-03)
+   * dopisana 13.09.2026. Test istnieje po to, żeby zakładka dodana tylko w jednym z dwóch plików
+   * `app-tabs` wyszła tutaj, a nie dopiero u użytkownika jednej platformy.
+   */
+  test('3.13 zakładki to MealPlan, Home, Profil i Preferencje — bez Docs', async ({ page }) => {
     await page.goto('/');
 
     await expect(page.getByText('MealPlan').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Home', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Profil', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Preferencje', exact: true })).toBeVisible();
 
     // Starter zniknął: żadnego „Docs", żadnego „Explore".
     await expect(page.getByRole('link', { name: 'Docs' })).toHaveCount(0);

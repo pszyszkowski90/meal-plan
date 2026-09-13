@@ -376,16 +376,18 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 
 #### Automated
 
-- [ ] 2.1 `npx tsc --noEmit` po regeneracji typed routes
-- [ ] 2.2 `npx expo lint` czyste, bez `react-hooks/set-state-in-effect`
-- [ ] 2.3 `expo export` + `wrangler deploy --dry-run` bez modułów z `node_modules`
-- [ ] 2.4 `GET /preferences` → HTML 200 na `wrangler dev`
-- [ ] 2.5 E2E: wykluczenie przeżywa zapis i przeładowanie strony
-- [ ] 2.6 E2E: opóźniony `GET` nie kasuje wpisanych wartości
-- [ ] 2.7 E2E: offline przy zapisie — komunikat, sesja zachowana, wartości zostają
-- [ ] 2.8 E2E: pola adresowalne przez `getByRole` (dowód naprawy dostępności)
+- [x] 2.1 `npx tsc --noEmit` po regeneracji typed routes — f20aea5
+- [x] 2.2 `npx expo lint` czyste, bez `react-hooks/set-state-in-effect` — f20aea5
+- [x] 2.3 `expo export` + `wrangler deploy --dry-run` bez modułów z `node_modules` — f20aea5
+- [x] 2.4 `GET /preferences` → HTML 200 na `wrangler dev` — f20aea5
+- [x] 2.5 E2E: wykluczenie przeżywa zapis i przeładowanie strony — f20aea5
+- [x] 2.6 E2E: opóźniony `GET` nie kasuje wpisanych wartości — f20aea5
+- [x] 2.7 E2E: offline przy zapisie — komunikat, sesja zachowana, wartości zostają — f20aea5
+- [x] 2.8 E2E: pola adresowalne przez `getByRole` (dowód naprawy dostępności) — f20aea5
 
 #### Manual
 
-- [ ] 2.9 Expo Go: zakładka Preferencje z ikoną, wyszukiwarka używalna jedną ręką
-- [ ] 2.10 Lista wykluczeń czytelna przy 20 pozycjach
+- [ ] 2.9 Expo Go: zakładka Preferencje z ikoną, wyszukiwarka używalna jedną ręką —
+      **niesprawdzone**: warstwy natywnej harness nie pokrywa, wymaga urządzenia
+- [ ] 2.10 Lista wykluczeń czytelna przy 20 pozycjach — **niesprawdzone**: ocena wizualna
+      przy realnej liczbie wpisów, do zrobienia przy pierwszym pełnym użyciu
