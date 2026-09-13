@@ -40,6 +40,11 @@ permissions:
   contents: write # agent commituje raport przeglądu na gałąź PR
   pull-requests: write # komentarz podsumowujący i komentarze wierszowe
   issues: write # etykiety
+  # WYMAGANE przez claude-code-action, choć nie wynika to z niczego w tym pliku.
+  # Bez tego akcja pada na `Could not fetch an OIDC token` — zmierzone 13.09.2026,
+  # dopiero po tym, jak sekret zaczął mieć prawdziwą wartość. Wcześniej krok był pomijany,
+  # więc ten brak nie miał jak wyjść.
+  id-token: write
 
 jobs:
   review:
