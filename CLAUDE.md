@@ -265,6 +265,13 @@ Warstwy 1–3 są **lokalne**, więc da się je pominąć — `--no-verify`, św
 każdy commit na `main`. **Nie wdraża** — od tego jest Workers Builds — i **nie uruchamia E2E**,
 bo Playwright stoi poza `package.json`.
 
+**Przegląd agentowy na PR ([impl-review.yml](.github/workflows/impl-review.yml)) NIE jest piątą
+warstwą** i celowo stoi w osobnym pliku: warstwy 1–4 uruchamiają narzędzia **deterministyczne**,
+a przegląd agentowy taki nie jest. Zlanie ich w jedno znaczyłoby, że czerwone „Typy, lint, testy"
+czasem oznacza literówkę, a czasem gorszy dzień modelu — i po tygodniu nikt by tej bramki nie
+czytał. Bez sekretu `CLAUDE_CODE_OAUTH_TOKEN` workflow **pomija kroki i przechodzi na zielono**;
+token generuje `claude setup-token`, a wkłada go `gh secret set CLAUDE_CODE_OAUTH_TOKEN`.
+
 - Warstwa 1 to hook `PostToolUse` w [.claude/settings.json](.claude/settings.json) →
   [claude-post-edit.mjs](scripts/hooks/claude-post-edit.mjs). Kod wyjścia **2** jest umowny:
   Claude Code wstrzykuje wtedy `stderr` z powrotem do kontekstu agenta, więc naruszenie wraca
