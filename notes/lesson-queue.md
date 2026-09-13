@@ -658,3 +658,54 @@ Commit: 63378f8, dcfa433
 Do decyzji: zostały tylko rzeczy niezablokowane — F4, indeks `dish_ingredient(ingredient_id)`
 i numeracja migracji, domknięcie m5l3 przez `10x-impl-review-ci`, `ast-grep`, `git add -A`
 do twardych reguł, `actions/*@v5`.
+
+### 16:31 UTC — reszta listy: F4, F7, indeks, reguła, akcje, dwa „nie"
+Wynik: ok
+Co zrobione: Domknięte wszystko, co zostało po decyzjach D20 i D21.
+
+**F4 — naprawione pełną pętlą.** Nieliczbowy tekst w „Własny cel" pokazuje teraz błąd i zatrzymuje
+zapis przed siecią, zamiast cicho znikać. Predykat `isUnparsableNumberInput` siedzi w module
+walidacji, bo `validateProfile` tego stanu **nie może zobaczyć** — dostaje już liczbę albo `null`.
+Trzy testy E2E, w tym **negatywny** (puste pole nadal znaczy „brak nadpisania"). Celowe zepsucie
+predykatu zaczerwieniło dwa z nich **osobno**. E2E **26/26** (było 23), jednostkowe **81** (było 77).
+Potwierdzone sprzężenie z F5: gdyby F4 wszedł pierwszy, pogorszyłby produkt.
+
+**F7 — ikony `explore*.png` usunięte.** Sprawdzone grepem po `src/`, `tests/` i `app.json`: nic ich
+nie importuje.
+
+**Reguła `git add -A` podniesiona do „Twardych reguł"** jako czwarta pozycja uszeregowana kosztem
+złamania — to była pozycja 1 listy działań z drugiego przeglądu reguł. W sekcji o pracy równoległej
+został wskaźnik, nie duplikat. `CLAUDE.md`: 336 linii niepustych.
+
+**`actions/checkout` i `actions/setup-node` podbite do v5** — GitHub ostrzegał o Node 20.
+
+**Indeks `dish_ingredient(ingredient_id)` zrobiony wcześniej, niż zakładało odroczenie — świadoma
+zmiana zdania.** Powodem nie była wydajność (tabela nadal pusta), tylko **numeracja**: D21
+odblokowała S-03 fazę 1, która miała zająć `0004`. Indeks wszedł jako `0004`, preferencje
+przesunięte na `0005`. Zweryfikowane: `EXPLAIN QUERY PLAN` daje teraz `SEARCH ... USING INDEX`
+zamiast `SCAN`; para wsteczna sprawdzona **w obie strony**. `--remote` świadomie NIE wykonane —
+reguła mówi, że warunek produkcyjny wchodzi przed commitem fazy, która go **potrzebuje**,
+a `listAllowedDishes` nie istnieje.
+
+**D22 — `ast-grep`: NIE.** Argument za był realny, ale `check-conventions.js` nie ma dziś **żadnej**
+zależności i to jest jego własność nośna: 0,15 s w hooku po edycji, działa w worktree bez
+`node_modules`, w CI nie potrzebuje niczego poza `npm ci`. Nowa zależność to ryzyko dla lockfile'a,
+czyli reguła, przed którą ucieka całe repo. Problem jest już rozwiązany — brzydko, ale skutecznie.
+
+**D23 — domknięcie m5l3 zablokowane na sekrecie.** `10x-impl-review-ci` działa przez
+`claude-code-action`, która wymaga `ANTHROPIC_API_KEY`. `gh secret list` zwraca **pustą listę**.
+Workflow dodany teraz padałby na **każdym** PR — a czerwona bramka, która zawsze jest czerwona,
+uczy ignorować czerwone bramki. Nie dodaję.
+
+Bramki: `tsc` 0, `npm test` 81/81, `expo lint` 0, `check-conventions` czysto (43 pliki),
+E2E 26/26, lockfile pusty.
+Co zacommitowane: src/lib/calorie-target.ts, src/lib/calorie-target.test.ts,
+src/app/(app)/profile.tsx, tests/e2e/profile-screen.spec.ts (`82068e9`); CLAUDE.md,
+.github/workflows/quality-gate.yml, assets/images/tabIcons/explore*.png (`bf58102`);
+migrations/0004_dish_ingredient_index.sql + para wsteczna,
+context/changes/dietary-preferences/plan.md, follow-ups/review-fixes.md (`06771a0`);
+notes/lesson-decisions.md, notes/lesson-queue.md
+Commit: 82068e9, bf58102, 06771a0 (+ poniżej)
+Do decyzji: **jedyne, co zostało, wymaga Ciebie** — (1) `gh secret set ANTHROPIC_API_KEY`, jeśli
+chcesz domknąć m5l3; (2) `migrations apply --remote` dla `0004`, gdy będzie potrzebne fazie 4
+albo S-03. Nic innego nie czeka.

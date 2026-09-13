@@ -35,6 +35,57 @@ Pełny raport: `context/archive/2026-09-12-profile-and-calorie-target/reviews/im
 
 <!-- KOLEJNE DECYZJE PONIŻEJ -->
 
+### D22 — `ast-grep` w `check-conventions.js`: NIE, i to jest rekomendacja przeciw
+
+**Co:** Nie przepisuję reguł `check-conventions.js` z wyrażeń regularnych na `ast-grep`.
+Zostaje obecne podejście: regexy po tekście z ręcznym usuwaniem komentarzy (`:36-103`).
+
+**Powód:** Argument za był realny — `ast-grep` nie widzi komentarzy, bo komentarze nie są kodem,
+więc obecne ręczne ich usuwanie stałoby się zbędne. Ale koszt przeważa i jest specyficzny dla
+tego repo:
+
+1. **`check-conventions.js` nie ma dziś ŻADNEJ zależności.** To nie jest przypadek: dzięki temu
+   działa jako hook `PostToolUse` w ~0,15 s po każdej edycji pliku, przechodzi w `pre-commit`
+   i `pre-push`, a w bramce CI nie potrzebuje niczego poza `npm ci`. Ta sama własność sprawia, że
+   `npm test` działa w świeżym `git worktree` bez `node_modules`.
+2. **Nowa zależność to ryzyko dla lockfile'a** — a to jest reguła, przed którą całe repo ucieka
+   (`npm install` na Windowsie psuje `package-lock.json` niewidocznie, Playwright mieszka **poza**
+   `package.json` właśnie dlatego).
+3. **Problem, który miałby rozwiązać, jest już rozwiązany** — brzydko, ale skutecznie i z testem
+   w postaci czystego przebiegu na 43 plikach. Wymiana działającego obejścia na zależność to zły
+   handel przy tej skali.
+
+**Kiedy zmienić zdanie:** gdy ręczne usuwanie komentarzy zacznie dawać fałszywe wyniki (dziś nie
+daje) albo gdy reguł przybędzie na tyle, że regexy staną się nieczytelne. Wtedy `ast-grep` wraca
+jako kandydat — z tym samym rachunkiem kosztów.
+
+**Jak cofnąć:** nic nie zrobione, decyzja żyje w tym akapicie.
+
+### D23 — Domknięcie m5l3 przez `10x-impl-review-ci` zablokowane na sekrecie
+
+**Co:** NIE dodaję workflow uruchamiającego `10x-impl-review-ci` na PR, mimo że skill jest
+zainstalowany i nie wymaga nowych zależności.
+
+**Powód — zmierzony, nie założony:** skill działa przez **`claude-code-action`**, a ta wymaga
+sekretu `ANTHROPIC_API_KEY` (albo `CLAUDE_CODE_OAUTH_TOKEN`) w repozytorium. `gh secret list`
+zwraca **pustą listę** — repo nie ma żadnego sekretu. Workflow dodany teraz **padałby na każdym
+pull requeście**.
+
+To byłoby gorsze niż brak workflow: czerwona bramka, która zawsze jest czerwona, uczy ludzi
+ignorować czerwone bramki — a warstwa 4 (`quality-gate.yml`) dopiero co powstała i jej wiarygodność
+jest jej jedyną wartością.
+
+**Co musi się wydarzyć, żeby to odblokować:** człowiek ustawia sekret w ustawieniach repozytorium
+(`gh secret set ANTHROPIC_API_KEY`). Wtedy workflow to kilkanaście linii i jeden przebieg na PR
+do sprawdzenia.
+
+**Uwaga o zakresie:** nawet po odblokowaniu zostaje pytanie **czy warto** — przegląd jest tu robiony
+przez jedną osobę, jedenaście razy w historii projektu. Wartość agenta recenzującego rośnie
+z liczbą przeglądów i liczbą recenzentów, a nie sama z siebie.
+
+**Jak cofnąć:** nic nie zrobione.
+
+
 ### D20 — Sito Atwatera dostaje próg BEZWZGLĘDNY obok względnego (12 kcal/100 g)
 
 **Co:** `atwaterWithinTolerance(macros, 10%, 12 kcal)` w `src/lib/dish-macros.ts`, użyte w obu sitach
