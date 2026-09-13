@@ -1,0 +1,120 @@
+# Przegląd implementacji na pull requeście — agent, nie narzędzie deterministyczne.
+#
+# To jest DRUGI workflow, celowo osobny od `quality-gate.yml`. Powód jest jeden i nośny:
+# **bramka jakości musi pozostać wiarygodna**. Ona uruchamia `tsc`, `eslint`, `npm test`
+# i skrypty repo — narzędzia, które dają ten sam wynik przy tym samym wejściu. Przegląd agentowy
+# jest z natury niedeterministyczny. Zlanie ich w jeden workflow znaczyłoby, że czerwone
+# „Typy, lint, testy" czasem oznacza literówkę w kodzie, a czasem gorszy dzień modelu — i po
+# tygodniu nikt by tej bramki nie czytał.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# UWIERZYTELNIANIE — dlaczego `CLAUDE_CODE_OAUTH_TOKEN`, a nie klucz API
+#
+# Token generuje się lokalnie poleceniem `claude setup-token` i wkłada do sekretów repozytorium.
+# Korzysta z konta Claude, które i tak jest opłacone, więc nie trzeba osobnego rozliczenia API.
+#
+# Subskrypcja ChatGPT **nie nadaje się** do tego miejsca z dwóch niezależnych powodów: subskrypcja
+# to nie dostęp API (kredyty API są osobnym produktem i osobnym kontem), a `claude-code-action`
+# przyjmuje wyłącznie poświadczenia Anthropica. Użycie modelu OpenAI wymagałoby napisania zupełnie
+# innego workflow, od zera.
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# BEZ SEKRETU TEN WORKFLOW PRZECHODZI NA ZIELONO, POMIJAJĄC KROKI.
+#
+# To jest świadomy wybór, nie zaniedbanie. Workflow, który pada na każdym PR, bo brakuje sekretu,
+# uczy ludzi ignorować czerwone sprawdzenia — a repo ma dopiero co postawioną bramkę jakości,
+# której wiarygodność jest jej jedyną wartością. Dopóki sekret nie istnieje, kroki są pomijane
+# i widać to w logu. Gdy się pojawi, przegląd rusza sam, bez zmiany w tym pliku.
+
+name: Przegląd implementacji
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: impl-review-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # agent commituje raport przeglądu na gałąź PR
+  pull-requests: write # komentarz podsumowujący i komentarze wierszowe
+  issues: write # etykiety
+  # WYMAGANE przez claude-code-action, choć nie wynika to z niczego w tym pliku.
+  # Bez tego akcja pada na `Could not fetch an OIDC token` — zmierzone 13.09.2026,
+  # dopiero po tym, jak sekret zaczął mieć prawdziwą wartość. Wcześniej krok był pomijany,
+  # więc ten brak nie miał jak wyjść.
+  id-token: write
+
+jobs:
+  review:
+    name: Przegląd implementacji względem planu
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v5
+        with:
+          # Agent porównuje PR z planem i potrzebuje historii, żeby policzyć zakres zmian.
+          # `0` znaczy pełna historia — płytki klon dałby pusty albo błędny diff.
+          fetch-depth: 0
+
+      # Sekret czytamy do `env`, bo kontekst `secrets` nie jest dostępny w `if` na poziomie joba.
+      # Dzięki temu brak sekretu daje POMINIĘCIE kroków, a nie czerwony przebieg.
+      - name: Sprawdź, czy token jest skonfigurowany
+        id: auth
+        env:
+          TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          # Długość, nigdy wartość. Liczba nie jest maskowana i jest jedynym sposobem, żeby
+          # odróżnić sekret PUSTY od BRAKUJĄCEGO — oba dają tu pusty łańcuch znaków.
+          # Zmierzone 13.09.2026: `gh secret set` na Windowsie potrafi zapisać pustą wartość,
+          # jeśli wklejenie do ukrytego promptu się nie zarejestruje. `gh secret list` pokazuje
+          # wtedy sekret jak każdy inny, więc bez tej liczby diagnoza jest zgadywaniem.
+          echo "Długość tokena: ${#TOKEN} znaków"
+          if [ -n "$TOKEN" ]; then
+            echo "gotowe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "gotowe=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Przegląd pominięty::Sekret CLAUDE_CODE_OAUTH_TOKEN jest pusty albo go nie ma — 'gh secret list' pokazuje oba przypadki tak samo. Ustaw go ponownie: 'gh secret set CLAUDE_CODE_OAUTH_TOKEN < plik-z-tokenem' albo przez interfejs GitHuba (Settings → Secrets and variables → Actions)."
+          fi
+
+      - name: Przegląd implementacji
+        if: steps.auth.outputs.gotowe == 'true'
+        # Przypięte do SHA, nie do ruchomego taga `v1` — tag da się przesunąć na inny kod,
+        # a przegląd ma prawo commitować do gałęzi PR i komentować. To jest ta sama zasada,
+        # co `npm ci` zamiast `npm install`: powtarzalność ponad wygodę.
+        # SHA odpowiada tagowi v1 z 13.09.2026.
+        uses: anthropics/claude-code-action@9cdae7f0d995e3ba7c33f226087fdf82a59cd520
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: /10x-impl-review-ci
+          track_progress: true
+
+      # Werdykt czytamy z PLIKU zacommitowanego przez agenta, nie z jego wyjścia.
+      # Plik jest w gałęzi PR i da się go przeczytać po fakcie — wyjście akcji znika z logiem.
+      - name: Sprawdź werdykt przeglądu
+        if: steps.auth.outputs.gotowe == 'true'
+        env:
+          ETYKIETY: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          git pull --ff-only || true
+          RAPORT=$(git ls-files 'context/changes/*/reviews/impl-review*.md' | tail -1)
+
+          if [ -z "$RAPORT" ]; then
+            echo "::notice title=Brak raportu::Agent nie zapisał raportu — prawdopodobnie PR nie dotyczy żadnego planu."
+            exit 0
+          fi
+
+          echo "Raport: $RAPORT"
+          if grep -qi 'Werdykt.*ODRZUCONY\|Verdict.*REJECTED' "$RAPORT"; then
+            if printf '%s' "$ETYKIETY" | grep -q 'impl-review-override'; then
+              echo "::warning title=Werdykt ODRZUCONY, pominięty etykietą::Etykieta impl-review-override jest ustawiona."
+              exit 0
+            fi
+            echo "::error title=Przegląd odrzucił zmianę::Werdykt ODRZUCONY w $RAPORT. Przeczytaj ustalenia albo dodaj etykietę impl-review-override."
+            exit 1
+          fi
+
+          echo "Werdykt nie jest odrzucający."

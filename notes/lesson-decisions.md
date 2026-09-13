@@ -35,6 +35,43 @@ Pełny raport: `context/archive/2026-09-12-profile-and-calorie-target/reviews/im
 
 <!-- KOLEJNE DECYZJE PONIŻEJ -->
 
+### D25 — Przegląd agentowy na PR wchodzi, uwierzytelniany tokenem OAuth konta Claude
+
+**Co:** `.github/workflows/impl-review.yml` — `10x-impl-review-ci` przez `claude-code-action`
+na każdym pull requeście do `main`. Uwierzytelnianie: `CLAUDE_CODE_OAUTH_TOKEN`, token generowany
+lokalnie przez `claude setup-token` i wkładany do sekretów repozytorium przez właściciela.
+
+**Powód zmiany zdania wobec D23:** D23 odrzucała ten workflow, bo brakowało sekretu, a workflow
+padający na każdym PR uczy ignorować czerwone bramki. Właściciel wskazał konto Claude jako źródło
+poświadczeń, co znosi pierwszą przeszkodę, a **guard na sekrecie** znosi drugą: bez sekretu kroki
+są **pomijane**, a przebieg jest zielony z widoczną notką. Workflow można było więc wprowadzić
+**zanim** sekret powstanie, i ruszy sam, gdy się pojawi.
+
+**Dlaczego NIE subskrypcja ChatGPT** (pytanie właściciela): dwa niezależne powody. Subskrypcja
+ChatGPT to nie dostęp do API — kredyty API są osobnym produktem na osobnym koncie. A niezależnie
+od tego `claude-code-action` przyjmuje wyłącznie poświadczenia Anthropica; model OpenAI wymagałby
+napisania innego workflow od zera (ścieżka „złóż sam" z lekcji m5l2, nierobiona).
+
+**Trzy rozstrzygnięcia wbudowane w plik:**
+
+1. **Osobny workflow, nie krok w bramce jakości.** Bramka uruchamia narzędzia deterministyczne;
+   przegląd agentowy taki nie jest. Zlanie ich znaczyłoby, że czerwone „Typy, lint, testy" czasem
+   oznacza literówkę, a czasem gorszy dzień modelu — i po tygodniu nikt by tej bramki nie czytał.
+2. **Akcja przypięta do SHA `9cdae7f`, nie do taga `v1`.** Tag da się przesunąć, a ta akcja ma
+   prawo commitować do gałęzi PR i komentować. Ta sama zasada, co `npm ci` zamiast `npm install`.
+3. **Werdykt czytany z zacommitowanego PLIKU raportu**, nie z wyjścia akcji — plik zostaje
+   w gałęzi i da się go przeczytać po fakcie. Werdykt `ODRZUCONY` wywraca sprawdzenie, chyba że
+   PR ma etykietę `impl-review-override`.
+
+**Czego właściciel musi dotknąć sam:** `claude setup-token` i `gh secret set
+CLAUDE_CODE_OAUTH_TOKEN`. Tokena nie generuję ani nie oglądam — to poświadczenie.
+
+**Do sprawdzenia przez właściciela:** czy plan Claude dopuszcza użycie automatyczne w CI. Nie
+rozstrzygam tego za niego.
+
+**Jak cofnąć:** usuń `.github/workflows/impl-review.yml`. Bramka jakości jest niezależna i zostaje.
+
+
 ### D24 — Praca idzie przez pull request, nie prosto na `main`
 
 **Co:** Od 13.09.2026 zmiany wchodzą gałęzią → PR → zielona bramka → merge. Zapisane
@@ -86,7 +123,7 @@ jako kandydat — z tym samym rachunkiem kosztów.
 
 **Jak cofnąć:** nic nie zrobione, decyzja żyje w tym akapicie.
 
-### D23 — Domknięcie m5l3 przez `10x-impl-review-ci` zablokowane na sekrecie
+### ~~D23~~ — Domknięcie m5l3 zablokowane na sekrecie → **ZASTĄPIONE przez D25 (13.09.2026)**
 
 **Co:** NIE dodaję workflow uruchamiającego `10x-impl-review-ci` na PR, mimo że skill jest
 zainstalowany i nie wymaga nowych zależności.
