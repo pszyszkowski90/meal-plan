@@ -241,3 +241,15 @@ Do decyzji: <albo ->
 ```
 
 <!-- DZIENNIK PONIŻEJ -->
+
+### 20:32 UTC — C1 README
+Wynik: ok
+Co zrobione: `README.md` napisany od nowa — czym jest MealPlan, cztery twarde ograniczenia
+produktowe, uruchomienie lokalne (`npm ci`, `.env.local`, `.dev.vars`), testy i bramki, struktura
+oraz odnośniki do `context/foundation/`. Zero treści startera, zero wzmianki o `reset-project`;
+sekcja `## Deployment` zachowana bez zmian. `npx tsc --noEmit`, `npm run check-conventions`
+i `npm test` (81/81) czyste, wszystkie odnośniki w README wskazują na istniejące pliki.
+Co zacommitowane: `README.md`, `notes/cert-queue.md`
+PR: #6
+Do decyzji: zachowana sekcja `## Deployment` została po angielsku w reszcie polskiego README —
+ujednolicenie języka to osobna, świadoma decyzja właściciela.
