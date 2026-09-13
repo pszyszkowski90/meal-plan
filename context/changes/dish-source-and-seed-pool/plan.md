@@ -431,11 +431,11 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 
 #### Automated
 
-- [x] 1.1 `migrations apply --local` stosuje `0003` bez błędu
-- [x] 1.2 `migrations list --local` bez zaległych
-- [x] 1.3 `npx tsc --noEmit` czyste po rozszerzeniu typu D1 o `all()`
-- [x] 1.4 Para wsteczna usuwa pięć tabel i wpis z `d1_migrations`; ponowne zastosowanie przechodzi
-- [x] 1.5 `INSERT` z `category` spoza enuma i `prep_minutes = 0` odrzucony przez bazę
+- [x] 1.1 `migrations apply --local` stosuje `0003` bez błędu — c848474
+- [x] 1.2 `migrations list --local` bez zaległych — c848474
+- [x] 1.3 `npx tsc --noEmit` czyste po rozszerzeniu typu D1 o `all()` — c848474
+- [x] 1.4 Para wsteczna usuwa pięć tabel i wpis z `d1_migrations`; ponowne zastosowanie przechodzi — c848474
+- [x] 1.5 `INSERT` z `category` spoza enuma i `prep_minutes = 0` odrzucony przez bazę — c848474
 
 #### Manual
 
