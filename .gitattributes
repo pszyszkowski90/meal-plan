@@ -1,0 +1,4 @@
+# Hooki gita uruchamia `sh`. Przy `core.autocrlf=true` (domyślne na Windowsie) świeży klon
+# dostałby je z CRLF, a `sh` odpowiada wtedy `bad interpreter: /bin/sh^M` — hook nie działa
+# i nikt tego nie zauważa, bo commit po prostu przechodzi.
+hooks/* text eol=lf

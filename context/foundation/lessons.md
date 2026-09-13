@@ -62,3 +62,20 @@ awarii, nie z teorii. Kolejne wpisy dopisuj pojedynczo. -->
   dowolnego pola **i przy zapisie**; odpowiedź `GET` stosuje się wyłącznie, gdy formularz jest
   nietknięty. W testach nie omijaj tego wyścigu `waitForTimeout` — czekaj na odpowiedź.
 - **Dotyczy**: implement, impl-review, plan
+
+## Odróżnij „narzędzie znalazło problem" od „narzędzie się nie uruchomiło"
+
+- **Kontekst**: każda bramka odpalająca zewnętrzne narzędzie — hooki `pre-commit` / `pre-push`,
+  skrypty weryfikacyjne, kroki CI.
+- **Problem**: `spawnSync('npx.cmd', […])` na Windowsie pod Node 25 kończy się `EINVAL` — plików
+  `.cmd` nie wolno uruchomić bez `shell: true` (skutek poprawki CVE-2024-27980). Kod wyjścia jest
+  wtedy `null`, nie `0`, więc bramka wypisała `FAIL eslint (0.0s)` i wyglądała na taką, która
+  złapała błąd, choć **nie sprawdziła niczego**. Ten sam błąd trafiający w drugą stronę — na
+  `exit 0` — meldowałby zieleń tygodniami. To ta sama klasa awarii, co EBUSY przy `expo export`:
+  dowód, którego nie było, wygląda jak dowód pozytywny.
+- **Reguła**: Każdy krok bramki sprawdza **osobno** `result.error` (nie uruchomiło się) i
+  `result.status` (uruchomiło się i znalazło problem), i wypisuje te dwa przypadki innym
+  komunikatem. Nowej bramki nie uznawaj za działającą, zanim nie zobaczysz jej **czerwonej po
+  celowym zepsuciu** — zielony przebieg na czystym drzewie nie dowodzi, że cokolwiek się wykonało.
+  Osobno: `eslint` domyślnie kończy się zerem mimo ostrzeżeń — w bramce zawsze `--max-warnings=0`.
+- **Dotyczy**: implement, impl-review, test-plan

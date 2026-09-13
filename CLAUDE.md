@@ -186,14 +186,22 @@ Nie dodawaj własnego hashowania ani tabel sesji.
 
 ## Komendy i weryfikacja
 
-Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`) są w
-[package.json](package.json); lint to
+Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`, `check-conventions`,
+`hooks:install`) są w [package.json](package.json); lint to
 `expo lint` z flat configiem w [eslint.config.js](eslint.config.js).
 
 - `npx tsc --noEmit` — sprawdzenie typów; **pierwsze z dwóch**, drugim jest `npm test`. Nie jest
   skryptem npm.
 - `npm run check-lock` — przed każdym pushem, jeśli ruszałeś zależności. Odtwarza sprawdzenie
   spójności robione przez `npm ci`, więc łapie zepsuty lock lokalnie, zamiast na czerwonym buildzie.
+- `npm run check-conventions` — deterministyczna bramka reguł z tego pliku, których nie złapie
+  ani `eslint`, ani `tsc`: zakaz `../`, ręcznej memoizacji, `globalThis` poza
+  [env.ts](src/server/env.ts), SQL-a poza [repository/](src/server/repository/), `getWorkerEnv()`
+  w trasach, surowych kolorów, `fetch` w ekranie, a do tego parzystość zakładek w obu plikach
+  `app-tabs` i pary migracji `migrations/` ↔ `migrations/down/`. Całe `src/` w ~0,15 s.
+  Definicje reguł: [check-conventions.js](scripts/check-conventions.js). **Nowa reguła wchodzi
+  tylko wtedy, gdy całe obecne drzewo ją przechodzi** — reguła czerwona w dniu dodania jest
+  szumem, nie bramką.
 - `npm test` — `node --test` na `src/lib/*.test.ts`, bez żadnej zależności (runner jest wbudowany
   w Node). Obejmuje **wyłącznie czyste moduły** z `src/lib/`; nie ma testów komponentów ani tras.
 - Testy przeglądarkowe (Playwright) leżą w [tests/e2e/](tests/e2e/), ale **Playwright NIE jest
@@ -211,6 +219,31 @@ Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`) są w
   `wrangler dev --ip 0.0.0.0` w LAN-ie albo, świadomie, produkcji; bez niego
   [src/lib/api.ts](src/lib/api.ts) rzuca czytelny błąd zamiast cicho pisać do produkcyjnej D1.
   Oba pliki są w `.gitignore`.
+
+**Bramki lokalne są trójwarstwowe i stoją PRZED CI, nie zamiast niego.** Każda warstwa łapie to,
+co przepuściła poprzednia, i kosztuje tyle, ile warta jest pomyłka na tym etapie:
+
+| Warstwa | Kiedy | Co robi | Koszt |
+| --- | --- | --- | --- |
+| 1 | po każdej edycji pliku przez agenta | reguły repo na **tym jednym pliku** | ~0,15 s |
+| 2 | `git commit` | reguły repo + `eslint --max-warnings=0` na plikach z indeksu; `npm test` gdy ruszony `src/lib/`; `check-lock` gdy ruszone zależności | ~10 s |
+| 3 | `git push` | reguły repo, `tsc --noEmit`, `npm test`, `check-lock` — całe drzewo | ~12 s |
+
+- Warstwa 1 to hook `PostToolUse` w [.claude/settings.json](.claude/settings.json) →
+  [claude-post-edit.mjs](scripts/hooks/claude-post-edit.mjs). Kod wyjścia **2** jest umowny:
+  Claude Code wstrzykuje wtedy `stderr` z powrotem do kontekstu agenta, więc naruszenie wraca
+  do niego od razu, a nie kilkanaście minut później z czerwonego commita. Hook nigdy nie wywraca
+  się na własnym błędzie (`catch` → wyjście 0) i **nie uruchamia** `eslint` ani `tsc`: jedno
+  wywołanie każdego z nich to tu 8–9 s, a warstwa 1 ma być niezauważalna.
+- Warstwy 2 i 3 to `hooks/pre-commit` i `hooks/pre-push` — dwie linijki wołające
+  [git-gate.mjs](scripts/hooks/git-gate.mjs). Logika jest w Node, nie w `sh`, bo to repo żyje na
+  Windowsie. **Aktywacja jest jawna i per klon:** `npm run hooks:install`
+  (`git config core.hooksPath hooks`) — bez tego pliki w [hooks/](hooks/) leżą martwe. Pominięcie
+  jednorazowe: `--no-verify`.
+- `npm`/`npx` na Windowsie to pliki `.cmd`, których Node 25 **odmawia** uruchomić bez
+  `shell: true` (EINVAL). Bramka odróżnia więc „narzędzie znalazło problem" (kod ≠ 0) od
+  „narzędzie się nie uruchomiło" (`result.error`) — inaczej wypisuje FAIL w 0,0 s, nie sprawdziwszy
+  niczego.
 
 Migracje D1 mają własną kolejność i **nie idą przez CI**:
 

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Warstwa 2 lokalnych bramek jakosci. Tresc: scripts/hooks/git-gate.mjs
+exec node scripts/hooks/git-gate.mjs pre-commit

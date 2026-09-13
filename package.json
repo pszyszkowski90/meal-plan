@@ -48,7 +48,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test src/lib/*.test.ts",
-    "check-lock": "node ./scripts/check-lockfile.js"
+    "check-lock": "node ./scripts/check-lockfile.js",
+    "check-conventions": "node ./scripts/check-conventions.js",
+    "hooks:install": "git config core.hooksPath hooks"
   },
   "private": true
 }
