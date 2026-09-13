@@ -17,6 +17,20 @@
 #   * NIE POTRZEBUJE ŻADNYCH SEKRETÓW. Sprawdzone 13.09.2026: `tsc` i `expo lint` przechodzą
 #     bez `.env.local`, bo `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` jest czytany dopiero w runtime
 #     (`src/app/_layout.tsx`). Gdyby kiedyś przestały — dołóż zmienną buildu, nie sekret.
+#
+# ZNANE OGRANICZENIE TEJ BRAMKI — `tsc` jest tu SŁABSZY niż lokalnie.
+#
+# Typy tras (`typedRoutes`) mieszkają w `.expo/types/router.d.ts`, który jest w `.gitignore`
+# i powstaje wyłącznie przy uruchomieniu Metro (`npm start`) — `expo export` go NIE tworzy.
+# Na runnerze go więc nie ma, a bez niego `Href` degraduje się do typu ogólnego i **nieistniejąca
+# ścieżka w `<Link href>` przestaje być błędem typu**. Zmierzone 13.09.2026: ta sama sonda
+# z `href="/nie-ma-takiej-trasy"` daje lokalnie `TS2322`, a bez `.expo/types` przechodzi na zielono.
+#
+# Świadomie tego nie obchodzimy: jedyne wyjścia to podnoszenie Metro na runnerze (wolne i kruche)
+# albo commitowanie wygenerowanego pliku (rozjedzie się z trasami i zacznie kłamać w drugą stronę).
+# Tej klasy błędu pilnuje więc warstwa 3 — hook `pre-push`, uruchamiany na maszynie, gdzie Metro
+# już raz chodziło. Deklaracje modułów `*.css` to osobna sprawa i są rozwiązane na stałe przez
+# `expo-types.d.ts` w repozytorium.
 
 name: Bramka jakości
 

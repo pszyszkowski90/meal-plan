@@ -338,9 +338,10 @@ git worktree remove <ścieżka>                       # sprzątanie po scaleniu
    (`cmd /c rmdir "<worktree>\node_modules"`). Narzędzie, które pójdzie *przez* złącze zamiast
    je odpiąć, skasuje `node_modules` **drzewa głównego** — a to w tym repo znaczy `npm ci`
    i ryzyko dla lockfile'a, czyli dokładnie to, czego unikamy.
-2. **Plików generowanych, bo są w `.gitignore`** — `expo-env.d.ts` i `.expo/types/`. Bez nich
-   `tsc` w worktree zgłasza **te same dwa fałszywe błędy o `.css`**, co świeży klon (patrz
-   Pułapki). Skopiuj oba z drzewa głównego albo uruchom tam raz Metro.
+2. **Plików generowanych, bo są w `.gitignore`** — `.expo/types/` z typami tras. Bez nich `tsc`
+   **przechodzi**, ale `typedRoutes` milczy, więc zła ścieżka w `<Link href>` nie zostanie
+   złapana (patrz Pułapki). Skopiuj katalog z drzewa głównego albo uruchom tam raz Metro.
+   Deklaracje `.css` nie są już problemem — daje je [expo-types.d.ts](expo-types.d.ts) z repo.
 3. **Konfiguracji lokalnej** — `.env.local` i `.dev.vars` też są w `.gitignore`. Bez nich
    `wrangler dev` i klient natywny nie wystartują; skopiuj świadomie, nie commituj.
 
@@ -362,10 +363,17 @@ w stanie **przejrzeć**, i ani jednego więcej.
   Uruchamiaj wyłącznie przy czystym `git status`, żeby dało się cofnąć przez
   `git checkout <sha> -- .claude CLAUDE.md`. Stan obecny: manifest m3l5 (24 skille) plus siedem
   skilli modułu 5 nałożonych ręcznie — łącznie 30.
-- `npx tsc --noEmit` na świeżym klonie zgłasza dwa fałszywe błędy o `.css`
-  (`animated-icon.module.css`, `@/global.css`). Deklaracje tych modułów siedzą w `expo-env.d.ts`
-  i `.expo/types/`, które są generowane przy pierwszym `npm start` i są w `.gitignore`. Uruchom
-  Metro raz, zanim uznasz typecheck za czerwony.
+- ~~`npx tsc --noEmit` na świeżym klonie zgłasza dwa fałszywe błędy o `.css`.~~ **Rozwiązane
+  13.09.2026** przez [expo-types.d.ts](expo-types.d.ts) — jedną linijkę `reference` do `expo/types`
+  trzymaną w repozytorium. Wcześniej deklaracje `.css` przychodziły wyłącznie z gitignorowanego
+  `expo-env.d.ts`, więc typecheck świecił na czerwono wszędzie, gdzie nikt nie uruchomił Metro:
+  świeży klon, świeży `git worktree` i runner GitHub Actions (to ostatnie zablokowało pierwszy
+  przebieg bramki jakości).
+- **`typedRoutes` NIE działa tam, gdzie nie chodziło Metro** — i to zostaje. `.expo/types/router.d.ts`
+  jest w `.gitignore`, a tworzy go wyłącznie `npm start` (`expo export` **nie**, sprawdzone).
+  Bez niego `Href` degraduje się do typu ogólnego i nieistniejąca ścieżka w `<Link href>`
+  **przestaje być błędem typu** — zmierzone sondą, która lokalnie daje `TS2322`, a na runnerze
+  przechodzi. Tej klasy błędu pilnuje więc warstwa 3 (`pre-push`), nie bramka w CI.
 - `app.json` → `slug: "meal-plan"` i `scheme: "mealplan"` to tożsamość projektu w EAS. Zmiana
   któregokolwiek psuje buildy; zostały już raz poprawione po scaffoldzie
   ([verification.md](context/changes/bootstrap-verification/verification.md)).
