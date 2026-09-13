@@ -334,3 +334,32 @@ seedowaniu / świadoma dziura nazwana w PRD). Modyfikuje kontrakt z D14, więc n
 **Faza 1 S-03 jest do tego czasu zablokowana.** Dowody przechylają się ku wariantowi z osobną
 tabelą, bo rozwinięcie przy seedowaniu przecieka przy rosnącej puli. Kolejność zmian:
 PRD (Otwarte pytanie 4) → schemat → ekran.
+
+### 11:38 UTC — A2 m3l5: debugging ze zbieżnością dowodów
+Wynik: ok
+Co zrobione: Naprawione **F5** (dotkliwsze z dwóch PENDING). Wiersz „Wróć do wyliczenia" był
+warunkowany na `target`, który gaśnie przy błędzie **któregokolwiek** pola — użytkownik z zapisanym
+nadpisaniem i wyczyszczonym wiekiem tracił jedyne wyjście z nadpisania. Poprawka rozdziela wartość
+wpisaną w pole od tego, czy profil jako całość się liczy. Pełna pętla przeszła w komplecie:
+reprodukcja (kod + harness) → **czerwony** (`element(s) not found`) → poprawka → **zielony**
+→ **celowe zepsucie**: przywrócenie `target &&` zaczerwieniło **oba** testy osobno (drugi wymagał
+własnego `--grep`, bo tryb `serial` zatrzymuje zestaw po pierwszej porażce) → przywrócenie → 23/23.
+Dwa testy regresji w `profile-screen.spec.ts`.
+**Które źródło dało sygnał pierwsze:** raport przeglądu i kod, nie obserwacja produktu.
+`wrangler tail` i log `wrangler dev` **nie pokazały nic** — defekt jest w całości po stronie
+klienta i nigdy nie dociera do Workera. To nie porażka źródła, tylko ustalenie: log serwera jest
+strukturalnie ślepy na błąd warunku renderowania.
+**Dwie pułapki złapane po drodze:** (1) jeden przebieg wrócił `1 failed, 2 did not run`, gdzie
+poległo **logowanie**, nie testy F5 — policzenie tego jako „czerwone po zepsuciu" byłoby dowodem,
+którego nie ma; przebieg powtórzony. (2) `grep` po `dist/` nie znajduje polskich napisów, bo
+bundler zapisuje znaki spoza ASCII inaczej niż szuka powłoka — wyglądało jak „zmiany nie ma
+w buildzie". Rozstrzygnęła sonda w Node na wzorcu czysto ASCII.
+**F4 zostaje PENDING świadomie:** naprawa F4 gasi `target`, więc **przed** F5 pogorszyłaby produkt.
+Po F5 da się ją zrobić bezpiecznie. Kolejność napraw była wymuszona sprzężeniem, nie preferencją.
+Bramki: `tsc --noEmit` 0, `npm test` 34/34, `expo lint` czysto, `check-conventions` czysto
+(39 plików), E2E **23/23**, `git diff package-lock.json` pusty.
+Co zacommitowane: src/app/(app)/profile.tsx, tests/e2e/profile-screen.spec.ts,
+notes/10x-lesson-m3l5-brief.md, notes/lesson-queue.md
+Commit: (poniżej)
+Do decyzji: F4 — czy naprawiamy teraz, gdy F5 zdjął blokadę. Nie robię tego z własnej inicjatywy,
+bo to zmiana zachowania walidacji, a przegląd zostawił ją właścicielowi.

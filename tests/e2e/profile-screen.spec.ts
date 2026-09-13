@@ -237,6 +237,47 @@ test.describe('Faza 3 — ekran profilu w przeglądarce', () => {
     await expect(page.getByText(kcal('1000'))).toBeVisible();
   });
 
+  /**
+   * Ustalenie **F5** przeglądu fazy 3 (`impl-review-phase-3.md:102-116`), zostawione jako PENDING.
+   *
+   * Wyjście z nadpisania („Wróć do wyliczenia") było warunkowane na `target`, a `target` jest
+   * `null`, gdy walidacji nie przechodzi **którekolwiek** pole. Skutek: użytkownik z zapisanym
+   * nadpisaniem, który wyczyści wiek, traci jedyny przycisk kasujący nadpisanie — i nie ma jak
+   * wrócić do wyliczenia inaczej niż ręcznie czyszcząc pole, o czym ekran nie mówi.
+   *
+   * Test celowo psuje pole INNE niż nadpisanie: sedno defektu polega na tym, że te dwie rzeczy
+   * nie powinny być ze sobą związane.
+   */
+  test('F5 wyjście z nadpisania zostaje, gdy niepoprawne jest inne pole', async ({ page }) => {
+    await openProfile(page);
+    await fillReferenceProfile(page);
+    await overrideField(page).fill('2200');
+
+    // Punkt wyjścia: nadpisanie obowiązuje i da się z niego wyjść.
+    await expect(page.getByText('Wróć do wyliczenia')).toBeVisible();
+
+    // Psujemy wiek. Nadpisanie zostaje wpisane i nadal obowiązuje.
+    await ageField(page).fill('');
+
+    await expect(overrideField(page)).toHaveValue('2200');
+    await expect(page.getByText('Wróć do wyliczenia')).toBeVisible();
+  });
+
+  /**
+   * Druga połowa F5: gdy niepoprawne jest **wyłącznie** nadpisanie, wyjście też ma zostać.
+   *
+   * 500 przechodzi przez `parseNumberInput` (jest liczbą), ale leży poniżej granicy nadpisania
+   * (1000), więc `validateProfile` odrzuca profil i gasi `target`. Użytkownik widzi błąd pod
+   * polem i — przed poprawką — nie miał czym cofnąć wpisanej wartości.
+   */
+  test('F5 wyjście z nadpisania zostaje, gdy niepoprawne jest samo nadpisanie', async ({ page }) => {
+    await openProfile(page);
+    await fillReferenceProfile(page);
+    await overrideField(page).fill('500');
+
+    await expect(page.getByText('Wróć do wyliczenia')).toBeVisible();
+  });
+
   test('3.13 zakładki to MealPlan, Home i Profil — bez Docs', async ({ page }) => {
     await page.goto('/');
 

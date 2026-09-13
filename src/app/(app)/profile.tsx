@@ -266,7 +266,15 @@ export default function ProfileScreen() {
     },
   });
 
-  const overrideKcal = target?.overrideKcal ?? null;
+  /**
+   * Nadpisanie WPISANE w pole, celowo niezależne od `target`.
+   *
+   * `target` gaśnie, gdy walidacji nie przechodzi **którekolwiek** pole — więc wiązanie z nim
+   * wyjścia z nadpisania zabierało użytkownikowi jedyny przycisk kasujący nadpisanie dokładnie
+   * wtedy, gdy formularz był w błędzie (ustalenie F5 przeglądu fazy 3). Wpisana wartość istnieje
+   * niezależnie od tego, czy profil jako całość się liczy, i wyjście z niej też musi.
+   */
+  const typedOverride = candidate.targetKcalOverride;
 
   return (
     <ScrollView
@@ -412,11 +420,16 @@ export default function ProfileScreen() {
           placeholder="2200"
         />
 
-        {target && overrideKcal !== null ? (
+        {typedOverride !== null ? (
           <ThemedView style={styles.overrideRow}>
+            {/*
+              Liczba wyliczona pokazuje się tylko wtedy, gdy naprawdę jest policzona. Sam wiersz
+              — a z nim wyjście — zostaje zawsze, gdy w polu coś stoi.
+            */}
             <ThemedText type="small">
-              Twój cel: {formatKcal(overrideKcal)} kcal (wyliczone{' '}
-              {formatKcal(target.computedKcal)})
+              {target
+                ? `Twój cel: ${formatKcal(typedOverride)} kcal (wyliczone ${formatKcal(target.computedKcal)})`
+                : `Twój cel: ${formatKcal(typedOverride)} kcal`}
             </ThemedText>
             <Pressable
               accessibilityRole="button"
