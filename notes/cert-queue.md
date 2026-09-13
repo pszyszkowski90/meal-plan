@@ -253,3 +253,18 @@ Co zacommitowane: `README.md`, `notes/cert-queue.md`
 PR: #6
 Do decyzji: zachowana sekcja `## Deployment` została po angielsku w reszcie polskiego README —
 ujednolicenie języka to osobna, świadoma decyzja właściciela.
+
+### 20:42 UTC — C2 Zrzuty ekranu
+Wynik: ok
+Co zrobione: cztery automatyczne zrzuty zrobione i **obejrzane**: `01-ekran-logowania.png`,
+`02-strona-glowna.png` (Home z kartą 2759 kcal), `03-funkcjonalnosc-profil.png` (wypełniony
+formularz z rozbiciem 1780 × 1,55 = 2759 i komunikatem „Zapisano"), `04-funkcjonalnosc-
+zapotrzebowanie.png` (to samo Home w szerokości telefonu). Leżą w `~/mealplan-zrzuty/`, **poza
+repo**. Skrypt jednorazowy: `~/.mealplan-e2e/zrzuty.mjs` — też poza repo, bo nic nie sprawdza;
+uruchomienie: `cd ~/.mealplan-e2e && NODE_PATH="$HOME/.mealplan-e2e/node_modules" node zrzuty.mjs`.
+Jechało przeciw `wrangler dev` na `localhost:8787` (lokalna D1, nie produkcja); `dist/` z 19:58
+było aktualne, więc bez ponownego `expo export`.
+Co zacommitowane: `notes/cert-queue.md` (zrzuty i skrypt z założenia nie wchodzą do repo)
+PR: #7
+Do decyzji: piąty zrzut (terminal z `npm test`) zostaje po stronie właściciela — punkt 4.2.
+Jeśli C3–C5 wejdą, wystarczy powtórzyć jedną komendę po C6, żeby zrzuty pokazały wykluczenia.
