@@ -7,7 +7,7 @@
 - Utworzony: 2026-09-12
 - Źródła: `context/foundation/prd.md`, `context/foundation/roadmap.md`,
   `context/foundation/tech-stack.md`, `CLAUDE.md`,
-  `context/changes/profile-and-calorie-target/` (plan i trzy przeglądy),
+  `context/archive/2026-09-12-profile-and-calorie-target/` (plan i trzy przeglądy; zarchiwizowane 13.09.2026),
   skan hot-spotów historii gita (30 dni)
 - Profil bazy testowej w chwili pisania: **`sparse`** — runner jest podpięty
   (`npm test` → `node --test` na `src/lib/*.test.ts`), ale istnieje **jeden** plik testowy,
@@ -68,7 +68,7 @@ jako dostawców. To temat obserwowalności i komunikatu o niedostępności, nie 
 
 | # | Nazwa fazy | Cel (jedna linia) | Ryzyka | Typy testów | Status | Folder zmiany |
 |---|---|---|---|---|---|---|
-| 1 | Ścieżka krytyczna w przeglądarce | Udowodnić, że bramka sesji i granica danych trzymają się na zbudowanym artefakcie | #2, #1, #7 | e2e + dymny | `implementing` | — (harness powstaje w ramach `profile-and-calorie-target`) |
+| 1 | Ścieżka krytyczna w przeglądarce | Udowodnić, że bramka sesji i granica danych trzymają się na zbudowanym artefakcie | #2, #1, #7 | e2e + dymny | `complete` | — (harness powstał w ramach `profile-and-calorie-target`, zarchiwizowanej 13.09.2026) |
 | 2 | Ścieżka profilu i cel kaloryczny | Udowodnić, że liczba widziana i liczba zapisana to ta sama liczba, a błędne dane nie jadą do sieci | #4, #6, #3 | e2e + jednostkowe | `not started` | — |
 | 3 | Odporność granicy danych | Dwie tożsamości i żądania z pominięciem UI jako stały test, nie ręczne sprawdzenie | #1, #6, #5 | integracyjne | `not started` | — |
 | 4 | Bramki jakości | Zabetonować dolną granicę, żeby regresja nie przeszła po cichu | przekrojowe | bramki | `not started` | — |
