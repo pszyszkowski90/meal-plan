@@ -363,3 +363,48 @@ notes/10x-lesson-m3l5-brief.md, notes/lesson-queue.md
 Commit: (poniżej)
 Do decyzji: F4 — czy naprawiamy teraz, gdy F5 zdjął blokadę. Nie robię tego z własnej inicjatywy,
 bo to zmiana zachowania walidacji, a przegląd zostawił ją właścicielowi.
+
+### 12:01 UTC — A3 m2l5: worktree na realnej zmianie
+Wynik: ok
+Co zrobione: **F-01 faza 2 przeprowadzona w osobnym `git worktree`** (gałąź `f01-phase2`,
+scalona `--no-ff` przez `78586d8`). Powstały dwa czyste moduły: `dish-macros.ts`
+(`computeDishMacros`, `atwaterKcal`, `atwaterDeviation`) i `dish-validation.ts` (`validateDish`
+z kontrolą kształtu i trzema sitami energetycznymi). Wyrocznia — owsianka 60 g płatków + 200 g
+mleka 2% = 327 kcal — **policzona ręcznie z tabeli USDA i rozpisana w komentarzu testu**, nie
+odczytana z implementacji. Zaokrąglanie przypięte osobnym testem, bo jest częścią kontraktu.
+`npm test` urósł z 34 do **66**. Bramki: `tsc` 0, `expo lint` 0, `check-conventions` czysto
+(43 pliki), lockfile nietknięty. Cztery kryteria fazy 2 odhaczone w planie F-01.
+**Celowe zepsucie:** zmiana `MacroPrecision.grams` z 1 na 0 zaczerwieniła **6 z 32** testów;
+po przywróceniu 32/32. Testy realnie wykrywają regres, nie tylko przechodzą.
+
+**Czego worktree NIE ma — zmierzone, nie wydedukowane** (to jest treść reguły w `CLAUDE.md`):
+1. `node_modules` — `npm test` działa (wbudowany runner Node), ale **hook `pre-commit` zatrzymał
+   commit na eslincie**, a `--no-verify` jest zakazane. Rozwiązane złączem katalogowym
+   (`mklink /J`) do drzewa głównego, nie przez `npm ci` w worktree.
+2. Pliki generowane z `.gitignore` (`expo-env.d.ts`, `.expo/types/`) — bez nich `tsc` w worktree
+   zgłasza **te same dwa fałszywe błędy o `.css`**, co świeży klon. Po skopiowaniu: czysto.
+3. Konfiguracja lokalna (`.env.local`, `.dev.vars`).
+
+**Potknięcie warte zapisania:** sprzątając, usunąłem złącze przez `rm -rf`. Gdyby narzędzie poszło
+*przez* złącze zamiast je odpiąć, skasowałoby `node_modules` **drzewa głównego**. Sprawdziłem od
+razu — 626 wpisów, `tsc` 0, całe. Ostrzeżenie dopisane do reguły.
+
+**Ustalenie ponad zakres, wymagające decyzji przed fazą 3 F-01:** sito Atwatera przy tolerancji
+±10% **na poziomie składnika** odrzuca warzywa bogate w błonnik z **prawdziwymi** liczbami USDA.
+Brokuł surowy: 34 kcal deklarowane wobec 41,17 kcal ze wzoru (4/4/9) — odchylenie **21%**. To nie
+jest błąd danych: USDA liczy energię wielu warzyw własnymi współczynnikami, z odjęciem błonnika,
+a ogólny Atwater traktuje cały błonnik jak węglowodany przyswajalne. Sito działa zgodnie
+z kontraktem fazy 2 i **jednocześnie odrzuca produkty poprawne**. Zachowanie przypięte testem
+w bloku „ZNANE OGRANICZENIE", żeby wyszło teraz, a nie przy seedowaniu 100 dań.
+
+Co zacommitowane: src/lib/dish-macros.ts, src/lib/dish-macros.test.ts, src/lib/dish-validation.ts,
+src/lib/dish-validation.test.ts (w worktree, `1c10a6a`); merge `78586d8`;
+context/changes/dish-source-and-seed-pool/plan.md (`a9a0529`); CLAUDE.md (`4a15b4d` + uzupełnienie);
+notes/lesson-queue.md
+Commit: 1c10a6a, 78586d8, a9a0529, 4a15b4d (+ poniżej)
+Do decyzji: **tolerancja Atwatera dla produktów niskokalorycznych** — osobny, luźniejszy próg,
+rezygnacja z sita składnikowego na rzecz sita na daniu, albo pole wyjątku na `ingredient`.
+Bez tego faza 3 odrzuci brokuła, cukinię i większość warzyw.
+Uwaga do B2: `CLAUDE.md` urósł do ~352 linii niepustych (przegląd reguł dał WARN już przy 272
+wobec progu 200). B2 musi to uwzględnić — reguła worktree jest nowa i potrzebna, więc skrót
+powinien iść z innych sekcji.

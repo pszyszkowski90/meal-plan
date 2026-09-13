@@ -323,6 +323,10 @@ git worktree remove <ścieżka>                       # sprzątanie po scaleniu
    # PowerShell albo cmd, w katalogu worktree — złącze katalogowe, nie kopia:
    cmd /c mklink /J "<worktree>\node_modules" "C:\Prywatne\Dieta 2\node_modules"
    ```
+   **Złącze usuń, ZANIM usuniesz worktree**, i wyłącznie jako katalog-link
+   (`cmd /c rmdir "<worktree>\node_modules"`). Narzędzie, które pójdzie *przez* złącze zamiast
+   je odpiąć, skasuje `node_modules` **drzewa głównego** — a to w tym repo znaczy `npm ci`
+   i ryzyko dla lockfile'a, czyli dokładnie to, czego unikamy.
 2. **Plików generowanych, bo są w `.gitignore`** — `expo-env.d.ts` i `.expo/types/`. Bez nich
    `tsc` w worktree zgłasza **te same dwa fałszywe błędy o `.css`**, co świeży klon (patrz
    Pułapki). Skopiuj oba z drzewa głównego albo uruchom tam raz Metro.
