@@ -79,3 +79,26 @@ awarii, nie z teorii. Kolejne wpisy dopisuj pojedynczo. -->
   celowym zepsuciu** — zielony przebieg na czystym drzewie nie dowodzi, że cokolwiek się wykonało.
   Osobno: `eslint` domyślnie kończy się zerem mimo ostrzeżeń — w bramce zawsze `--max-warnings=0`.
 - **Dotyczy**: implement, impl-review, test-plan
+
+## Kryterium, które przechodzi niezależnie od tego, czy rzecz działa, nie jest kryterium
+
+- **Kontekst**: pisanie kryteriów sukcesu w planie fazy — zwłaszcza dla ograniczeń zakresowych
+  (`BETWEEN`), granic walidacji i wszystkiego, co ma „działać dla pojęcia X".
+- **Problem**: kryterium bywa sformułowane tak, że **spełnia je zarówno stan zaplanowany, jak
+  i stan wdrożony, który się od niego różni** — albo tak, że da się je zaliczyć tylko przez
+  założenie wiedzy, której miało dowieść. Dwa przypadki zmierzone tego samego dnia:
+  - **F-01, kryterium 1.5**: plan chciał `prep_minutes` `CHECK BETWEEN 5 AND 120`, wdrożono
+    `> 0`. Kryterium testowało wartość **0** — odrzucaną przez oba ograniczenia. Przeszło na
+    zielono, a zaplanowanego zakresu nie ma: `prep_minutes = 999` wchodzi do bazy bez słowa.
+  - **S-03, kryterium 1.7**: żądało wykluczenia „grzyby" i sprawdzenia, że odsiane zostaje
+    „risotto z borowikami". Model danych tej samej zmiany wskazuje `ingredient_id`, a wiersza
+    „grzyby" nie ma i nie będzie. Jedyny sposób zaliczenia to wykluczyć wprost borowiki — czyli
+    **założyć wiedzę, której kryterium miało dowieść**. Test przeszedłby, dowodząc jedynie, że
+    `JOIN` łączy.
+- **Reguła**: Kryterium zakresu musi trafiać w **oba końce i tuż za nie** (0, 4, 5, 120, 121),
+  nigdy w jedną wartość spełniającą kilka różnych ograniczeń naraz. Kryterium zdolności („da się
+  wyrazić X") musi startować z **tego samego wejścia, co użytkownik**, a nie z identyfikatora,
+  który ktoś już wcześniej rozwiązał za niego. Pisząc kryterium, zadaj pytanie: **czy istnieje
+  świat, w którym to przechodzi, a funkcja nie działa?** Jeśli tak — kryterium jest do przepisania.
+- **Dotyczy**: plan, plan-review, implement, impl-review
+

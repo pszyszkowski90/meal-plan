@@ -491,3 +491,50 @@ Commit: 6cb76de (+ poniżej)
 Do decyzji: podniesienie reguły `git add -A` do „Twardych reguł" (jedna linia, osobny commit,
 w kolejnej sesji) oraz czy dzielić `CLAUDE.md` na pliki zagnieżdżone, żeby realnie zejść poniżej
 progu 200 linii.
+
+### 12:49 UTC — C1 m2l3: przegląd kodu
+Wynik: ok
+Co zrobione: Najpierw **nadrobiony przegląd F-01 fazy 1** — jedynej fazy w historii tego repo,
+która weszła na produkcję nierecenzowana — potem brief z **jedenastu** raportów, nie z jednego.
+Kryteria weryfikowałem **uruchamiając je**, nie czytając: `migrations list` lokalnie i zdalnie,
+oba `INSERT`-y łamiące `CHECK`, `EXPLAIN QUERY PLAN`. Wiersze próbne posprzątane
+(`SELECT COUNT(*) FROM dish` → 0). Werdykt: **WYMAGA UWAGI**, 0 krytycznych, 2 ostrzeżenia,
+2 obserwacje — produkcji nic nie groziło.
+
+**F1 (zmierzone):** odsiew po składniku **skanuje** całą `dish_ingredient`. `PRIMARY KEY (dish_id,
+ingredient_id)` indeksuje `dish_id` jako pierwszy, a wykluczenie pyta po `ingredient_id`.
+`EXPLAIN QUERY PLAN`: `SCAN` przy filtrze po składniku kontra `SEARCH` po daniu. To **luka planu**,
+nie wykonawcy. Odroczone do fazy 4 (tabela pusta, migracja na produkcję dałaby dziś zero korzyści)
+— zapisane w `follow-ups/review-fixes.md` z nazwanym momentem, w którym przestaje być odroczeniem.
+
+**F2:** kryterium 1.5 przechodziło **niezależnie od tego, czy zaplanowane ograniczenie istnieje** —
+testowało `prep_minutes = 0`, odrzucane i przez `> 0`, i przez `BETWEEN 5 AND 120`. Sprawdziłem:
+`prep_minutes = 999` wchodzi do bazy bez słowa. **Ten sam kształt co kryterium 1.7 w S-03**
+(zadanie A1). Dwa wystąpienia w dwóch niezależnych planach → **zapisane jako lekcja** w
+`lessons.md` (szósty wpis).
+
+**Odstępstwo `prep_minutes` rozstrzygnięte: PODTRZYMANE.** Nie broniłem decyzji z rozpędu ani jej
+nie cofnąłem — uzasadnienie wykonawcy jest **lepsze niż plan** (zakres to reguła produktowa,
+`0002` wprost zakazuje zakresów w DDL, SQLite nie upuszcza `CHECK`, a ustalenie F1 przeglądu fazy 2
+S-02 kazało usunąć cztery takie `CHECK`-i; plan przeczył sam sobie). Dołożyłem to, czego
+uzasadnienie nie powiedziało: odstępstwo jest bezpieczne **tylko** przy dwóch warunkach — zakres
+ma właściciela gdzie indziej (spełnione dopiero w fazie 2) i istnieje **jedna droga zapisu**
+(zależy od fazy 3).
+
+**Liczba, która najbardziej zaskoczyła:** przeglądy **planu** złapały **9 ustaleń krytycznych**,
+przeglądy **implementacji** — **2**. Oba impl-krytyczne to higiena commita (hasło jawnym tekstem;
+niespójny lockfile), nie logika, i oba miały NISKI wpływ. Żaden z jedenastu przeglądów nie wrócił
+czysty. Oba werdykty ODRZUCONY padły na **fazę 1** swojej zmiany.
+
+`change.md` F-01: `planned` → **`implementing`**, nie `impl_reviewed` — świadome odstępstwo od
+instrukcji umiejętności, bo przejrzana jest jedna z czterech faz, a `impl_reviewed` kłamałby wobec
+`/10x-archive`. Powód zapisany w pliku.
+
+Bramki: `tsc` 0, `npm test` 66/66, `check-conventions` czysto (43 pliki), lockfile pusty.
+Co zacommitowane: context/changes/dish-source-and-seed-pool/reviews/impl-review-phase-1.md,
+context/changes/dish-source-and-seed-pool/follow-ups/review-fixes.md,
+context/changes/dish-source-and-seed-pool/change.md, context/foundation/lessons.md,
+notes/10x-lesson-m2l3-brief.md, notes/lesson-queue.md
+Commit: (poniżej)
+Do decyzji: indeks `dish_ingredient(ingredient_id)` — kiedy wchodzi i pod jakim numerem migracji
+(`0004` jest zajęty przez preferencje w planie S-03). Moja rekomendacja: przed fazą 4 F-01.
