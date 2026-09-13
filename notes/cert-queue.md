@@ -268,3 +268,26 @@ Co zacommitowane: `notes/cert-queue.md` (zrzuty i skrypt z założenia nie wchod
 PR: #7
 Do decyzji: piąty zrzut (terminal z `npm test`) zostaje po stronie właściciela — punkt 4.2.
 Jeśli C3–C5 wejdą, wystarczy powtórzyć jedną komendę po C6, żeby zrzuty pokazały wykluczenia.
+
+### 21:08 UTC — C3 S-03 faza 1: schemat, repozytorium, trasa
+Wynik: ok
+Co zrobione: migracja `0005_preferences.sql` z parą wsteczną (`user_preferences`, `exclusion`,
+`exclusion_group`, `ingredient_group`), `src/lib/preferences.ts` + 19 testów jednostkowych,
+`src/server/repository/preferences.ts` (w tym `listAllowedDishes`), trasa `GET`/`PUT
+/api/preferences`, dwie specyfikacje E2E. **To zamyka brakujące kryterium 1 certyfikacji: Create
+i Delete na realnej kolekcji** — `PUT` doprowadza listę wykluczeń do stanu, tworząc i kasując
+wiersze, a nie nadpisując pole singletonu. Dziesięć z jedenastu kryteriów fazy odhaczone
+(sha `76c1128`): 1.1-1.3 i 1.7-1.9 dowiedzione na lokalnej D1 zapytaniem WYGENEROWANYM
+Z MODUŁU REPOZYTORIUM (zero dryfu między dowodem a kodem), 1.4-1.5 testami E2E, 1.10 bramkami,
+1.11 przez `migrations apply --remote` wykonane PRZED tym commitem. Bramki: `tsc` czysty,
+`npm test` 100/100, `expo lint` czysty, `check-conventions` czysty, E2E 33/33.
+Co zacommitowane: `migrations/0005_preferences.sql`, `migrations/down/0005_preferences.down.sql`,
+`src/lib/preferences.ts`, `src/lib/preferences.test.ts`, `src/server/repository/preferences.ts`,
+`src/server/env.ts`, `src/app/api/preferences+api.ts`, `tests/e2e/preferences-api.spec.ts`,
+`tests/e2e/data-boundary.spec.ts`, `context/changes/dietary-preferences/plan.md`,
+`notes/cert-queue.md`
+PR: #8
+Do decyzji: kryterium **1.6** (konto A nie widzi wykluczeń konta B) zostaje **BLOCKED-MANUAL** —
+wymaga drugiego konta testowego, którego repo nie ma; ta sama blokada co 2.9 w S-02. Warstwę
+zewnętrzną granicy pokrywa 1.4. Poza planem doszło tłumaczenie naruszenia klucza obcego na 400
+zamiast 500: bez niego wykluczenie wskazujące nieistniejący składnik dawało „coś się popsuło".

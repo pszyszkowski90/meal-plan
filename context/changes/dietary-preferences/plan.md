@@ -354,21 +354,23 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 
 #### Automated
 
-- [ ] 1.1 `migrations apply --local` stosuje `0005`; para wsteczna cofa; `list --local` czysto
-- [ ] 1.2 `INSERT` łamiący `CHECK` spójności odrzucony przez bazę
-- [ ] 1.3 Podwójne wykluczenie tego samego składnika nie tworzy duplikatu
-- [ ] 1.4 `GET`/`PUT /api/preferences` bez tokenu i z podrobionym tokenem → 401
-- [ ] 1.5 `GET` zwraca `Cache-Control: no-store`
-- [ ] 1.6 Konto A nie widzi wykluczeń konta B
-- [ ] 1.7 `listAllowedDishes` odsiewa danie, którego nazwa nie zawiera wykluczonego składnika —
-      wykluczenie po `ingredient_id` („borowiki, suszone"), nie po słowie „grzyby"
-- [ ] 1.8 Wykluczenie grupowe „grzyby" odsiewa danie z borowikami, bez wymieniania borowików
-- [ ] 1.9 Składnik dopisany do grupy PO zapisaniu wykluczenia też jest odsiewany
-- [ ] 1.10 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
+- [x] 1.1 `migrations apply --local` stosuje `0005`; para wsteczna cofa; `list --local` czysto — 76c1128
+- [x] 1.2 `INSERT` łamiący `CHECK` spójności odrzucony przez bazę — 76c1128
+- [x] 1.3 Podwójne wykluczenie tego samego składnika nie tworzy duplikatu — 76c1128
+- [x] 1.4 `GET`/`PUT /api/preferences` bez tokenu i z podrobionym tokenem → 401 — 76c1128
+- [x] 1.5 `GET` zwraca `Cache-Control: no-store` — 76c1128
+- [ ] 1.6 Konto A nie widzi wykluczeń konta B — **BLOCKED-MANUAL**: wymaga drugiego konta
+      testowego, którego repo nie ma (ta sama blokada co kryterium 2.9 S-02). Warstwa zewnętrzna
+      granicy — odmowa bez tożsamości i przy podrobionym tokenie — jest pokryta w 1.4.
+- [x] 1.7 `listAllowedDishes` odsiewa danie, którego nazwa nie zawiera wykluczonego składnika —
+      wykluczenie po `ingredient_id` („borowiki, suszone"), nie po słowie „grzyby" — 76c1128
+- [x] 1.8 Wykluczenie grupowe „grzyby" odsiewa danie z borowikami, bez wymieniania borowików — 76c1128
+- [x] 1.9 Składnik dopisany do grupy PO zapisaniu wykluczenia też jest odsiewany — 76c1128
+- [x] 1.10 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste — 76c1128
 
 #### Manual
 
-- [ ] 1.11 `migrations apply --remote` wykonane przed commitem fazy
+- [x] 1.11 `migrations apply --remote` wykonane przed commitem fazy — 76c1128
 
 ### Phase 2: Ekran preferencji
 
