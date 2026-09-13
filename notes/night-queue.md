@@ -527,3 +527,26 @@ Commit: ten
 Do decyzji rano: czy ujednolicić formatowanie liczb własną funkcją zamiast `toLocaleString`.
 **Uwaga:** `.env.local` ma tymczasowo `EXPO_PUBLIC_API_URL=http://127.0.0.1:8787` na potrzeby
 weryfikacji natywnej; kopia oryginału w scratchpadzie, przywracam przed końcem pracy.
+
+### 09:32 UTC (13.09) — Ograniczenie celu i faza 1 puli dań
+Wynik: ok
+Co zrobione:
+1. **Cel kaloryczny przycinany do 1000–6000 kcal** (decyzja właściciela, D16). `effectiveKcal`
+   przycięty, `computedKcal` zostaje surowym wynikiem wzoru — wyjaśnienie na ekranie pozostaje
+   prawdziwe. Nowe pole `clampedTo` ('min'/'max'/null) mówi ekranowi, że ma to powiedzieć wprost;
+   bez tego „= 317 kcal dziennie" kłóciłoby się po cichu z celem 1000. Komunikat na Profilu i na
+   karcie Home. 4 nowe testy jednostkowe + test E2E; próba celowego zepsucia zapala 3 jednostkowe
+   i E2E. **Świadomie nie odrzucam profilu** — to zamknęłoby produkt dla realnych osób (drobna
+   starsza kobieta ma faktycznie niskie zapotrzebowanie).
+2. **F-01 faza 1**: migracja `0003_dish_pool` z parą wsteczną — pięć tabel puli dań, pierwsze
+   w tym repo dane **współdzielone** (bez `user_id`). `slug` jako tożsamość dania,
+   `dish_meal_slot` wiele-do-wielu, stan składnika w nazwie, zamknięty enum kategorii.
+   `all<T>()` dołożone do typu D1. Zastosowana `--local` i `--remote`.
+   Wszystkie sześć kryteriów 1.1–1.6 zielone; ponad kryteria zweryfikowana kaskada `ON DELETE`.
+3. Odstępstwo Minor odnotowane w planie: `prep_minutes` ma w DDL tylko `> 0`, bez zakresu
+   5–120 — zakresy liczbowe nie wchodzą do `CHECK` (reguła z `0002`, plan sam sobie przeczył).
+Bramki: `tsc`, `expo lint`, `npm test` 34/34, `check-lock`, dry-run 12 modułów, harness 21/21.
+Produkcja po wdrożeniu: smoke zielony, 7/7 testów tylko-do-odczytu.
+Commit: 15f208f, c848474, 3668c8c
+Do decyzji rano: granice 1000–6000 są **dziedziczone z ograniczenia nadpisania i nie były dobierane
+medycznie** — jeśli mają być inne, zmienia się je w `ProfileBounds.targetKcal`.
