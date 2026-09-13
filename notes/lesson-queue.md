@@ -408,3 +408,46 @@ Bez tego faza 3 odrzuci brokuła, cukinię i większość warzyw.
 Uwaga do B2: `CLAUDE.md` urósł do ~352 linii niepustych (przegląd reguł dał WARN już przy 272
 wobec progu 200). B2 musi to uwzględnić — reguła worktree jest nowa i potrzebna, więc skrót
 powinien iść z innych sekcji.
+
+### 12:22 UTC — B1 m5l3: bramka jakości w CI
+Wynik: ok
+Co zrobione: `.github/workflows/quality-gate.yml` — push i PR do `main`, sześć kroków
+(`npm ci`, `tsc --noEmit`, `expo lint`, `npm test`, `check-conventions`, `check-lock`), przebieg
+1 min 10 s. **Workflow przeszedł na prawdziwym pushu** (run `34756638926`, wszystkie kroki zielone)
+— kryterium „Gotowe, gdy" spełnione. Trzy rozstrzygnięcia zapisane jako **D19** i w komentarzu
+workflow: bramka nie wdraża (od tego jest Workers Builds), `npm ci` na Linuksie jest sam w sobie
+najlepszym testem lockfile'a, E2E nie wchodzi (Playwright poza `package.json`). Bramka nie
+potrzebuje sekretów — sprawdzone przez tymczasowe odsunięcie `.env.local`.
+
+**Pierwszy przebieg PADŁ — i to była najcenniejsza rzecz w tym zadaniu.** Krok `Typy` zgłosił dwa
+błędy o `.css`. To nie był błąd konfiguracji CI, tylko **realny problem repo, którego trzy lokalne
+warstwy nie mogły wykryć z zasady**: deklaracje `.css` przychodziły wyłącznie z gitignorowanego
+`expo-env.d.ts`, tworzonego przy pierwszym `npm start`. Każda maszyna deweloperska ma go od dawna,
+runner startuje ze świeżego klonu. Ten sam objaw widziałem godzinę wcześniej w worktree (A3)
+i uznałem za lokalną niedogodność do obejścia — dopiero CI pokazało, że to dziura
+w reprodukowalności. Naprawa: `expo-types.d.ts` z jedną linijką `reference`, w repo. Typecheck
+przechodzi teraz wszędzie: świeży klon, worktree, runner. Wpis w Pułapkach `CLAUDE.md`
+przekreślony jako rozwiązany.
+
+**Znane ograniczenie, zmierzone i zapisane:** `.expo/types/router.d.ts` też jest w `.gitignore`
+i powstaje **wyłącznie** przy Metro (`expo export` go nie tworzy — sprawdzone przez usunięcie
+i eksport). Bez niego `Href` degraduje się do typu ogólnego i **zła ścieżka w `<Link href>`
+przestaje być błędem typu**. Sonda `href="/nie-ma-takiej-trasy-zupelnie"`: lokalnie `TS2322`,
+bez `.expo/types` zielono. Czyli `typedRoutes` na runnerze milczy. Nie obchodzę tego — pilnuje
+tego warstwa 3 (`pre-push`). Zapisane w workflow i w `CLAUDE.md`.
+
+**Celowe zepsucie — z przeszkodą wartą odnotowania.** Nie dało się wypchnąć zepsutej gałęzi z tej
+maszyny: błąd lintu zatrzymuje `pre-commit`, błąd typu zatrzymuje `pre-push`, a `--no-verify` jest
+zakazany. Warstwy lokalne działają na tyle dobrze, że **uniemożliwiają przetestowanie warstwy
+zdalnej normalną drogą**. Zamiast obchodzić hooki, odtworzyłem scenariusz, dla którego ta bramka
+istnieje: commit przez **API GitHuba**, czyli push z maszyny bez zainstalowanych hooków.
+PR #1, plik przypisujący string do `number`. Wynik: krok `Typy` **czerwony**
+(`Type 'string' is not assignable to type 'number'`), kolejne kroki nie ruszyły. PR zamknięty bez
+scalania, gałąź skasowana, zdalnie został sam `main`.
+
+Bramki lokalne: `tsc` 0, `npm test` 66/66, `check-conventions` czysto (43 pliki), lockfile pusty.
+Co zacommitowane: .github/workflows/quality-gate.yml, expo-types.d.ts, CLAUDE.md,
+notes/lesson-decisions.md, notes/10x-lesson-m5l3-brief.md, notes/lesson-queue.md
+Commit: a7f553a, 3265236 (+ poniżej)
+Do decyzji: ostrzeżenie GitHuba, że `actions/checkout@v4` i `actions/setup-node@v4` celują
+w Node 20 (wymuszany Node 24). Nie blokuje; podbicie do `@v5` przy okazji.
