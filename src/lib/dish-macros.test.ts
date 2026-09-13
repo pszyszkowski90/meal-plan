@@ -13,6 +13,7 @@ import { describe, test } from 'node:test';
 import {
   atwaterDeviation,
   atwaterKcal,
+  atwaterWithinTolerance,
   computeDishMacros,
   type Macros,
 } from './dish-macros.ts';
@@ -134,5 +135,53 @@ describe('atwaterKcal i atwaterDeviation', () => {
   test('błąd ×10 w kaloriach wychodzi jako ogromne odchylenie', () => {
     const misread: Macros = { ...Oats, kcal: 3790 };
     assert.ok(atwaterDeviation(misread) > 0.8);
+  });
+});
+
+describe('atwaterWithinTolerance — próg względny ORAZ bezwzględny', () => {
+  const REL = 0.1;
+  const FLOOR = 12;
+
+  test('próg bezwzględny rządzi przy małych kaloriach', () => {
+    // 23 kcal deklarowane, 29,5 z Atwatera — 28% odchylenia, ale tylko 6,5 kcal różnicy.
+    const spinach: Macros = { kcal: 23, protein: 2.86, carbs: 3.63, fat: 0.39 };
+    assert.ok(atwaterDeviation(spinach) > REL, 'warunek testu: próg WZGLĘDNY ma być przekroczony');
+    assert.equal(atwaterWithinTolerance(spinach, REL, FLOOR), true);
+  });
+
+  test('próg względny rządzi przy dużych kaloriach', () => {
+    // Oliwa: 16 kcal różnicy, czyli powyżej progu bezwzględnego — ale to tylko 1,8%.
+    const oil: Macros = { kcal: 884, protein: 0, carbs: 0, fat: 100 };
+    assert.ok(Math.abs(884 - atwaterKcal(oil)) > FLOOR, 'warunek testu: różnica > próg bezwzględny');
+    assert.equal(atwaterWithinTolerance(oil, REL, FLOOR), true);
+  });
+
+  test('oba progi przekroczone naraz — odrzucone', () => {
+    // Ryż ugotowany podpięty pod suchy: 224 kcal różnicy, 172% odchylenia.
+    const misMapped: Macros = { kcal: 130, protein: 7.1, carbs: 79.9, fat: 0.7 };
+    assert.equal(atwaterWithinTolerance(misMapped, REL, FLOOR), false);
+  });
+
+  test('granica progu bezwzględnego jest włączna', () => {
+    // 10 kcal deklarowane, makra dające dokładnie 22 → różnica równa 12.
+    const exact: Macros = { kcal: 10, protein: 0, carbs: 5.5, fat: 0 };
+    assert.equal(atwaterKcal(exact) - exact.kcal, FLOOR);
+    assert.equal(atwaterWithinTolerance(exact, REL, FLOOR), true);
+    // Tuż za granicą — odrzucone.
+    const over: Macros = { kcal: 10, protein: 0, carbs: 5.75, fat: 0 };
+    assert.equal(atwaterWithinTolerance(over, REL, FLOOR), false);
+  });
+
+  test('zero kcal przy niezerowych makrach zostaje ostre mimo progu', () => {
+    // Gdyby próg bezwzględny obowiązywał, te makra (12 kcal) przeszłyby jako bezkaloryczne.
+    assert.equal(
+      atwaterWithinTolerance({ kcal: 0, protein: 0, carbs: 3, fat: 0 }, REL, FLOOR),
+      false,
+    );
+    // Prawdziwie bezkaloryczny produkt (woda) nadal przechodzi.
+    assert.equal(
+      atwaterWithinTolerance({ kcal: 0, protein: 0, carbs: 0, fat: 0 }, REL, FLOOR),
+      true,
+    );
   });
 });

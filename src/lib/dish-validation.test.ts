@@ -217,33 +217,91 @@ describe('validateDish — sito 3: gęstość energetyczna', () => {
   });
 });
 
-describe('ZNANE OGRANICZENIE — sito Atwatera odrzuca warzywa bogate w błonnik', () => {
+describe('sito Atwatera — warzywa bogate w błonnik przechodzą, błędy mapowania nie', () => {
   /**
-   * To NIE jest test pożądanego zachowania. Przypina zachowanie **obecne**, żeby ograniczenie
-   * było widoczne, zanim zacznie się seedowanie puli (faza 3), a nie odkryte w jej trakcie.
+   * Decyzja D20 (13.09.2026). Wcześniej ten blok nazywał się „ZNANE OGRANICZENIE" i przypinał
+   * zachowanie, w którym brokuł z PRAWDZIWYMI liczbami USDA był ODRZUCANY.
    *
-   * USDA liczy kalorie wielu warzyw **swoimi** współczynnikami, z odjęciem błonnika. Ogólne
-   * współczynniki Atwatera (4/4/9) zawyżają wtedy energię o ~20%, bo traktują cały błonnik jak
-   * przyswajalne węglowodany. Przy tolerancji ±10% na poziomie składnika oznacza to odrzucenie
-   * produktów, które są całkowicie poprawne.
+   * Przyczyna: sama tolerancja względna załamuje się blisko zera. Ogólne współczynniki (4/4/9)
+   * liczą cały błonnik jak węglowodany przyswajalne, a USDA odejmuje go własnymi współczynnikami.
+   * Zmierzone odchylenia: brokuł 21%, ogórek 21%, szpinak 28%, pieczarka 29% — przy nadwyżce
+   * rzędu 3–7 kcal, czyli w kilokaloriach żadnej.
    *
-   * Liczby z USDA, brokuł surowy: 34 kcal | 2,82 B | 6,64 W | 0,37 T.
-   * Atwater = 4×2,82 + 4×6,64 + 9×0,37 = 11,28 + 26,56 + 3,33 = 41,17.
-   * Odchylenie = |34 − 41,17| / 34 ≈ 21% — ponad dwukrotność tolerancji.
-   *
-   * Do rozstrzygnięcia przez właściciela przed fazą 3 (patrz Dziennik, wpis A3).
+   * Lekarstwem jest próg BEZWZGLĘDNY obok względnego, nie podniesienie procentu.
    */
-  test('brokuł z prawdziwymi liczbami USDA nie przechodzi sita składnikowego', () => {
-    const broccoli: KnownIngredient[] = [
-      { name: 'brokuł, surowy', per100g: { kcal: 34, protein: 2.82, carbs: 6.64, fat: 0.37 } },
+  const vegetables: KnownIngredient[] = [
+    { name: 'brokuł, surowy', per100g: { kcal: 34, protein: 2.82, carbs: 6.64, fat: 0.37 } },
+    { name: 'szpinak, surowy', per100g: { kcal: 23, protein: 2.86, carbs: 3.63, fat: 0.39 } },
+    { name: 'pieczarki, świeże', per100g: { kcal: 22, protein: 3.09, carbs: 3.26, fat: 0.34 } },
+    { name: 'ogórek, surowy', per100g: { kcal: 15, protein: 0.65, carbs: 3.63, fat: 0.11 } },
+  ];
+
+  for (const vegetable of vegetables) {
+    test(`${vegetable.name} przechodzi sito składnikowe`, () => {
+      // Dobrana gramatura tak, żeby danie mieściło się w progu kalorycznym i gęstości —
+      // testujemy sito Atwatera, nie pozostałe dwa.
+      const result = validateDish(
+        oatmeal({
+          ingredients: [
+            { ingredientName: vegetable.name, grams: 200 },
+            { ingredientName: 'oliwa z oliwek', grams: 20 },
+            { ingredientName: 'płatki owsiane, suche', grams: 40 },
+          ],
+        }),
+        [...KnownIngredients, vegetable],
+      );
+
+      assert.equal(
+        result.ok,
+        true,
+        `odrzucono: ${result.ok ? '' : result.errors.join(' | ')}`,
+      );
+    });
+  }
+
+  test('próg bezwzględny NIE przepuszcza błędu mapowania — ryż ugotowany pod nazwą suchego', () => {
+    // Różnica 224 kcal, o rząd wielkości powyżej progu 12 kcal.
+    const misMapped: KnownIngredient[] = [
+      { name: 'ryż biały, suchy', per100g: { kcal: 130, protein: 7.1, carbs: 79.9, fat: 0.7 } },
     ];
 
     const result = validateDish(
-      oatmeal({ ingredients: [{ ingredientName: 'brokuł, surowy', grams: 200 }] }),
-      broccoli,
+      oatmeal({ ingredients: [{ ingredientName: 'ryż biały, suchy', grams: 80 }] }),
+      misMapped,
     );
 
-    assert.equal(result.ok, false, 'jeśli to przeszło, ograniczenie zostało naprawione — zaktualizuj test');
+    assert.equal(result.ok, false);
+    assert.ok(!result.ok && result.errors.some((e) => e.includes('Atwater')));
+  });
+
+  test('próg bezwzględny NIE przepuszcza błędu x10 na produkcie niskokalorycznym', () => {
+    // 20 kcal zadeklarowane wobec 186 z makr — różnica 166 kcal.
+    const inflated: KnownIngredient[] = [
+      { name: 'sos niskokaloryczny', per100g: { kcal: 20, protein: 12, carbs: 30, fat: 2 } },
+    ];
+
+    const result = validateDish(
+      oatmeal({ ingredients: [{ ingredientName: 'sos niskokaloryczny', grams: 100 }] }),
+      inflated,
+    );
+
+    assert.equal(result.ok, false);
+    assert.ok(!result.ok && result.errors.some((e) => e.includes('Atwater')));
+  });
+
+  test('zero kcal przy niezerowych makrach zostaje ostre — próg bezwzględny tu NIE działa', () => {
+    // Składnik podpięty pod „wodę". Gdyby próg 12 kcal obowiązywał, produkt o makrach
+    // dających <= 12 kcal przeszedłby jako bezkaloryczny.
+    const asWater: KnownIngredient[] = [
+      { name: 'przyprawa, zmapowana na wodę', per100g: { kcal: 0, protein: 0.5, carbs: 2, fat: 0 } },
+    ];
+
+    const result = validateDish(
+      oatmeal({ ingredients: [{ ingredientName: 'przyprawa, zmapowana na wodę', grams: 100 }] }),
+      asWater,
+    );
+
+    assert.equal(result.ok, false);
     assert.ok(!result.ok && result.errors.some((e) => e.includes('Atwater')));
   });
 });

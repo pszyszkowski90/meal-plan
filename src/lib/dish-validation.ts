@@ -19,6 +19,7 @@
 
 import {
   atwaterDeviation,
+  atwaterWithinTolerance,
   computeDishMacros,
   type DishMacroItem,
   type Macros,
@@ -41,6 +42,12 @@ export const DishBounds = {
   energyDensity: { min: 0.3, max: 5 },
   /** Dopuszczalne odchylenie od energii Atwatera, jako ułamek. */
   atwaterTolerance: 0.1,
+  /**
+   * Próg BEZWZGLĘDNY dla tego samego sita, w kcal na 100 g. Bez niego warzywa bogate w błonnik
+   * są odrzucane na prawdziwych liczbach USDA — uzasadnienie i pomiary w `dish-macros.ts`
+   * przy `atwaterWithinTolerance`. Decyzja D20 z 13.09.2026.
+   */
+  atwaterFloorKcal: 12,
 } as const;
 
 /** Składnik znany bazie: nazwa z `ingredient.name` plus makra na 100 g. */
@@ -182,13 +189,18 @@ export function validateDish(
 
     // Sito 1a — Atwater NA SKŁADNIKU. Wiersz USDA, który nie domyka się na współczynnikach,
     // jest prawie zawsze źle zmapowany; łapiemy go zanim rozejdzie się po wszystkich daniach.
-    const deviation = atwaterDeviation(known.per100g);
-    if (deviation > DishBounds.atwaterTolerance) {
+    if (
+      !atwaterWithinTolerance(
+        known.per100g,
+        DishBounds.atwaterTolerance,
+        DishBounds.atwaterFloorKcal,
+      )
+    ) {
       errors.push(
         `Składnik „${known.name}" nie domyka się na współczynnikach Atwatera ` +
-          `(odchylenie ${percent(deviation)} przy dopuszczalnych ` +
-          `${percent(DishBounds.atwaterTolerance)}) — wiersz USDA jest prawdopodobnie ` +
-          `źle zmapowany.`,
+          `(odchylenie ${percent(atwaterDeviation(known.per100g))} przy dopuszczalnych ` +
+          `${percent(DishBounds.atwaterTolerance)} albo ${DishBounds.atwaterFloorKcal} kcal) — ` +
+          `wiersz USDA jest prawdopodobnie źle zmapowany.`,
       );
     }
 
@@ -204,12 +216,12 @@ export function validateDish(
   const macros = computeDishMacros(items);
   const totalGrams = items.reduce((sum, item) => sum + item.grams, 0);
 
-  // Sito 1b — Atwater NA DANIU.
-  const dishDeviation = atwaterDeviation(macros);
-  if (dishDeviation > DishBounds.atwaterTolerance) {
+  // Sito 1b — Atwater NA DANIU. Ten sam próg bezwzględny: danie złożone głównie z warzyw
+  // dziedziczy ich nadwyżkę błonnikową i bez progu byłoby odrzucane tak samo jak składniki.
+  if (!atwaterWithinTolerance(macros, DishBounds.atwaterTolerance, DishBounds.atwaterFloorKcal)) {
     errors.push(
       `Makra dania nie domykają się na współczynnikach Atwatera ` +
-        `(odchylenie ${percent(dishDeviation)}).`,
+        `(odchylenie ${percent(atwaterDeviation(macros))}).`,
     );
   }
 

@@ -106,3 +106,38 @@ export function atwaterDeviation(macros: Macros): number {
 
   return Math.abs(macros.kcal - expected) / macros.kcal;
 }
+
+/**
+ * Czy makra domykają się na współczynnikach Atwatera — z progiem WZGLĘDNYM **i BEZWZGLĘDNYM**.
+ *
+ * Dlaczego dwa progi, a nie jeden. Sama tolerancja względna **załamuje się blisko zera**:
+ * ogólne współczynniki (4/4/9) liczą cały błonnik jak węglowodany przyswajalne, a USDA liczy
+ * energię wielu warzyw własnymi współczynnikami, z odjęciem błonnika. Przy produkcie o 23 kcal
+ * nadwyżka 6,5 kcal to **28% odchylenia** — mimo że w kilokaloriach jest to nic. Zmierzone
+ * na prawdziwych wierszach USDA: brokuł 21%, ogórek 21%, szpinak 28%, pieczarka 29%.
+ * Podniesienie samego progu względnego do ~35% przepuściłoby już realne błędy mapowania.
+ *
+ * Próg bezwzględny rozwiązuje to bez osłabiania sita, bo **skala błędu, którego szukamy, jest
+ * inna**: ryż ugotowany podpięty pod suchy daje różnicę 224 kcal, a błąd ×10 na produkcie
+ * niskokalorycznym — 166 kcal. Oba są o rząd wielkości powyżej progu, a błonnik nie.
+ *
+ * Wartość progu (12 kcal/100 g) ma zapas: najgorszy zmierzony przypadek uczciwy to brokuł, 7,2 kcal.
+ * Koszt przeoczenia jest ograniczony z góry — 12 kcal/100 g przy 300 g warzyw to 36 kcal,
+ * czyli poniżej 2% dziennego budżetu, wewnątrz guardraila ±10%.
+ *
+ * **Zero kilokalorii jest osobnym przypadkiem i zostaje ostre:** produkt zadeklarowany jako
+ * bezkaloryczny, który ma niezerowe makra, jest zawsze błędem mapowania (składnik podpięty pod
+ * „wodę") — tam próg bezwzględny NIE obowiązuje.
+ */
+export function atwaterWithinTolerance(
+  macros: Macros,
+  relativeTolerance: number,
+  absoluteFloorKcal: number,
+): boolean {
+  if (macros.kcal === 0) {
+    return atwaterKcal(macros) === 0;
+  }
+
+  const difference = Math.abs(macros.kcal - atwaterKcal(macros));
+  return difference <= Math.max(relativeTolerance * macros.kcal, absoluteFloorKcal);
+}

@@ -478,10 +478,22 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 > traktuje cały błonnik jak węglowodany przyswajalne. Sito działa więc zgodnie z kontraktem
 > i jednocześnie odrzuca produkty poprawne.
 >
-> Zachowanie jest **przypięte testem** (`dish-validation.test.ts`, blok „ZNANE OGRANICZENIE"),
-> żeby nie wyszło dopiero przy seedowaniu. Warianty do wyboru: osobna, luźniejsza tolerancja dla
-> produktów niskokalorycznych; wyłączenie sita składnikowego na rzecz samego sita na daniu;
-> albo pole wyjątku na `ingredient`. Nie rozstrzygam — zmienia kontrakt fazy 2.
+> **ROZSTRZYGNIĘTE 13.09.2026 — decyzja D20. Faza 3 odblokowana.**
+>
+> Sito dostaje **próg bezwzględny obok względnego**: `|zadeklarowane − Atwater| ≤ max(10% ×
+> zadeklarowane, 12 kcal)`. Wariant „luźniejsza tolerancja procentowa" został **sprawdzony
+> i odrzucony** — szpinak ma 28,1% odchylenia, pieczarka 29,4%, więc próg musiałby sięgnąć ~35%
+> i przestałby cokolwiek łapać. Przyczyną nie jest dziedzina, tylko matematyka: tolerancja
+> względna załamuje się blisko zera.
+>
+> Próg bezwzględny rozdziela oba przypadki czysto, bo **skala błędu, którego szukamy, jest o rząd
+> wielkości większa** niż nadwyżka błonnikowa: ryż ugotowany podpięty pod suchy daje różnicę
+> 224 kcal, błąd ×10 na produkcie niskokalorycznym 166 kcal, a najgorsze uczciwe warzywo
+> (brokuł) 7,2 kcal.
+>
+> Blok testowy „ZNANE OGRANICZENIE" **zastąpiony**: cztery warzywa z prawdziwymi liczbami USDA
+> przechodzą, trzy klasy błędów nadal są odrzucane. Celowe zepsucie (próg = 0) zaczerwieniło
+> dokładnie cztery testy warzywne. `npm test` 77/77.
 
 ### Phase 3: Pilot — 20 dań przez cały potok
 
