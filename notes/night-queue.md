@@ -510,3 +510,20 @@ przed wdrożeniem, oba z testem regresji i próbą celowego zepsucia.
 **Granica z D7 utrzymana:** zero kodu produktowego na `dish-source-and-seed-pool`
 i `dietary-preferences` — noc zatrzymała się na zrecenzowanych planach.
 Commit: ten
+
+### 09:15 UTC (13.09) — T2 odblokowane po nocy: 3.12 zweryfikowane
+Wynik: ok
+Co zrobione: Blokady AVD usunięte zwykłym `rm -rf` — padały tylko dlatego, że próbowałem ich
+usunąć, gdy żył jeszcze `emulator.exe`. **Hipoteza DNS z D3 potwierdzona: bez VPN-a wystarcza
+domyślny DNS hosta** (gość rozwiązał i pingował domenę Clerka bez `-dns-server`). Emulator wstał
+w 25 s, Expo Go załadowało bundle, Clerk zainicjalizował się bez spinnera.
+**Kryterium 3.12 odhaczone zrzutami ekranu**: zakładka Profil z ikoną, logowanie z kodem
+urządzenia, `ChoiceField` zawijający pięć poziomów, klawiatura numeryczna na polu wieku,
+„Zapisz" z zapasem nad zakładkami. Przebieg przeciw lokalnemu `wrangler dev` przez `adb reverse`.
+Przy okazji sprostowałem własny błąd z nocy: `toLocaleString('pl-PL')` **grupuje na Androidzie,
+nie grupuje w przeglądarce** — kryteria 3.7/3.8 są więc spełnione natywnie i niespełnione na webie,
+a nie „nieprecyzyjnie zapisane", jak twierdziłem.
+Commit: ten
+Do decyzji rano: czy ujednolicić formatowanie liczb własną funkcją zamiast `toLocaleString`.
+**Uwaga:** `.env.local` ma tymczasowo `EXPO_PUBLIC_API_URL=http://127.0.0.1:8787` na potrzeby
+weryfikacji natywnej; kopia oryginału w scratchpadzie, przywracam przed końcem pracy.

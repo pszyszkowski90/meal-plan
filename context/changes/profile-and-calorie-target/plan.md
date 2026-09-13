@@ -771,7 +771,7 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 - [x] 3.9 Web: „70,5” przyjęte; wiek 17 i waga 7 dają błędy pod polami po „Zapisz”, bez żądania
 - [x] 3.10 Web: nadpisanie 2 200 widoczne na Profilu i Home; edycja wagi nie kasuje; „Wróć do wyliczenia” działa
 - [x] 3.11 Web offline: odczyt i zapis komunikują brak sieci bez wylogowania, wartości zostają
-- [ ] 3.12 Expo Go: zakładka Profil z ikoną, ten sam przebieg, klawiatury liczbowe, formularz nie chowa się pod zakładkami — **BLOCKED-MANUAL**: emulator nie wystartował (osierocone blokady AVD), weryfikacja natywna po stronie człowieka
+- [x] 3.12 Expo Go: zakładka Profil z ikoną, ten sam przebieg, klawiatury liczbowe, formularz nie chowa się pod zakładkami — zweryfikowane na emulatorze 13.09.2026 (zrzuty ekranu)
 - [x] 3.13 Web: zakładki „MealPlan” / „Home” / „Profil”, bez „Docs”
 
 > **Czym odhaczone.** Kryteria 3.7–3.11 i 3.13 przeszły jako testy przeglądarkowe
@@ -779,17 +779,27 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 > przebiegi całego zestawu z rzędu na zielono (19/19). To nie jest „powinno działać" — każdy
 > z nich uruchamia prawdziwy formularz w prawdziwej przeglądarce.
 >
-> **3.12 zostaje dla człowieka**: emulator Androida nie wystartował tej nocy (osierocone blokady
-> AVD), więc warstwa natywna — ikona zakładki, klawiatury liczbowe, formularz nad zakładkami —
-> nie została sprawdzona wcale.
+> **3.12 zweryfikowane na emulatorze 13.09.2026** (po usunięciu osieroconych blokad AVD, które
+> blokowały start poprzedniej nocy). Sprawdzone na zrzutach ekranu: zakładka Profil **z ikoną**,
+> pełne logowanie z kodem urządzenia, `ChoiceField` zawijający pięć poziomów aktywności,
+> **klawiatura numeryczna** po dotknięciu pola wieku, oraz przycisk „Zapisz" z zapasem nad paskiem
+> zakładek (rezerwa `BottomTabInset + Spacing.three` działa). Przebieg szedł przeciw lokalnemu
+> `wrangler dev` przez `adb reverse`, nie przeciw produkcji.
 >
-> Dwie rozbieżności między zapisem kryteriów a zachowaniem, obie do rozstrzygnięcia przez
-> właściciela, żadna nie zmienia arytmetyki:
-> 1. **Separator tysięcy.** Kryteria piszą „1 780" i „2 759"; ekran pokazuje „1780" i „2759",
->    bo `toLocaleString('pl-PL')` nie grupuje liczb czterocyfrowych. Zachowanie jest poprawne
->    typograficznie — nieprecyzyjny jest zapis kryterium.
-> 2. **Mnożnik.** Kryterium 3.7 pisze „× 1.55", ekran pokazuje „× 1,55" (przecinek dziesiętny
->    po polsku, zgodnie z regułą „liczby przez `toLocaleString`").
+> **Separator tysięcy zachowuje się RÓŻNIE na obu platformach** — zmierzone 13.09.2026, moja
+> wcześniejsza notatka w tym miejscu była błędna:
+> - **Web** (silnik przeglądarki): `(2759).toLocaleString('pl-PL')` → `"2759"`, same cyfry,
+>   **bez** separatora (sprawdzone kodami znaków w przeglądarce).
+> - **Android** (Hermes): to samo wyrażenie daje `"2 790"` i `"1 800"` — **ze spacją**
+>   (widoczne na zrzutach z emulatora).
+>
+> Czyli kryteria 3.7 i 3.8 („1 780", „2 759") są spełnione **na Androidzie i niespełnione na
+> webie**, przy identycznym kodzie. To nie jest nieprecyzyjny zapis kryterium, tylko realna
+> rozbieżność międzyplatformowa w danych ICU. Do decyzji właściciela: albo formatować liczby
+> własną funkcją zamiast `toLocaleString`, albo świadomie przyjąć różnicę.
+>
+> Osobno: kryterium 3.7 pisze „× 1.55", a obie platformy pokazują „× 1,55" (przecinek dziesiętny
+> po polsku, zgodnie z regułą „liczby przez `toLocaleString`").
 >
 > Obserwacja z budowy testów, nie kryterium: odpowiedź początkowego `GET /api/profile`
 > **nadpisuje to, co użytkownik zdążył wpisać**, jeśli dojdzie po rozpoczęciu pisania.

@@ -294,3 +294,31 @@ na OP 3 są od wyboru źródła niezależne.
 **Uwaga o numeracji:** kolejka prosiła o „OP 1–3", ale opisała treść Otwartego pytania **4** z PRD
 (wykluczenia składnikowe kontra daniowe). Rozstrzygnąłem oba — OP 3 i OP 4 są sprzężone, bo próg
 niewykonalności planu zależy od tego, jak liczone są wykluczenia.
+
+### D15 — Emulator odblokowany; hipoteza DNS z D3 **potwierdzona**
+
+**Co odkryte:** Blokada T2 nie miała nic wspólnego z VPN-em ani DNS-em. Start emulatora blokowały
+dwie osierocone blokady w `~/.android/avd/mealplan35.avd/` (`hardware-qemu.ini.lock` — katalog
+z plikiem `pid` — oraz `multiinstance.lock`) ze znacznikiem **17:35**, czyli z sesji sprzed nocnej
+pętli. Dało się je usunąć zwykłym `rm -rf`; moje wcześniejsze próby padły, bo **wykonywałem je,
+gdy żył jeszcze proces `emulator.exe`**, który je trzymał. Napisałem wtedy, że naprawa wymaga
+człowieka — to było błędne.
+
+**Hipoteza z D3 potwierdzona pomiarem:** po rozłączeniu VPN-a **domyślny DNS hosta wystarcza**.
+Gość rozwiązał `flying-dove-9587.clerk.accounts.dev` → `worker.clerkprod-cloudflare.net`
+(172.64.153.110) i pingował go bez flagi `-dns-server`. Firmowe resolvery `10.254.15.20/.5` były
+potrzebne wyłącznie dlatego, że VPN przechwytywał rozwiązywanie nazw.
+
+**Skutek:** kryterium **3.12 zweryfikowane** na emulatorze (zrzuty ekranu): zakładka Profil
+z ikoną, pełne logowanie z kodem urządzenia, klawiatura numeryczna, przycisk „Zapisz" z zapasem
+nad paskiem zakładek. Przebieg szedł przeciw **lokalnemu** `wrangler dev` przez `adb reverse`,
+nie przeciw produkcji.
+
+**Znalezisko uboczne — rozbieżność międzyplatformowa:** `toLocaleString('pl-PL')` **grupuje
+liczby czterocyfrowe na Androidzie (Hermes), a nie grupuje w przeglądarce**. Ten sam kod pokazuje
+„2 790" na telefonie i „2759" na webie (sprawdzone kodami znaków). Moja notatka z nocy twierdziła,
+że separator nie pojawia się nigdy i że to kryterium jest nieprecyzyjne — **to było błędne**,
+kryteria są spełnione na Androidzie i niespełnione na webie. Sprostowane w planie i w komentarzu
+testu.
+
+**Jak cofnąć:** nie ma czego — to odkrycie, nie zmiana. Konfiguracja emulatora bez zmian.

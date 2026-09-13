@@ -22,11 +22,11 @@ import { control } from './support/sign-in';
  * Wyrocznie — 1780, 1,55, 2759, 2200 — pochodzą z kryteriów planu, czyli z wymagania, nigdy
  * z uruchomienia modułu liczącego.
  *
- * **Separator tysięcy.** Plan zapisuje te liczby jako „1 780" i „2 759", ale `toLocaleString('pl-PL')`
- * **nie grupuje** liczb czterocyfrowych (`minimumGroupingDigits: 2` w danych locale dla polskiego),
- * więc na ekranie jest „1780" i „2759". Zachowanie jest poprawne typograficznie; to zapis kryterium
- * jest nieprecyzyjny. Asercje dopuszczają obie formy, żeby test pilnował arytmetyki, a nie literówki
- * w dokumencie — rozbieżność jest odnotowana w planie i w Dzienniku.
+ * **Separator tysięcy różni się między platformami** (zmierzone 13.09.2026). W przeglądarce
+ * `(2759).toLocaleString('pl-PL')` daje `"2759"` — same cyfry, bez separatora. Na Androidzie
+ * (Hermes) to samo wyrażenie daje `"2 790"` ze spacją. Ten sam kod, dwa wyniki, bo różnią się dane
+ * ICU silnika. Asercje dopuszczają więc obie formy: test ma pilnować **arytmetyki**, a nie tego,
+ * który silnik akurat wstawi spację. Rozbieżność jest odnotowana w planie jako decyzja dla właściciela.
  */
 
 /** Te testy piszą do profilu jednego konta testowego — równoległość dawałaby wyścig (jak w `profile-api`). */
