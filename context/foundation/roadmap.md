@@ -3,7 +3,7 @@ project: "MealPlan"
 version: 1
 status: draft
 created: 2026-08-31
-updated: 2026-09-12
+updated: 2026-09-13
 prd_version: 1
 main_goal: speed
 top_blocker: decisions
@@ -65,7 +65,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 | ----- | ---------------------------- | ------------------------------------------------------------------ | ------------------ | --------------------------------- | -------- |
 | F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | planning |
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
-| S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | in-progress |
+| S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | done        |
 | S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | planning |
 | S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | proposed |
 | S-05  | `swap-and-reject-dish`       | wymienić danie w planie i oznaczyć je, żeby nie wracało              | S-04               | FR-010, FR-011                    | proposed |
@@ -184,7 +184,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   na każdy wygenerowany plan i pozostaje niewidoczny, dopóki ktoś nie policzy ręcznie. Dane
   profilu są jednocześnie najbardziej wrażliwe w produkcie, więc to pierwszy realny test
   warstwy izolacji wprowadzonej w S-01.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Użytkownik podaje preferencje żywieniowe
 
@@ -378,3 +378,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **S-01: użytkownik zakłada konto e-mail + hasło, loguje się i widzi ten sam stan na telefonie
   oraz w przeglądarce; niezalogowany nie dostaje żadnego widoku produktowego** — Zarchiwizowane
   2026-09-12 → `context/archive/2026-08-31-account-and-login/`. Lekcja: —.
+- **S-02: użytkownik podaje wiek, wagę, wzrost, płeć i poziom aktywności w skali 1–5, może je
+  później edytować, i widzi wynikające z nich dzienne zapotrzebowanie kaloryczne wraz
+  z wyjaśnieniem, skąd bierze się ta liczba** — Zarchiwizowane 2026-09-13 →
+  `context/archive/2026-09-12-profile-and-calorie-target/`. Lekcja: —.
