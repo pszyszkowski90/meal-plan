@@ -21,6 +21,12 @@ interface D1PreparedStatement {
   bind(...values: unknown[]): D1PreparedStatement;
   first<T = unknown>(): Promise<T | null>;
   run(): Promise<unknown>;
+  /**
+   * Odczyt WIELU wierszy. Dołożone dla puli dań (F-01), która z definicji nie mieści się
+   * w `first()`. Kształt `{ results }` jest kontraktem D1, nie naszym wyborem — runtime zwraca
+   * obiekt z metadanymi, a `results` jest jego jedynym polem, którego to repo używa.
+   */
+  all<T = unknown>(): Promise<{ results: T[] }>;
 }
 
 interface D1Database {

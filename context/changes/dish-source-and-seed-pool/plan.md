@@ -431,15 +431,32 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 
 #### Automated
 
-- [ ] 1.1 `migrations apply --local` stosuje `0003` bez błędu
-- [ ] 1.2 `migrations list --local` bez zaległych
-- [ ] 1.3 `npx tsc --noEmit` czyste po rozszerzeniu typu D1 o `all()`
-- [ ] 1.4 Para wsteczna usuwa pięć tabel i wpis z `d1_migrations`; ponowne zastosowanie przechodzi
-- [ ] 1.5 `INSERT` z `category` spoza enuma i `prep_minutes = 0` odrzucony przez bazę
+- [x] 1.1 `migrations apply --local` stosuje `0003` bez błędu
+- [x] 1.2 `migrations list --local` bez zaległych
+- [x] 1.3 `npx tsc --noEmit` czyste po rozszerzeniu typu D1 o `all()`
+- [x] 1.4 Para wsteczna usuwa pięć tabel i wpis z `d1_migrations`; ponowne zastosowanie przechodzi
+- [x] 1.5 `INSERT` z `category` spoza enuma i `prep_minutes = 0` odrzucony przez bazę
 
 #### Manual
 
-- [ ] 1.6 `.schema` obejrzany — pięć tabel, klucze obce i `CHECK`-i obecne
+- [x] 1.6 `.schema` obejrzany — pięć tabel, klucze obce i `CHECK`-i obecne
+
+> **Odstępstwo od litery planu (Minor), naniesione świadomie.** Kontrakt fazy 1 wymieniał
+> `prep_minutes` **5–120** jako `CHECK`. Migracja ma tylko `prep_minutes > 0`, bo zakres 5–120 jest
+> **regułą produktową**, a nie niezmiennikiem bazy — a komentarz w `0002_user_profile.sql` wprost
+> zakazuje kopiowania zakresów liczbowych do DDL: ich źródłem prawdy jest moduł walidacji, SQLite
+> nie ma `ALTER TABLE … DROP CONSTRAINT`, więc korekta progu kosztowałaby przebudowę tabeli,
+> a rozjazd wychodzi użytkownikowi jako 500 zamiast błędu pod polem. Plan sam powoływał się na tę
+> granicę zdanie wcześniej — to była jego wewnętrzna sprzeczność. Zakres 5–120 wejdzie do
+> `src/lib/dish-validation.ts` w fazie 2. Kryterium 1.5 pozostaje spełnione: `prep_minutes = 0`
+> jest odrzucane przez bazę.
+>
+> **Zweryfikowane ponad kryteria:** kaskada `ON DELETE` — usunięcie dania zabrało jego pory,
+> składniki i kroki, a wiersz `ingredient` przetrwał (składniki są współdzielone, nie należą
+> do dania). To jest ścieżka, na której stanie idempotencja skryptu seedującego w fazie 3.
+>
+> Migracja zastosowana **`--local` i `--remote`** (produkcja ma pięć nowych tabel, `migrations list
+> --remote` bez zaległych). Jest addytywna — nie dotyka `app_user` ani `user_profile`.
 
 ### Phase 2: Czyste moduły — makra i walidacja
 
