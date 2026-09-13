@@ -64,6 +64,12 @@ export function ChoiceField<T extends string | number>({
               key={String(option.value)}
               accessibilityRole="radio"
               accessibilityState={{ checked }}
+              // `aria-checked` WPROST, bo React Native Web NIE tłumaczy na nie
+              // `accessibilityState` — zmierzone 13.09.2026 sondą na wdrożonym buildzie: element
+              // miał `role="radio"` i nie miał `aria-checked` w ogóle. Czytnik ekranu ogłaszał
+              // więc „przycisk radio" bez stanu, a jedynym sygnałem wyboru zostawał KOLOR TŁA.
+              // Luka jest tu od S-02; ta zmiana ją domyka, bo dokładnie o to chodzi w F6.
+              aria-checked={checked}
               accessibilityLabel={option.hint ? `${option.label} — ${option.hint}` : option.label}
               onPress={() => onChange(option.value)}
               style={({ pressed }) => pressed && styles.pressed}>

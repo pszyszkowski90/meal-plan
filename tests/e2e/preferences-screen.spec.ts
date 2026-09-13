@@ -53,6 +53,31 @@ test.describe('Faza 2 S-03 — ekran preferencji w przeglądarce', () => {
     await expect(page.getByRole('button', { name: 'Zapisz', exact: true })).toBeVisible();
   });
 
+  test('wybór OGŁASZA swój stan, a nie tylko go koloruje', async ({ page }) => {
+    // React Native Web nie tłumaczy `accessibilityState` na `aria-checked` — zmierzone sondą
+    // 13.09.2026: chipy i opcje radio miały role, ale ŻADNEGO atrybutu stanu. Dla czytnika
+    // ekranu jedynym sygnałem wyboru zostawał kolor tła. Ten test pilnuje, żeby nie wróciło.
+    await openPreferences(page);
+
+    const chip = page.getByRole('checkbox', { name: Group, exact: true });
+    const before = await chip.getAttribute('aria-checked');
+    expect(before).not.toBeNull();
+
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-checked', before === 'true' ? 'false' : 'true');
+
+    // To samo dla wyboru jednokrotnego — `ChoiceField` miał tę lukę od S-02.
+    await page.getByRole('radio', { name: '5', exact: true }).click();
+    await expect(page.getByRole('radio', { name: '5', exact: true })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    await expect(page.getByRole('radio', { name: '3', exact: true })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
   test('2.5 wykluczenie przeżywa zapis i przeładowanie strony', async ({ page }) => {
     await openPreferences(page);
 
