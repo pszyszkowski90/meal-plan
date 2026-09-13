@@ -291,3 +291,21 @@ Do decyzji: kryterium **1.6** (konto A nie widzi wykluczeń konta B) zostaje **B
 wymaga drugiego konta testowego, którego repo nie ma; ta sama blokada co 2.9 w S-02. Warstwę
 zewnętrzną granicy pokrywa 1.4. Poza planem doszło tłumaczenie naruszenia klucza obcego na 400
 zamiast 500: bez niego wykluczenie wskazujące nieistniejący składnik dawało „coś się popsuło".
+
+### 21:28 UTC — C4 Seed składników i grup
+Wynik: ok
+Co zrobione: `scripts/seed-ingredients.mjs` (bez zależności, pisze SQL na stdout) generuje
+**35 składników** z makrami USDA na 100 g w stanie podanym w nazwie i **8 grup** — grzyby,
+orzechy, nabiał, ryby, owoce morza, strączki, gluten, wieprzowina — plus 20 przypisań
+w `ingredient_group`. Dań NIE seeduje. **Sito Atwatera jest importowane z `src/lib/`, nie
+przepisane**, więc dowód nie może rozjechać się z walidacją dania; wszystkie 35 wierszy je
+przechodzą (przypraw wysokobłonnikowych świadomie nie ma — pieprz odchyla się o 30%).
+Zasiane `--local` i `--remote`; drugi przebieg lokalnie potwierdził idempotencję (35/8/20 przed
+i po). Produkcja: 35 składników, 8 grup, 20 przypisań, **0 dań**.
+Co zacommitowane: `scripts/seed-ingredients.mjs`, `notes/cert-queue.md` (wygenerowany SQL leży
+w gitignorowanym `.wrangler/` — to artefakt, nie źródło)
+PR: #9
+Do decyzji: C5 będzie potrzebował trasy odczytu składników i grup do wyszukiwarki — faza 2 planu
+zakłada wyszukiwanie po `ingredient`, a takiej trasy jeszcze nie ma. Dołożę ją w C5.
+Przy okazji: smoke test produkcji po C3 wyszedł czysto — `/` 200, `/api/health`
+`{"ok":true,"d1":true}`, `/api/preferences` bez tokenu 401, nieznana ścieżka 404.
