@@ -73,6 +73,13 @@ function TargetCard({ state }: { state: TargetState }) {
               cel nadpisany, wyliczone {formatKcal(state.target.computedKcal)} kcal
             </ThemedText>
           ) : null}
+          {/* Cel przycięty do bezpiecznej granicy nie może wyglądać jak zwykły wynik wzoru. */}
+          {state.target.clampedTo ? (
+            <ThemedText type="small" themeColor="textDanger">
+              {state.target.clampedTo === 'min' ? 'podciągnięty' : 'obniżony'} do bezpiecznej
+              granicy, z profilu wychodzi {formatKcal(state.target.computedKcal)} kcal
+            </ThemedText>
+          ) : null}
           <Link href="/profile">
             <ThemedText type="linkPrimary">Zmień profil</ThemedText>
           </Link>

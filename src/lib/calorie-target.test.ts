@@ -252,13 +252,13 @@ describe('parseNumberInput — wejście z polskiej klawiatury', () => {
 /**
  * Skrajne profile mieszczące się w `ProfileBounds`.
  *
- * Te testy **przypinają stan faktyczny, a nie postulowany**: wynik `computeCalorieTarget` nie jest
- * ograniczany do `ProfileBounds.targetKcal` (1000–6000), mimo że dokładnie ten przedział obowiązuje
- * ręczne nadpisanie. Produkt policzy więc i pokaże cel, którego użytkownikowi **nie pozwoliłby
- * wpisać** — a ta liczba zasili ograniczenie ±10% generatora (S-04).
+ * Wzór na skrajnych, ale **dopuszczalnych przez walidację** profilach wychodzi daleko poza przedział
+ * `ProfileBounds.targetKcal` (1000–6000) w obie strony. Od 13.09.2026 `effectiveKcal` jest do tego
+ * przedziału **przycinany**, a `computedKcal` zostaje surowym wynikiem wzoru — dzięki temu
+ * wyjaśnienie na ekranie („BMR × mnożnik = …") pozostaje prawdziwe, a cel, który bierze generator,
+ * jest bezpieczny.
  *
- * Czy tak ma zostać, jest decyzją produktową, nie techniczną — patrz Dziennik nocy 12/13.09.2026.
- * Do czasu jej podjęcia testy pilnują, żeby zachowanie nie zmieniło się przypadkiem.
+ * Te testy pilnują obu stron tego kontraktu naraz.
  */
 describe('computeCalorieTarget — skrajne profile w granicach walidacji', () => {
   test('minimalny dopuszczalny profil daje 317 kcal — poniżej dolnej granicy celu ręcznego', () => {
@@ -272,9 +272,12 @@ describe('computeCalorieTarget — skrajne profile w granicach walidacji', () =>
     });
 
     assert.equal(target.bmrKcal, 264);
+    // Wyjaśnienie zostaje prawdziwe: wzór naprawdę daje 317.
     assert.equal(target.computedKcal, 317);
-    // Kontrakt do rozstrzygnięcia: 317 < ProfileBounds.targetKcal.min (1000).
     assert.ok(target.computedKcal < ProfileBounds.targetKcal.min);
+    // Ale cel obowiązujący jest podciągnięty do dolnej granicy i mówi o tym wprost.
+    assert.equal(target.effectiveKcal, ProfileBounds.targetKcal.min);
+    assert.equal(target.clampedTo, 'min');
   });
 
   test('maksymalny dopuszczalny profil daje 8508 kcal — powyżej górnej granicy celu ręcznego', () => {
@@ -290,6 +293,42 @@ describe('computeCalorieTarget — skrajne profile w granicach walidacji', () =>
     assert.equal(target.bmrKcal, 4478);
     assert.equal(target.computedKcal, 8508);
     assert.ok(target.computedKcal > ProfileBounds.targetKcal.max);
+    assert.equal(target.effectiveKcal, ProfileBounds.targetKcal.max);
+    assert.equal(target.clampedTo, 'max');
+  });
+
+  test('profil w normie nie jest przycinany — clampedTo zostaje null', () => {
+    const target = computeCalorieTarget({
+      age: 30,
+      weightKg: 80,
+      heightCm: 180,
+      sex: 'male',
+      activityLevel: 3,
+      targetKcalOverride: null,
+    });
+
+    assert.equal(target.computedKcal, 2759);
+    assert.equal(target.effectiveKcal, 2759);
+    assert.equal(target.clampedTo, null);
+  });
+
+  test('nadpisanie spoza granic też jest przycinane — profil z D1 omija validateProfile', () => {
+    // `computeCalorieTarget` bywa wołane na wierszu odtworzonym z bazy, bez walidacji wejścia.
+    const base = {
+      age: 30,
+      weightKg: 80,
+      heightCm: 180,
+      sex: 'male',
+      activityLevel: 3,
+    } as const;
+
+    const tooLow = computeCalorieTarget({ ...base, targetKcalOverride: 200 });
+    assert.equal(tooLow.effectiveKcal, ProfileBounds.targetKcal.min);
+    assert.equal(tooLow.clampedTo, 'min');
+
+    const tooHigh = computeCalorieTarget({ ...base, targetKcalOverride: 99_000 });
+    assert.equal(tooHigh.effectiveKcal, ProfileBounds.targetKcal.max);
+    assert.equal(tooHigh.clampedTo, 'max');
   });
 
   test('profil tuż wewnątrz granic nie wywraca się na zaokrąglaniu wagi', () => {

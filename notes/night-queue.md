@@ -511,7 +511,7 @@ przed wdrożeniem, oba z testem regresji i próbą celowego zepsucia.
 i `dietary-preferences` — noc zatrzymała się na zrecenzowanych planach.
 Commit: ten
 
-### 09:15 UTC (13.09) — T2 odblokowane po nocy: 3.12 zweryfikowane
+### 09:13 UTC (13.09) — T2 odblokowane po nocy: 3.12 zweryfikowane
 Wynik: ok
 Co zrobione: Blokady AVD usunięte zwykłym `rm -rf` — padały tylko dlatego, że próbowałem ich
 usunąć, gdy żył jeszcze `emulator.exe`. **Hipoteza DNS z D3 potwierdzona: bez VPN-a wystarcza

@@ -77,8 +77,22 @@ export interface CalorieTarget {
   /** `round(bmrKcal × multiplier)` — liczone z ZAOKRĄGLONEGO BMR, żeby zgadzało się z wyjaśnieniem. */
   computedKcal: number;
   overrideKcal: number | null;
-  /** Cel obowiązujący: nadpisanie, a gdy go nie ma — wyliczenie. To bierze generator. */
+  /**
+   * Cel obowiązujący: nadpisanie, a gdy go nie ma — wyliczenie. To bierze generator.
+   *
+   * **Zawsze mieści się w `ProfileBounds.targetKcal`.** Wzór Mifflin-St Jeor na skrajnych, ale
+   * dopuszczalnych profilach wychodzi poza ten przedział w obie strony (30 kg / 100 cm / 100 lat
+   * / kobieta / poziom 1 → 317 kcal; 300 kg / 250 cm / 18 lat / mężczyzna / poziom 5 → 8508 kcal),
+   * a taki cel jest jednocześnie niebezpieczny i niemożliwy do wpisania ręcznie. Guardrail ±10%
+   * generatora (S-04) liczy się od TEJ liczby, więc przycięcie siedzi tutaj, przy wzorze.
+   */
   effectiveKcal: number;
+  /**
+   * Czy `effectiveKcal` został przycięty do granicy i w którą stronę. `null` znaczy „cel jest
+   * dokładnie tym, co wyszło ze wzoru albo z nadpisania". Ekran ma to powiedzieć wprost — cichy
+   * rozjazd między wyjaśnieniem („= 317 kcal dziennie") a celem byłby gorszy niż brak przycięcia.
+   */
+  clampedTo: 'min' | 'max' | null;
 }
 
 /** Kontrakt przewodowy `GET` i `PUT /api/profile` — jeden kształt, klient niczego nie scala. */
@@ -260,12 +274,18 @@ export function computeCalorieTarget(profile: ProfileInput): CalorieTarget {
   // zasiliłby ograniczenie ±10% generatora (S-04), więc guard siedzi tutaj, przy samym wzorze.
   const overrideApplies = typeof overrideKcal === 'number' && overrideKcal > 0;
 
+  // Surowy cel przed przycięciem: nadpisanie, a gdy go nie ma — wyliczenie.
+  const rawTarget = overrideApplies ? overrideKcal : computedKcal;
+  const { min, max } = ProfileBounds.targetKcal;
+  const effectiveKcal = Math.min(Math.max(rawTarget, min), max);
+
   return {
     bmrKcal,
     multiplier,
     activityLevel: profile.activityLevel,
     computedKcal,
     overrideKcal,
-    effectiveKcal: overrideApplies ? overrideKcal : computedKcal,
+    effectiveKcal,
+    clampedTo: effectiveKcal === rawTarget ? null : rawTarget < min ? 'min' : 'max',
   };
 }

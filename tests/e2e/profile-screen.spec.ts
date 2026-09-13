@@ -210,6 +210,33 @@ test.describe('Faza 3 — ekran profilu w przeglądarce', () => {
     await page.unroute('**/api/profile');
   });
 
+  /**
+   * Ograniczenie celu do bezpiecznych widełek (13.09.2026).
+   *
+   * Profil skrajny, ale **dopuszczalny przez walidację**, daje ze wzoru 317 kcal — liczbę
+   * medycznie niebezpieczną i jednocześnie taką, której użytkownik NIE mógłby wpisać ręcznie
+   * (granica nadpisania to 1000). Ekran ma pokazać obie liczby: prawdziwy wynik wzoru
+   * w wyjaśnieniu i przycięty cel obowiązujący, z powodem.
+   */
+  test('skrajnie niski profil pokazuje wynik wzoru i przycięty cel, z wyjaśnieniem', async ({
+    page,
+  }) => {
+    await openProfile(page);
+    await ageField(page).fill('100');
+    await weightField(page).fill('30');
+    await heightField(page).fill('100');
+    await sexOption(page, 'Kobieta').click();
+    await activityOption(page, 1).click();
+    await overrideField(page).fill('');
+
+    // Wyjaśnienie nie kłamie — wzór naprawdę daje 317.
+    await expect(page.getByText(/= *317 kcal dziennie/)).toBeVisible();
+
+    // I od razu obok: dlaczego obowiązujący cel jest inny.
+    await expect(page.getByText(/bezpieczne minimum/)).toBeVisible();
+    await expect(page.getByText(kcal('1000'))).toBeVisible();
+  });
+
   test('3.13 zakładki to MealPlan, Home i Profil — bez Docs', async ({ page }) => {
     await page.goto('/');
 

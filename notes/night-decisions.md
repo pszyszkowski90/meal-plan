@@ -322,3 +322,32 @@ kryteria są spełnione na Androidzie i niespełnione na webie. Sprostowane w pl
 testu.
 
 **Jak cofnąć:** nie ma czego — to odkrycie, nie zmiana. Konfiguracja emulatora bez zmian.
+
+### D16 — Cel obowiązujący przycinany do widełek 1000–6000 kcal
+
+**Co:** `computeCalorieTarget` przycina `effectiveKcal` do `ProfileBounds.targetKcal`, a nowe pole
+`clampedTo` (`'min' | 'max' | null`) mówi, czy i w którą stronę. `computedKcal` **zostaje surowym
+wynikiem wzoru** — dzięki temu wyjaśnienie na ekranie („BMR × mnożnik = …") pozostaje prawdziwe.
+
+**Powód:** Decyzja właściciela z 13.09.2026. Profile dopuszczalne przez walidację dawały cele
+**317 kcal** (30 kg / 100 cm / 100 lat / kobieta / poziom 1) i **8508 kcal** (300 kg / 250 cm /
+18 lat / mężczyzna / poziom 5) — liczby jednocześnie niebezpieczne i niemożliwe do wpisania
+ręcznie, bo nadpisanie jest ograniczone do 1000–6000. Guardrail ±10% generatora (S-04) liczy się
+od celu obowiązującego, więc przycięcie musi siedzieć przy wzorze, a nie w UI.
+
+**Dlaczego przycięcie, a nie odrzucenie profilu:** odrzucanie zamknęłoby produkt dla realnych osób
+(drobna starsza kobieta faktycznie ma niskie zapotrzebowanie). Przycięcie z **jawnym komunikatem**
+daje bezpieczną liczbę i nie kłamie: ekran pokazuje obie — wynik wzoru w wyjaśnieniu i cel
+obowiązujący z powodem różnicy.
+
+**Gdzie widać:** ekran profilu (komunikat pod rozbiciem, `textDanger`) i karta na Home
+(„podciągnięty / obniżony do bezpiecznej granicy, z profilu wychodzi X kcal").
+
+**Dowód:** 4 nowe testy jednostkowe (34/34) i test E2E; próba celowego zepsucia — po usunięciu
+przycięcia padają 3 testy jednostkowe i test E2E, po przywróceniu 34/34 i 21/21.
+
+**Jak cofnąć:** usunąć `Math.min/Math.max` w `computeCalorieTarget` i pole `clampedTo`; wtedy
+wraca zachowanie sprzed zmiany, czyli cel 317 kcal pokazywany użytkownikowi.
+
+**Uwaga:** granice 1000–6000 są dziedziczone z ograniczenia nadpisania i **nie były dobierane
+medycznie**. Jeśli mają być inne, zmienia się je w jednym miejscu: `ProfileBounds.targetKcal`.

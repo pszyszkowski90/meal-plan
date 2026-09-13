@@ -16,6 +16,7 @@ import {
   ActivityLevels,
   computeCalorieTarget,
   parseNumberInput,
+  ProfileBounds,
   validateProfile,
   type ActivityLevel,
   type ProfileFieldErrors,
@@ -371,9 +372,24 @@ export default function ProfileScreen() {
               <ThemedText type="smallBold">
                 = {formatKcal(target.computedKcal)} kcal dziennie
               </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Tyle utrzymuje obecną wagę. Jeśli chcesz inny cel, wpisz go poniżej.
-              </ThemedText>
+              {/*
+                Gdy wzór wyszedł poza bezpieczny przedział, cel obowiązujący jest przycięty.
+                Ekran MUSI to powiedzieć: inaczej wyjaśnienie („= 317 kcal") kłóciłoby się po cichu
+                z liczbą, którą produkt faktycznie przyjmuje i od której liczy ograniczenie ±10%.
+              */}
+              {target.clampedTo ? (
+                <ThemedText type="small" themeColor="textDanger">
+                  {target.clampedTo === 'min'
+                    ? `To mniej niż bezpieczne minimum ${formatKcal(ProfileBounds.targetKcal.min)} kcal — ` +
+                      `przyjmujemy ${formatKcal(target.effectiveKcal)} kcal dziennie.`
+                    : `To więcej niż przyjmowane maksimum ${formatKcal(ProfileBounds.targetKcal.max)} kcal — ` +
+                      `przyjmujemy ${formatKcal(target.effectiveKcal)} kcal dziennie.`}
+                </ThemedText>
+              ) : (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Tyle utrzymuje obecną wagę. Jeśli chcesz inny cel, wpisz go poniżej.
+                </ThemedText>
+              )}
             </>
           ) : (
             <ThemedText type="small" themeColor="textSecondary">
