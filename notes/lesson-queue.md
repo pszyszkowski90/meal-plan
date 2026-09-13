@@ -717,3 +717,57 @@ albo S-03. Nic innego nie czeka.
 > UTC") — i powtórzył się, mimo że regułę znałem. Wniosek na przyszłość: znacznik **wklejaj
 > z wyjścia polecenia w tej samej komendzie, w której piszesz wpis**, zamiast przepisywać go
 > z pamięci kilka kroków później.
+
+### 20:06 UTC — migracja na produkcji, praca przez PR, przegląd agentowy
+Wynik: ok
+Co zrobione: Trzy rzeczy zlecone przez właściciela po domknięciu kolejki.
+
+**Migracja `0004` na produkcji.** Kopia zapasowa (`d1 export --remote`) → `migrations apply
+--remote` → weryfikacja. Indeks `idx_dish_ingredient_ingredient` jest na produkcji,
+`migrations list --remote` czysto, smoke test zielony.
+
+**Praca przestawiona na pull requesty (D24).** `main` wdraża natychmiast, więc commit wypchnięty
+wprost był jednocześnie wdrożeniem, którego nikt nie przeczytał — tego dnia poszły tak **24
+commity**, w tym poprawka widoczna dla użytkownika i migracja schematu. Zapisane w `CLAUDE.md`
+z sekwencją `gh` i **jednym jawnym wyjątkiem**: naprawa czerwonej produkcji może iść prosto na
+`main`, bo wtedy PR jest kosztem, nie zabezpieczeniem. Zmiana poszła jako PR #2 — pierwszy test
+nowego przepływu.
+
+**Przegląd agentowy na PR (D25, zastępuje D23).** `10x-impl-review-ci` przez `claude-code-action`,
+PR #3. Właściciel pytał o podpięcie subskrypcji ChatGPT — **nie da się, z dwóch niezależnych
+powodów**: subskrypcja to nie dostęp do API (kredyty API to osobny produkt i osobne konto),
+a `claude-code-action` przyjmuje wyłącznie poświadczenia Anthropica. Użyte `CLAUDE_CODE_OAUTH_TOKEN`
+z konta Claude, które i tak jest opłacone.
+
+**CZTERY BLOKADY, KAŻDA ZASŁONIĘTA PRZEZ POPRZEDNIĄ** — żadnej nie dało się zobaczyć z lektury
+konfiguracji, wszystkie wyszły z kolejnych realnych przebiegów:
+
+1. **Sekret istniał, ale był PUSTY.** `gh secret list` pokazuje pusty sekret identycznie jak każdy
+   inny. Zanim to ustaliłem, wykluczyłem dziwactwo `gh run rerun` (wymusiłem świeży przebieg pustym
+   commitem — ten sam objaw), literówkę i białe znaki w nazwie oraz złe repozytorium. Rozstrzygnęło
+   dopiero wypisanie **samej długości** wartości: `Długość tokena: 0`. Przyczyna: `gh secret set`
+   na Windowsie zapisał pustkę, bo wklejenie do ukrytego promptu się nie zarejestrowało.
+2. **Brak `id-token: write`** — `Could not fetch an OIDC token`. Wyszło dopiero wtedy, gdy sekret
+   zaczął mieć wartość; wcześniej krok był pomijany, więc nie miał jak się ujawnić.
+3. **Aplikacja GitHub „Claude" bez dostępu do TEGO repo.** Była zainstalowana na koncie od pięciu
+   miesięcy, ale w trybie „Only select repositories" z dwoma innymi projektami. Token to
+   uwierzytelnienie, aplikacja to uprawnienie — akcja potrzebuje obu.
+4. **Workflow musi istnieć na gałęzi DOMYŚLNEJ.** Akcja odmawia uruchomienia z pliku żyjącego
+   wyłącznie w gałęzi PR — i słusznie: inaczej każdy z prawem zapisu mógłby w PR podmienić workflow
+   i kazać agentowi zrobić cokolwiek. Rozwiązane scaleniem PR #3.
+
+**Co obroniło się w tej rozgrywce:** guard na sekrecie. Gdyby workflow nie pomijał kroków przy
+braku poświadczeń, PR #3 świeciłby na czerwono przez cały czas diagnozy — a bramka jakości jest
+za świeża, żeby uczyć ignorowania czerwieni. Wypisywanie długości tokena **zostało na stałe**,
+bo okazało się jedynym sposobem odróżnienia „sekretu nie ma" od „sekret jest pusty".
+
+To jest ten sam wzorzec, co wpis w `lessons.md` o bramkach: **„narzędzie się nie uruchomiło"
+wygląda tak samo jak „narzędzie nic nie znalazło"**, dopóki tych dwóch przypadków nie rozdzielisz.
+
+Co zacommitowane: migracja bez commitu (operacja na produkcji); CLAUDE.md, notes/lesson-decisions.md
+(PR #2, `321ea83`); .github/workflows/impl-review.yml, CLAUDE.md, notes/lesson-decisions.md
+(PR #3, `6b5d8a5`); notes/lesson-queue.md (ten PR)
+Commit: 321ea83, 6b5d8a5 (+ poniżej)
+Do decyzji: **ochrona gałęzi `main`** w Settings → Branches z wymaganym sprawdzeniem „Typy, lint,
+testy, konwencje, lockfile". Bez niej reguła PR-ów opiera się na dyscyplinie, nie na blokadzie.
+Świadomie nie ruszam ustawień repozytorium.
