@@ -57,10 +57,10 @@ jobs:
 
     steps:
       - name: Pobierz kod
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Ustaw Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           # Ta sama główna wersja, co lokalnie (Node 25). Runner Node ma wbudowane `--test`
           # i okrajanie typów, na których stoi `npm test` — starszy Node ich nie ma.

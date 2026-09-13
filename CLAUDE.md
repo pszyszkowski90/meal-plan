@@ -48,6 +48,9 @@ Trzy pierwsze są uszeregowane kosztem złamania, nie tematem. Rozwinięcia zost
   sekret lub tabelę stoi na produkcji i zwraca 500 (szczegóły: Komendy i weryfikacja).
 - **`npx expo start --web` nie jest testem wdrożenia** — uruchamia trasy API w Node. Wierność
   runtime'u daje wyłącznie `npx wrangler dev` na zbudowanym `dist/` (szczegóły: Komendy i weryfikacja).
+- **Stage'uj po ścieżkach, nigdy `git add -A` ani `git add .`.** 13.09 `git add -A` wciągnęło
+  na `main` niedokończony plik innej sesji. Przed commitem przeczytaj `git status --short`; cudzą
+  zmianę poznasz po tym, że jej nie pamiętasz — to wystarczający powód, żeby jej nie stage'ować.
 - **Expo się zmieniło.** Zanim napiszesz kod Expo, sprawdź wersjonowaną dokumentację
   <https://docs.expo.dev/versions/v57.0.0/> zamiast polegać na pamięci o starszych SDK.
 - **Router mieszka w `src/app/`, nie w `app/`.** Nowy ekran = nowy plik w [src/app/](src/app/),
@@ -291,6 +294,8 @@ npx wrangler deploy                                   # produkcja
 ```
 
 - **`npx wrangler dev` na zbudowanym `dist/` to bramka przed każdym deployem** (Twarde reguły).
+- **Stage'uj po ścieżkach, nigdy `git add -A` ani `git add .`** (Twarde reguły) — tu konkretnie:
+  po każdym zadaniu `git diff --stat package-lock.json` ma być pusty.
 - Smoke test po wdrożeniu: `/` zwraca HTML, nieznana ścieżka zwraca 404, `/api/health` zwraca
   `{"ok":true,"d1":true,…}` (`d1:true` znaczy „tabela `app_user` istnieje", nie tylko „binding
   działa"), a `/api/account` bez nagłówka `Authorization` zwraca 401. Jeśli HTML działa, a trasa API
@@ -338,9 +343,8 @@ Dla zmiany w pojedynkę worktree jest opcjonalny i zwykle nie warty kosztu (niż
 - **`.expo/types/`** z typami tras. Bez nich `tsc` przechodzi, ale `typedRoutes` milczy (Pułapki).
 - **`.env.local` i `.dev.vars`** — bez nich `wrangler dev` i klient natywny nie wystartują.
 
-**Stage'uj po ścieżkach, nigdy `git add -A` ani `git add .`.** Przed commitem przeczytaj
-`git status --short`; cudzą zmianę poznasz po tym, że jej nie pamiętasz — to wystarczający powód,
-żeby jej nie stage'ować. `git diff --stat package-lock.json` ma być pusty.
+**Stage'owanie po ścieżkach** (Twarde reguły) jest w dzielonym drzewie tym ważniejsze, że cudze
+pliki są tu normą, a nie wyjątkiem.
 
 **Równoległość ogranicza przepustowość przeglądu, nie liczba agentów.** Więcej równoległych
 gałęzi to więcej nieprzejrzanego kodu, a nie więcej gotowej pracy — to repo ma już dowód, że
