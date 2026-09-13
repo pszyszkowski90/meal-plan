@@ -296,3 +296,12 @@ Do decyzji: <albo ->
 ```
 
 <!-- DZIENNIK PONIŻEJ -->
+
+### 10:47 UTC — preflight
+Wynik: ok
+Co zrobione: Drzewo czyste (`git status --short` pusty, HEAD `288916a`). Trzy bramki zielone:
+`npx tsc --noEmit` bez błędów, `npm test` 34/34, `npm run check-lock` — 1127 pakietów spójnych.
+`core.hooksPath` wskazuje na `hooks/`, więc warstwy 2 i 3 są aktywne w tym klonie.
+Co zacommitowane: notes/lesson-queue.md
+Commit: (poniżej)
+Do decyzji: -
