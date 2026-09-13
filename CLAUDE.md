@@ -299,6 +299,46 @@ tylko do dodawania; mapa ryzyk i bramki jakości są w
 [context/foundation/test-plan.md](context/foundation/test-plan.md).
 Briefy z lekcji kursu leżą w [notes/](notes/) (`10x-lesson-*-brief.md`).
 
+## Praca równoległa i worktree
+
+**Worktree jest obowiązkowy, gdy w tym drzewie pracuje ktoś jeszcze** — druga sesja agenta,
+druga osoba, cokolwiek, co może mieć własne pliki w `git status`. 13.09 `git add -A` wciągnęło
+na `main` niedokończony plik innej sesji; to jedyny znany sposób, żeby to się nie powtórzyło.
+Dla zmiany w pojedynkę worktree jest opcjonalny i zwykle nie warty kosztu (niżej).
+
+```sh
+git worktree add <ścieżka-poza-repo> -b <gałąź>    # nowa gałąź w osobnym katalogu
+git worktree list                                   # co jest podpięte
+git worktree remove <ścieżka>                       # sprzątanie po scaleniu
+```
+
+**Trzy rzeczy, których świeży worktree NIE ma — zmierzone 13.09.2026:**
+
+1. **`node_modules`.** Worktree to czysty checkout. `npm test` **działa** (to `node --test`,
+   runner wbudowany w Node, zero zależności), ale `tsc` i `eslint` nie mają czym się uruchomić —
+   więc **hook `pre-commit` zatrzymuje commit na eslincie**, a `--no-verify` jest zakazane.
+   Nie uruchamiaj tam `npm ci` (drugie drzewo zależności na dysku i ryzyko dla lockfile'a) —
+   podepnij złącze katalogowe do drzewa głównego:
+   ```sh
+   # PowerShell albo cmd, w katalogu worktree — złącze katalogowe, nie kopia:
+   cmd /c mklink /J "<worktree>\node_modules" "C:\Prywatne\Dieta 2\node_modules"
+   ```
+2. **Plików generowanych, bo są w `.gitignore`** — `expo-env.d.ts` i `.expo/types/`. Bez nich
+   `tsc` w worktree zgłasza **te same dwa fałszywe błędy o `.css`**, co świeży klon (patrz
+   Pułapki). Skopiuj oba z drzewa głównego albo uruchom tam raz Metro.
+3. **Konfiguracji lokalnej** — `.env.local` i `.dev.vars` też są w `.gitignore`. Bez nich
+   `wrangler dev` i klient natywny nie wystartują; skopiuj świadomie, nie commituj.
+
+**Stage'owanie w dzielonym drzewie: zawsze po ścieżkach, nigdy `git add -A` ani `git add .`.**
+Przed commitem przeczytaj `git status --short` i wypisz w opisie tylko te pliki, które sam
+zmieniłeś. Cudzą zmianę poznasz po tym, że jej nie pamiętasz — to wystarczający powód, żeby jej
+nie stage'ować. `git diff --stat package-lock.json` po każdym zadaniu: ma być pusty.
+
+**Równoległość ogranicza przepustowość przeglądu, nie liczba agentów.** Więcej równoległych
+gałęzi to więcej nieprzejrzanego kodu, a nie więcej gotowej pracy — to repo ma już dowód, że
+nieprzejrzana faza trafia na produkcję (faza 1 F-01). Otwieraj tyle worktree, ile zmian jesteś
+w stanie **przejrzeć**, i ani jednego więcej.
+
 ## Pułapki
 
 - **`10x get <ref>` kasuje skille spoza manifestu tej lekcji.** Nie dokłada kumulatywnie, tylko
