@@ -228,6 +228,13 @@ co przepuściła poprzednia, i kosztuje tyle, ile warta jest pomyłka na tym eta
 | 1 | po każdej edycji pliku przez agenta | reguły repo na **tym jednym pliku** | ~0,15 s |
 | 2 | `git commit` | reguły repo + `eslint --max-warnings=0` na plikach z indeksu; `npm test` gdy ruszony `src/lib/`; `check-lock` gdy ruszone zależności | ~10 s |
 | 3 | `git push` | reguły repo, `tsc --noEmit`, `npm test`, `check-lock` — całe drzewo | ~12 s |
+| 4 | push i PR na `main` | to samo co warstwa 3 plus `npm ci` i `expo lint`, na Linuksie | ~2 min |
+
+Warstwy 1–3 są **lokalne**, więc da się je pominąć — `--no-verify`, świeży klon bez
+`npm run hooks:install`, push z innej maszyny. Warstwa 4
+([quality-gate.yml](.github/workflows/quality-gate.yml)) pominąć się nie da i jako jedyna widzi
+każdy commit na `main`. **Nie wdraża** — od tego jest Workers Builds — i **nie uruchamia E2E**,
+bo Playwright stoi poza `package.json`.
 
 - Warstwa 1 to hook `PostToolUse` w [.claude/settings.json](.claude/settings.json) →
   [claude-post-edit.mjs](scripts/hooks/claude-post-edit.mjs). Kod wyjścia **2** jest umowny:
@@ -285,8 +292,12 @@ npx wrangler deploy                                   # produkcja
   sprawdzenia bierz więc z wdrożonego HTML-a, nie z lokalnego `dist/`, inaczej dostaniesz 404, które
   wygląda jak zepsute wdrożenie. Uboczny skutek: część deployów unieważnia stare adresy assetów,
   więc otwarta u kogoś strona z przed deployu może stracić swój bundel do odświeżenia.
-- CI to Cloudflare Workers Builds na gałęzi `main` (nie GitHub Actions). Typecheck i lint nadal
-  uruchamiasz sam przed pushem.
+- **Wdraża Cloudflare Workers Builds** z gałęzi `main`; **sprawdza jakość GitHub Actions**
+  ([quality-gate.yml](.github/workflows/quality-gate.yml)) na pushu i PR do `main`. To dwie różne
+  rzeczy podpięte do tej samej gałęzi: bramka nie wdraża, a Workers Builds nie uruchamia lintu ani
+  testów. Bramka jest **czwartą** warstwą, nie zamiennikiem trzech lokalnych — nadal odpalaj
+  `tsc` i `npm test` przed pushem, bo czerwony przebieg na `main` znaczy, że kod już jest
+  wdrażany.
 
 ## Dokumenty projektu
 

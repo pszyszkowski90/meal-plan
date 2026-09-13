@@ -35,6 +35,37 @@ Pełny raport: `context/archive/2026-09-12-profile-and-calorie-target/reviews/im
 
 <!-- KOLEJNE DECYZJE PONIŻEJ -->
 
+### D19 — Bramka jakości w GitHub Actions jako czwarta warstwa, bez wdrażania i bez E2E
+
+**Co:** `.github/workflows/quality-gate.yml` na pushu i PR do `main`: `npm ci`, `tsc --noEmit`,
+`expo lint`, `npm test`, `check-conventions`, `check-lock`. Trzy rozstrzygnięcia wbudowane
+w workflow i opisane w jego komentarzu:
+
+1. **Bramka nie wdraża.** Wdrożeniem zajmuje się Workers Builds, podpięty osobno do `main`.
+   Dwa niezależne wdrożenia tego samego commita to wyścig o to, które nadpisze drugie, i dwa
+   miejsca na sekrety.
+2. **`npm ci` jest bramką sam w sobie.** To dokładnie ten przebieg, który psuje `npm install`
+   na Windowsie: wpisy `*-wasm32*` bez zależności `@emnapi/*`, EUSAGE na Linuksie. Wcześniej
+   wychodziło to dopiero w Workers Builds — czyli **po** wypchnięciu na `main`. Teraz wychodzi
+   na pull requeście.
+3. **E2E nie wchodzi.** Playwright stoi poza `package.json`, bo `npm install` psuje tu lockfile.
+   Wciągnięcie go do zależności po to, żeby CI miało E2E, złamałoby dokładnie tę regułę, której
+   ta bramka pilnuje. Świadome ograniczenie: testy przeglądarkowe zostają uruchamiane z ręki.
+
+**Powód:** Warstwy 1–3 są lokalne, więc da się je pominąć (`--no-verify`, świeży klon bez
+`hooks:install`, push z innej maszyny). Warstwa 4 pominąć się nie da i jako jedyna widzi każdy
+commit na `main`.
+
+**Sprawdzone, nie założone:** `tsc` i `expo lint` przechodzą **bez** `.env.local` (zmierzone przez
+tymczasowe odsunięcie pliku), więc bramka nie potrzebuje żadnych sekretów.
+`EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` czytany jest dopiero w runtime.
+
+**Jak cofnąć:** usuń `.github/workflows/quality-gate.yml` i cofnij dwa akapity w `CLAUDE.md`
+(tabela warstw, sekcja o CI). Zero wpływu na kod produktu i na wdrożenie.
+
+**Status:** workflow w repo; wynik pierwszego przebiegu — patrz Dziennik, wpis B1.
+
+
 ### D17 — Ryzyko wykluczeń przeniesione z fazy 2 do fazy 1 S-03 i przeramowane jako luka wymagań
 
 **Co:** Badanie i przeramowanie S-03 (`context/changes/dietary-preferences/research.md`,

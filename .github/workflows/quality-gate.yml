@@ -1,0 +1,81 @@
+# Bramka jakości — warstwa 4, uruchamiana przez GitHuba.
+#
+# Warstwy 1–3 (hook po edycji, `pre-commit`, `pre-push`) opisuje `CLAUDE.md` i wszystkie trzy są
+# LOKALNE, więc da się je pominąć: `--no-verify`, świeży klon bez `npm run hooks:install`, push
+# z innej maszyny. Ta bramka pominąć się nie da i jest jedynym miejscem, które widzi KAŻDY commit
+# na `main` oraz każdy pull request.
+#
+# CZEGO TA BRAMKA NIE ROBI — i to jest celowe:
+#
+#   * NIE WDRAŻA. Wdrożeniem zajmuje się Cloudflare Workers Builds, podpięty osobno do gałęzi
+#     `main`. Dwa niezależne wdrożenia tego samego commita to wyścig o to, które nadpisze drugie,
+#     i dwa miejsca, w których trzeba trzymać sekrety. Tu jest bramka, nie drugi deploy.
+#   * NIE URUCHAMIA E2E. Playwright mieszka POZA `package.json` (patrz `tests/e2e/README.md`),
+#     bo `npm install` psuje tu lockfile na Windowsie. Wciągnięcie go do zależności tylko po to,
+#     żeby CI miało E2E, złamałoby dokładnie tę regułę, której ta bramka pilnuje. Testy
+#     przeglądarkowe zostają uruchamiane z ręki.
+#   * NIE POTRZEBUJE ŻADNYCH SEKRETÓW. Sprawdzone 13.09.2026: `tsc` i `expo lint` przechodzą
+#     bez `.env.local`, bo `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` jest czytany dopiero w runtime
+#     (`src/app/_layout.tsx`). Gdyby kiedyś przestały — dołóż zmienną buildu, nie sekret.
+
+name: Bramka jakości
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Nowy push na tę samą gałąź anuluje poprzedni przebieg — nie ma sensu płacić za wynik,
+# który i tak jest nieaktualny.
+concurrency:
+  group: quality-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Typy, lint, testy, konwencje, lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+
+      - name: Ustaw Node
+        uses: actions/setup-node@v4
+        with:
+          # Ta sama główna wersja, co lokalnie (Node 25). Runner Node ma wbudowane `--test`
+          # i okrajanie typów, na których stoi `npm test` — starszy Node ich nie ma.
+          node-version: '25'
+          cache: npm
+
+      # `npm ci` jest tu bramką SAM W SOBIE, nie tylko instalacją.
+      #
+      # To jest dokładnie ten przebieg, który psuje `npm install` uruchomiony na Windowsie:
+      # zapisuje wpisy pakietów `*-wasm32*` bez ich zależności `@emnapi/*`, bo `cpu: ["wasm32"]`
+      # nie pasuje do hosta. Na Linuksie `npm ci` przerywa wtedy z EUSAGE. Lokalnie tego nie widać
+      # — dopiero Workers Builds wywracał się na czerwono, PO wypchnięciu na `main`, czyli już
+      # na produkcji. Tutaj ten sam błąd wychodzi na pull requeście.
+      - name: Zainstaluj zależności (npm ci — nigdy npm install)
+        run: npm ci
+
+      - name: Typy
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx expo lint
+
+      - name: Testy jednostkowe
+        run: npm test
+
+      - name: Konwencje repozytorium
+        run: npm run check-conventions
+
+      # Nadmiarowe wobec `npm ci` wyżej (ten by już padł), ale komunikat z tego skryptu mówi
+      # KTÓRY pakiet jest zepsuty i jak to naprawić — a `npm ci` rzuca samo EUSAGE.
+      - name: Spójność lockfile
+        run: npm run check-lock
