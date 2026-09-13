@@ -815,6 +815,20 @@ z lokalnego `dist/` (pułapka z `CLAUDE.md`).
 
 #### Manual
 
-- [ ] 4.4 Pełny przebieg na produkcji w przeglądarce — **CZĘŚCIOWO**: smoke i testy tylko-do-odczytu przeszły na produkcji; pełnego przebiegu z zapisem świadomie NIE robiono, bo zasada nocy zabrania pisania danych testowych do produkcyjnej D1
-- [ ] 4.5 Ten sam profil widoczny w Expo Go przeciw produkcji — **BLOCKED-MANUAL**: emulator nie wystartował (osierocone blokady AVD)
+- [x] 4.4 Pełny przebieg na produkcji w przeglądarce — 13.09.2026, 9/9 testów ścieżki profilu przeciw produkcji (podgląd, zapis, karta na Home, walidacja, nadpisanie, offline, przycięcie celu, zakładki)
+- [x] 4.5 Ten sam profil widoczny w Expo Go przeciw produkcji — 13.09.2026, zrzut ekranu: karta pokazuje „2 200 kcal, wyliczone 2 790", czyli dane produkcyjne
 - [x] 4.6 `CLAUDE.md` bez zdań opisujących stan sprzed zmiany
+
+> **Jak domknięto 4.4 i 4.5** (13.09.2026, po zatwierdzeniu przez właściciela zapisu jednego
+> profilu testowego do produkcyjnej D1 — nocna zasada tego zabraniała, więc czekało na decyzję):
+>
+> - **4.4** — `tests/e2e/profile-screen.spec.ts` uruchomiony z `MEALPLAN_BASE_URL` wskazującym
+>   produkcję: 9/9. Pokrywa pełny przebieg, nie tylko zapis.
+> - **4.5** — Expo Go na emulatorze, `EXPO_PUBLIC_API_URL` na produkcję i **bez** `adb reverse`
+>   dla portu API, żeby żądanie musiało wyjść w świat. Żeby wynik był jednoznaczny, profil
+>   **lokalny** zmieniono na inne wartości (60 kg, bez nadpisania → 2 449 kcal); aplikacja
+>   pokazała „2 200 kcal, wyliczone 2 790", czyli wartości **produkcyjne**. Bez tego rozróżnienia
+>   zrzut nie dowodziłby, do którego backendu poszło żądanie.
+>
+> Po weryfikacji wiersz profilu został z produkcji **usunięty** — baza wraca do stanu sprzed
+> testu (0 profili, 3 konta).
