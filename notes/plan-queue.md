@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G3, faza 2** (czysty moduł generatora).
+Kolejne zadanie do wzięcia: **G3, faza 3** (repozytorium i trasa `/api/plan`).
 
 ---
 
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 1 z 4**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 2 z 4**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -351,3 +351,91 @@ PR: #32
 Do decyzji: —
 Uwaga: powtórzenia, determinizm, kształt schematu i treść komunikatu porażki rozstrzygnięte
 **przez agenta** na podstawie pomiarów, zgodnie z §4. Zero pytań do właściciela.
+
+### 17:33 UTC — G3 faza 2: czysty moduł generatora
+Wynik: ok
+Co zrobione: `src/lib/plan-generator.ts` (655 linii) i `src/lib/plan-generator.test.ts` —
+30 nowych testów, `npm test` **130/130**. Wszystkie 17 kryteriów fazy 2 zaliczone.
+Moduł importuje **wyłącznie** `./dish-validation.ts` (typ `MealSlot`), zgodnie z 2.16.
+Stała `CalorieTolerance = 0.1` ma wreszcie jedno miejsce w repo — dotąd żyła jako liczba
+w skrypcie `.mjs` i jako proza w `CLAUDE.md`.
+
+**Zestaw sprawdzony CELOWYM ZEPSUCIEM — i pierwsze dwie próby niczego nie złapały.**
+To jest najważniejsza rzecz z tej fazy:
+1. Zdjęcie sprawdzenia okna w punkcie końcowym: **130/130 dalej zielone**. Powód: przy ostatniej
+   pozycji `minRest` i `maxRest` są zerowe, więc przycinanie samo wpuszcza wyłącznie sumy z okna.
+2. Zdjęcie przycinania górną granicą: **też 130/130 zielone** — łapie je sprawdzenie końcowe.
+   Guardrail ma więc DWIE niezależne bramki i żadna nie przepuści dnia poza oknem w pojedynkę.
+   Zapisane w komentarzu przy pętli, żeby nikt nie usunął jednej jako „martwego kodu".
+3. Rozluźnienie `CalorieTolerance` do 0,5: **7 testów na czerwono**. To jest realny tryb awarii
+   i zestaw go łapie.
+4. Zdjęcie odsiewu wykluczeń: 3 czerwone. Zdjęcie limitu czasu: 4 czerwone.
+
+**Kryterium 2.6 wymagało poprawki, bo w pierwszej wersji NIE łapało zepsutego odsiewu.**
+Pula miała dania odrzucone o innych kaloriach niż dopuszczone, więc generator omijał je sam —
+nie mieściły się w oknie — i zepsuty filtr przechodził na zielono. To jest dokładnie ten tryb
+z `lessons.md`: kryterium przechodzące niezależnie od tego, czy rzecz działa. Poprawione: dania
+odrzucone mają **te same kalorie** co dopuszczone i **niższe `id`**, więc po sortowaniu stoją
+w liście pierwsze i zepsuty odsiew sięga po nie natychmiast. Po poprawce oba zepsucia łapane.
+
+Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`.
+Stage po ścieżkach. `package-lock.json` nietknięty (sprawdzone `git diff --exit-code`).
+Bramki: `npm test` 130/130, `tsc --noEmit` czysto, `expo lint` czysto,
+`check-conventions` czysto (51 plików), `check-lock` czysto.
+Werdykt przeglądu: patrz wpis o przeglądzie niżej.
+PR: #33
+Do decyzji: —
+
+### 18:10 UTC — G3 faza 2, przegląd implementacji i poprawki
+Wynik: ok
+Co zrobione: **zadanie przeglądu w CI padło dwa razy** na PR #33 (2 min 31 s i 4 min 21 s),
+za każdym razem w tym samym miejscu — po wykryciu planu, na etapie zbierania dowodów, bez
+zapisania raportu. Diff ma 1207 linii nowego kodu plus plan powyżej tysiąca. Bramka czyta PLIK,
+nie komentarz, więc bez raportu przepuściłaby PR **bez żadnego przeglądu**.
+Zamiast obejść bramkę etykietą, przegląd wykonał agent adwersaryjny **lokalnie** — z prawem do
+`npm test`, `tsc`, `check-conventions` i mutowania kopii modułu, czyli z większymi możliwościami
+weryfikacji niż ma zadanie CI. Raport z decyzjami: `reviews/impl-review.md`.
+
+Werdykt: **WYMAGA UWAGI** → po poprawkach **APPROVED**. Jedenaście ustaleń, dziewięć przyjętych
+i naprawionych, dwa odłożone świadomie z powodem.
+
+**F1 było realnym defektem i najdroższą rzeczą tej fazy.** Pora uboższa niż potrzeby dnia
+(dwie przekąski przy sześciu posiłkach, gdzie dzień potrzebuje trzech różnych) **omijała krok 1
+diagnozy**, bo żaden filtr nie był winny, a krok 2 jej nie łapał — `sumTop` po cichu sumowało
+tyle dań, ile było, licząc brakujące posiłki jako 0 kcal. Sprawa spadała do przeszukiwania:
+**39 561 węzłów, 19 ms** i werdykt `combination`. Trzy rzeczy złe naraz: zły powód (rada
+„poluzuj filtry", choć żaden nie odsiewa), sprzeczny ładunek (przy porze całkiem pustej
+`visitedNodes: 0`, czyli „przestrzeń wyczerpana" bez ani jednego węzła — kryterium 2.12 asertuje
+`visitedNodes > 0`, więc kod potrafił wyemitować werdykt, który jego własne kryterium odrzuca)
+i **koszt powyżej limitu 10 ms CPU**, czyli 500 zamiast obiecanego 422. Po poprawce ta sama
+sonda: **1 ms** i `reason: 'calories'`.
+
+**F2**: `DefaultNodeBudget = 200 000` kupowało **~12 ms**, czyli więcej niż 10 ms, których miało
+bronić. Obniżone do 100 000 (~5,7 ms w tym samym pomiarze). Właściwa kalibracja na `workerd`
+nadal należy do G4 — to było poprawienie wartości startowej na stronę bezpieczną, nie pomiar.
+
+**Cztery ustalenia to luki w POKRYCIU, nie defekty** — i każda była mutacją, którą zestaw
+przepuszczał: relaksacja (kryterium 2.10 było odhaczone, a jego test jej nie uruchamiał), kierunek
+dolnego przycięcia (`continue` → `break` dawało fałszywe „nie da się" i zostawiało 30/30 zielone),
+rozstrzygacz remisu w diagnozie i próg `needed`. Wszystkie cztery mają teraz testy, a każdy
+sprawdzony **uruchomieniem swojej mutacji**.
+
+**F5** to realna poprawka: limit użyć był kluczowany samym daniem, więc danie z pory obfitej
+przenosiło tamten hojny limit do pory ciasnej — **39 z 58 dań realnej puli ma więcej niż jedną
+porę**. Klucz to teraz para (danie, pora). Pierwsza próba zmieniła tylko odczyt, nie zasiew
+i dekrementację — i **zestaw to złapał**, dwa testy powtórzeń zaczerwieniły się natychmiast.
+Uczciwa adnotacja zapisana w komentarzu testu: samej mutacji klucza zestaw **nie łapie**, bo
+limit jest miękki i różnica obu kluczy jest statystyczna, nie deterministyczna.
+
+Przy okazji: `expo lint` wywrócił się pięcioma błędami `react-hooks/rules-of-hooks`, bo funkcja
+pomocnicza nazywała się `useKey` — preset czyta każdą nazwę zaczynającą się od `use` jako hook
+Reacta, niezależnie od tego, że plik nie ma z Reactem nic wspólnego. Przemianowana na `usageKey`,
+powód zapisany w kodzie.
+
+Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`,
+`context/changes/first-weekly-plan/reviews/impl-review.md`,
+`context/changes/first-weekly-plan/plan.md`, `notes/plan-queue.md`. Stage po ścieżkach.
+Bramki: `npm test` **136/136** (było 130), `tsc --noEmit`, `expo lint`, `check-conventions` czysto.
+Werdykt przeglądu: przeczytany, wszystkie jedenaście ustaleń ma decyzję.
+PR: #33
+Do decyzji: —

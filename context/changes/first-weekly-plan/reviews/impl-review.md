@@ -1,12 +1,30 @@
 <!-- IMPL-REVIEW-REPORT -->
-# Implementation Review: Generator tygodniowego jadłospisu (S-04) — Faza 1: Schemat planu
+# Implementation Review: S-04 — Faza 2 (czysty moduł generatora)
 
 - **Plan**: `context/changes/first-weekly-plan/plan.md`
-- **Scope**: Full plan (CI review on PR #32) — plan declares four phases; this PR implements **Phase 1 only** (schema), which matches the PR's own stated scope ("Ten PR nie dodaje żadnego kodu czytającego nowe tabele").
+- **Scope**: Faza 2 z czterech (czysty moduł generatora). Faza 1 (schemat) scalona w PR #32; fazy
+  3–4 jawnie poza zakresem tego PR-a.
 - **Date**: 2026-09-14
-- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34873988614
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34880202524
 - **Verdict**: APPROVED
-- **Findings**: 0 critical, 1 warning, 0 observations
+- **Findings**: 0 critical, 0 warnings, 0 observations
+
+> **Kontekst tego przebiegu.** To jest czwarty commit na gałęzi i drugi przebieg tej umiejętności
+> w CI. Poprzedni przebieg (`34879232914`) zgłosił jedno ustalenie (F1 — martwa gałąź obronna
+> `if (list.length === 0) { return false; }` w `findDay`). Commit `1634237` usuwa dokładnie tę
+> gałąź i zapisuje niezmiennik, który ją czynił martwą, komentarzem w jej miejscu. Ten przebieg
+> weryfikuje **stan po tej poprawce** od zera — pełny plan wobec pełnej różnicy PR-a — a nie tylko
+> deltę względem poprzedniego raportu.
+>
+> **Metoda automatycznej weryfikacji.** Sandbox tego zadania odmawia `npm ci`/`npx tsc`/
+> `npx expo lint`/`npm test`/`npm run check-conventions` przez Bash bez potwierdzenia, którego
+> nikt w CI nie da. Zamiast zgadywać, przegląd użył **rzeczywistego wyniku** równoległego
+> workflow „Bramka jakości" na TYM SAMYM commicie (run `34880202519`, job „Typy, lint, testy,
+> konwencje, lockfile", **sukces**) jako dowodu: `tsc --noEmit` bez błędów, `expo lint` bez błędów,
+> `npm test` → `ℹ pass 136` / `ℹ fail 0`, `check-conventions: czysto (51 plików)`,
+> `check-lock: package-lock.json spójny — 1127 pakietów`. Ten sam licznik testów (136) jak przed
+> poprawką potwierdza, że usunięcie gałęzi nie zmieniło zaobserwowanego zachowania — zgodne
+> z tym, że gałąź była martwa.
 
 ## Verdicts
 
@@ -18,46 +36,70 @@
 | Architecture | PASS |
 | Pattern Consistency | PASS |
 | Test Coverage | PASS |
-| Success Criteria | WARNING |
+| Success Criteria | PASS |
 
-## What changed since the last review (`52ef43b`)
+## Metoda
 
-One new commit, `268db91` — docs-only, touches only this review file itself (`reviews/impl-review.md`, +12/-1), no migration or source change:
+Porównanie: pełny tekst planu (Faza 2, sekcje „Krytyczne szczegóły implementacji" i cztery
+niezmienniki udokumentowane przy pętli) wobec `git diff origin/main...HEAD` (5 plików), diff
+commita `1634237` przeczytany w całości (`+7/-4` w `plan-generator.ts`), oraz ponowne przeczytanie
+funkcji `findDay` (`plan-generator.ts:280-410`) w kontekście kroku 1 diagnozy (`:442-491`), żeby
+zweryfikować niezmiennik, na który powołuje się nowy komentarz.
 
-- Filled in the `Decision` field on the previous pass's **F1** (this same finding, below) as `ACKNOWLEDGED`, with rationale cross-referencing `notes/plan-queue.md:230-233` ("Przeniesione z poprzedniej paczki", F3 of PR #20 — `--allowedTools` for the CI reviewer is deliberately left unwidened because expanding it *replaces* the default tool set and the effect can't be safety-checked on the very PR that changes it) and naming `impl-review-override` as the intended merge path for this class of finding.
-- No `migrations/`, `src/`, or `notes/plan-queue.md` change in this commit — re-diffing `origin/main...HEAD` against the prior review's file list confirms `migrations/0006_plan.sql` and `migrations/down/0006_plan.down.sql` are byte-identical to the previous pass.
+## Cross-reference: pliki zmienione vs. zaplanowane
 
-Re-verified from scratch this run (not just carried forward): `git diff --name-only origin/main...HEAD` (9 files, unchanged set from the last two reviews), `git show --stat 268db91` (single file, review doc only), and a fresh read of `migrations/0006_plan.sql` against `plan.md`'s Phase 1 SQL contract — still a byte-for-byte match. Nothing here changes any of the seven dimension verdicts.
+| Plik | W planie fazy 2? | Werdykt |
+|---|---|---|
+| `src/lib/plan-generator.ts` | tak | MATCH |
+| `src/lib/plan-generator.test.ts` | tak (bez zmian w tym commicie) | MATCH |
+| `context/changes/first-weekly-plan/plan.md` | konwencja Progress | oczekiwane (Faza 2 odhaczona, `f6ff446`) |
+| `context/changes/first-weekly-plan/reviews/impl-review.md` | konwencja przeglądu | oczekiwane (autor rozliczył F1 przed tym przebiegiem) |
+| `notes/plan-queue.md` | konwencja Dziennika (`CLAUDE.md` §Dokumenty projektu) | oczekiwane |
 
-## Findings
+Zero plików fazy 3/4. `git diff --stat` dla `package-lock.json` puste.
 
-### F1 — Automated verification commands still can't be re-executed in this CI environment
+## Weryfikacja poprawki F1
 
-- **Severity**: ⚠️ WARNING
-- **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
-- **Dimension**: Success Criteria
-- **Location**: N/A (review environment, not the PR's code)
-- **Detail**: Phase 1's automated verification (1.1–1.6: `wrangler d1 migrations apply/list --local`, forward/backward migration round-trip, `INSERT` boundary checks on `day_index`/`meal_slot`/`dish_id`, cascade deletes, `npm run check-conventions`) again could not be executed by this run — `node_modules` is not installed on this runner (checked fresh: `test -d node_modules` → absent), and `git fetch`, `npm ci`, and `gh pr view` all require interactive approval unavailable in this non-interactive session. This is the third consecutive occurrence of the identical, previously-reported limitation — unchanged since the last two reviews (`47172d9`, `52ef43b`).
-  Static analysis still corroborates the PR's claims: `migrations/*.sql` (6) and `migrations/down/*.down.sql` (6) pair 1:1 by name, including `0006_plan.sql` ↔ `0006_plan.down.sql`. `migrations/0006_plan.sql` is unchanged since the last review and still matches the plan's SQL contract (`plan.md:218-238`) byte-for-byte — table definitions, `CHECK` constraints, `FOREIGN KEY` directions (`ON DELETE CASCADE` to `app_user`, no cascade to `dish`), the `CREATE INDEX idx_plan_item_dish` statement, and the primary key all line up. The down-migration drops `plan_item` before `plan` (FK-safe order) and deletes the `d1_migrations` row, matching the plan's contract at `plan.md:267-276`. This is strong circumstantial support but still not execution.
-- **Fix**: Grant this review's CI job `npm ci` + `wrangler`/`Bash` permissions so future runs execute the plan's checks directly. No code change needed on this PR — this is a tooling/`--allowedTools` limitation of the review job, not a defect in the PR.
-- **Decision**: ACKNOWLEDGED — ta sama decyzja co w poprzedniej rundzie, podtrzymana. Recenzent
-  ma rację co do faktu (statyczne wnioskowanie to nie wykonanie) i sam zauważa, że ponowne
-  ACKNOWLEDGED jest tu najpewniej właściwe. Ustalenie **nie dotyczy kodu tego PR-a**, tylko
-  uprawnień zadania przeglądu, a `notes/plan-queue.md` §4 („Przeniesione z poprzedniej paczki",
-  F3 raportu z PR #20) trzyma je świadomie otwarte z podanym powodem: rozszerzenie
-  `--allowedTools` **zastępuje** domyślny zestaw narzędzi, a skutku nie da się sprawdzić na PR-ze,
-  który tę zmianę wprowadza. Luka w dowodzie jest tu pokryta warstwą 3 (`pre-push`) i warstwą 4
-  (bramka jakości) — obie przebiegły na zielono — oraz 14 sprawdzeniami ograniczeń, których
-  wyniki są wypisane w Dzienniku razem z przebiegiem migracji wstecz i z powrotem.
-  Ponieważ ustalenie jest **mechanicznie odtwarzane przy każdym przebiegu** i nie da się go
-  zamknąć na tym PR-ze, scalenie idzie przez etykietę `impl-review-override` — to jest ten
-  przypadek, do którego etykieta została zrobiona. (Poprzednie rundy: `dcdb029`, `268db91`.)
-  Ta runda (`268db91`) nie zmieniła kodu ani migracji — tylko przepisała pole `Decision` tego
-  samego ustalenia z tym samym uzasadnieniem, więc podtrzymanie ACKNOWLEDGED jest odtworzeniem
-  decyzji autora, nie nową oceną. Note for the human triaging this: the identical finding was
-  already discussed and deliberately left open across two previous reports on this same PR
-  (see `context/changes/first-weekly-plan/reviews/impl-review.md` at commits `dcdb029` and
-  `268db91`, and `notes/plan-queue.md` §4, F3 of PR #20) — re-applying ACKNOWLEDGED here is very
-  likely correct rather than reopening a debate.
+Poprzedni przebieg: `if (list.length === 0) { return false; }` w `walk()` był nieosiągalny, bo
+krok 1 diagnozy w `generatePlan` gwarantuje `pools[slot].length >= needed >= 1` dla każdej pory
+obecnej w dniu, a `pools` nie jest mutowane w trakcie przeszukiwania.
+
+Commit `1634237` usuwa gałąź i zostawia komentarz:
+
+```
+// Niezmiennik: `generatePlan` kończy działanie w kroku 1 diagnozy, gdy którakolwiek pora ma
+// mniej dań, niż dzień potrzebuje, a `pools` nie jest mutowane w trakcie przeszukiwania
+// (użycie śledzą `usedToday` i `usesLeft`, nikt nie usuwa z listy). Lista jest więc tu
+// zawsze niepusta.
+const list = pools[slot];
+const start = offsets[position] % list.length;
+```
+
+Sprawdzone niezależnie, że usunięcie jest bezpieczne **także gdyby niezmiennik przestał
+zachodzić**: przy `list.length === 0`, `start = offsets[position] % 0` daje `NaN`; obie części
+zawinięcia stają się `[NaN, 0]` i `[0, NaN]` — w obu przypadkach warunek pętli `index < to` jest
+fałszywy natychmiast (`NaN < 0` i `0 < NaN` to zawsze `false` w JS), więc żadna iteracja się nie
+wykonuje i `walk` spada do `return false` na końcu funkcji — dokładnie ten sam wynik, jaki dawał
+usunięty strażnik. Usunięcie nie wprowadza więc nowej klasy awarii nawet w scenariuszu, którego
+niezmiennik miał zapobiegać.
+
+To jest ta sama klasa poprawki, co ustalenie F11 z lokalnego przeglądu adwersaryjnego wcześniej
+na tej gałęzi (`const start = list.length > 0 ? … : 0`) — usunięcie martwego strażnika i zapisanie
+niezmiennika komentarzem zamiast kodem obronnym, który nigdy się nie wykona.
+
+**Wniosek: F1 rozliczone poprawnie, bez regresji.** Zero nowych ustaleń w tym przebiegu.
+
+## Co przegląd potwierdził jako poprawne (bez zastrzeżeń)
+
+- **Guardrail ±10% nadal ma dwie niezależne bramki** (sprawdzenie końcowe w `walk()` i przycinanie
+  obustronne, `:320-330` i `:356-364`) — niezmienione tym commitem.
+- **Dyscyplina zakresu bez zastrzeżeń** — diff to jedna ukierunkowana poprawka w module fazy 2 plus
+  konwencyjny wpis do Dziennika i rozliczenie ustalenia w pliku przeglądu. Zero repozytorium, tras,
+  ekranów, migracji.
+- **Zero regresji względem wcześniejszych ustaleń (F1–F11 lokalnego przeglądu i F1 poprzedniego
+  przebiegu CI)** — wszystkie odpowiadające im fragmenty kodu nadal obecne i niezmienione poza
+  samą poprawką F1.
+- **Pokrycie testami niezmienione i wystarczające**: 136/136 przed i po tym commicie — spójne
+  z tym, że usunięta gałąź była martwa i żadne zachowanie się nie zmieniło.
 
 <!-- End of report -->
