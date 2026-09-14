@@ -1,0 +1,45 @@
+{
+  "slug": "wolowina-z-ziemniakami-i-kapusta",
+  "name": "Wołowina z ziemniakami i kapustą",
+  "mealSlots": [
+    "dinner",
+    "lunch"
+  ],
+  "prepMinutes": 45,
+  "modelKcalHint": 720,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "wołowina mielona 10% tłuszczu, surowa",
+      "grams": 150
+    },
+    {
+      "ingredientName": "ziemniaki, surowe",
+      "grams": 250
+    },
+    {
+      "ingredientName": "kapusta biała, surowa",
+      "grams": 150
+    },
+    {
+      "ingredientName": "cebula, surowa",
+      "grams": 50
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Ziemniaki obierz i gotuj w osolonej wodzie 20 minut.",
+    "Kapustę poszatkuj, cebulę posiekaj.",
+    "Na oleju zeszklij cebulę, dodaj mięso i smaż 8 minut, rozdrabniając łyżką.",
+    "Dorzuć kapustę i duś 10 minut pod przykryciem.",
+    "Dopraw solą i podaj z ziemniakami."
+  ]
+}

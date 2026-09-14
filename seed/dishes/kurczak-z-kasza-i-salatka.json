@@ -1,0 +1,44 @@
+{
+  "slug": "kurczak-z-kasza-i-salatka",
+  "name": "Kurczak z kaszą i sałatką",
+  "mealSlots": [
+    "lunch",
+    "dinner"
+  ],
+  "prepMinutes": 30,
+  "modelKcalHint": 750,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "pierś z kurczaka, surowa",
+      "grams": 180
+    },
+    {
+      "ingredientName": "kasza gryczana, sucha",
+      "grams": 80
+    },
+    {
+      "ingredientName": "ogórek, surowy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "oliwa z oliwek",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Kaszę gotuj w osolonej wodzie 15 minut.",
+    "Pierś pokrój w paski, dopraw solą i usmaż na suchej patelni 8 minut.",
+    "Ogórka i pomidora pokrój w kostkę, skrop oliwą.",
+    "Podaj kurczaka z kaszą i sałatką."
+  ]
+}

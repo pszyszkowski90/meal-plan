@@ -1,0 +1,34 @@
+{
+  "slug": "platki-z-mlekiem-i-slonecznikiem",
+  "name": "Płatki z mlekiem i słonecznikiem",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 8,
+  "modelKcalHint": 650,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "płatki owsiane, suche",
+      "grams": 70
+    },
+    {
+      "ingredientName": "mleko 2%, płynne",
+      "grams": 250
+    },
+    {
+      "ingredientName": "nasiona słonecznika, łuskane",
+      "grams": 20
+    },
+    {
+      "ingredientName": "miód",
+      "grams": 15
+    }
+  ],
+  "steps": [
+    "Płatki zalej mlekiem i odstaw na 5 minut.",
+    "Wmieszaj miód.",
+    "Posyp nasionami słonecznika."
+  ]
+}

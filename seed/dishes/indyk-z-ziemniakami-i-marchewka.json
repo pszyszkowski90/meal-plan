@@ -1,0 +1,41 @@
+{
+  "slug": "indyk-z-ziemniakami-i-marchewka",
+  "name": "Indyk z ziemniakami i marchewką",
+  "mealSlots": [
+    "dinner",
+    "lunch"
+  ],
+  "prepMinutes": 40,
+  "modelKcalHint": 620,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "pierś z indyka, surowa",
+      "grams": 180
+    },
+    {
+      "ingredientName": "ziemniaki, surowe",
+      "grams": 250
+    },
+    {
+      "ingredientName": "marchew, surowa",
+      "grams": 100
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Ziemniaki obierz i gotuj w osolonej wodzie 20 minut.",
+    "Marchew pokrój w słupki i ugotuj na parze 10 minut.",
+    "Indyka pokrój na plastry i dopraw solą.",
+    "Rozgrzej olej i smaż mięso po 4 minuty z każdej strony.",
+    "Podaj z ziemniakami i marchewką."
+  ]
+}

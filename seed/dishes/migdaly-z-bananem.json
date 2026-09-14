@@ -1,0 +1,25 @@
+{
+  "slug": "migdaly-z-bananem",
+  "name": "Migdały z bananem",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 450,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "migdały",
+      "grams": 60
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 120
+    }
+  ],
+  "steps": [
+    "Banana pokrój w plastry.",
+    "Podaj z migdałami."
+  ]
+}

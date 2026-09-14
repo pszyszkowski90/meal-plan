@@ -1,0 +1,41 @@
+{
+  "slug": "indyk-z-ryzem-brazowym-i-brokulem",
+  "name": "Indyk z ryżem brązowym i brokułem",
+  "mealSlots": [
+    "lunch",
+    "dinner"
+  ],
+  "prepMinutes": 45,
+  "modelKcalHint": 780,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "pierś z indyka, surowa",
+      "grams": 180
+    },
+    {
+      "ingredientName": "ryż brązowy, suchy",
+      "grams": 90
+    },
+    {
+      "ingredientName": "brokuł, surowy",
+      "grams": 150
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Ryż brązowy gotuj w osolonej wodzie 30 minut.",
+    "Brokuł podziel na różyczki i gotuj na parze 6 minut.",
+    "Indyka pokrój w paski i dopraw solą.",
+    "Rozgrzej olej i smaż mięso 8 minut, obracając.",
+    "Podaj indyka z ryżem i brokułem."
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "kanapki-z-awokado-i-jajkiem",
+  "name": "Kanapki z awokado i jajkiem",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 12,
+  "modelKcalHint": 620,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 80
+    },
+    {
+      "ingredientName": "awokado, surowe",
+      "grams": 100
+    },
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 100
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Jajka ugotuj na twardo, 9 minut od zagotowania, i ostudź.",
+    "Awokado rozgnieć widelcem i dopraw solą.",
+    "Rozsmaruj awokado na chlebie.",
+    "Jajka obierz, pokrój w plastry i ułóż na wierzchu."
+  ]
+}

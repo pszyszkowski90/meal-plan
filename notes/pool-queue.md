@@ -446,3 +446,51 @@ jest wzorcem dla fazy 4. F2 (`check:pool` nie wymienione w planie z nazwy) przyj
 uruchamia skrypt, który plan zamawia w punkcie 5 tej samej fazy.
 PR: #25
 Do decyzji: —
+
+### 14:44 UTC — P5 Skalowanie puli do minimów
+Wynik: ok (dwie pozycje przeniesione, opisane niżej)
+Co zrobione: pula urosła z 20 do **56 dań** i z 35 do **51 składników**, wszystko na produkcji.
+Minima spełnione z zapasem: 20 śniadań (min 12), 27 obiadów (min 18), 31 kolacji (min 18),
+15 przekąsek (min 12).
+**Problem z pilota jest rozwiązany:** cel 3200 kcal przeszedł **z nieosiągalnego (0% w każdym
+scenariuszu) do 38%** przy sześciu posiłkach, a 2800 kcal z 12% do 68%. Sufit dnia podniósł się
+z 2791 do ponad 2900 kcal. Także po odfiltrowaniu limitu 30 minut i czterech wykluczeń **każdy
+z pięciu celów ma trafienia**.
+**Sito `modelKcalHint` odrzuciło trzy dania** i to jest najlepszy dowód, że działa: sałatka grecka
+(deklarowane 700, wyliczone 511 — 27%), sałatka z tuńczykiem i awokado (27%), kanapki z fetą
+(22%). Wszystkie trzy warzywne — systematycznie przeszacowałem energię dań warzywnych. Zgodnie
+z regułą §P4 **odrzucone, nie poprawione gramaturą pod sito**, mimo że przyczyną było złe
+oszacowanie autora, a nie zły przepis. Reguła jest mechaniczna właśnie po to.
+**Pierwsze podejście nie spełniło moich własnych warunków kompozycji** z FEASIBILITY (2/4 śniadań
+i 3/6 obiadów powyżej progu zamiast 4/4 i 6/6), bo moje szacunki szły systematycznie 17-19% za
+wysoko. Dołożone jedenaście dań celowo kalorycznych — i tu jest **uczciwe zastrzeżenie
+metodologiczne**: te jedenaście było porcjowanych DO pasma kalorycznego, więc `modelKcalHint`
+jest dla nich celem projektowym, a nie ślepym oszacowaniem. Ich zerowy rozjazd nie dowodzi
+trafności szacowania. Zapisane w FEASIBILITY.md, żeby nikt nie odczytał raportu odwrotnie.
+Pułapka do zapamiętania: `seed-dishes.mjs` waliduje wobec `seed/ingredients.json`, **nie wobec
+bazy**, więc danie z nowym składnikiem przechodzi walidację i pada dopiero przy wgrywaniu na
+`NOT NULL constraint failed: dish_ingredient.ingredient_id`. D1 wycofuje wtedy cały plik — baza
+została nietknięta (sprawdzone: 20 dań przed i po nieudanym wgraniu) — ale kolejność „najpierw
+składniki, potem dania" jest twarda. Dopisana do `CLAUDE.md`.
+Cały plan F-01 ma teraz **zero oczekujących pozycji** w obu fazach.
+Co zacommitowane: `seed/ingredients.json`, `seed/usda-subset.json`, `seed/FEASIBILITY.md`,
+`seed/dishes/` (+36 plików), `CLAUDE.md`,
+`context/changes/dish-source-and-seed-pool/plan.md`, `notes/pool-queue.md`
+Werdykt przeglądu: <do uzupełnienia>
+PR: <do uzupełnienia>
+Do decyzji: —
+
+**Dwie pozycje z P5 świadomie NIEZROBIONE, każda z powodem:**
+
+1. **Pole `meta` w `all<T>()` (`src/server/env.ts`) plus pomiar CPU** — ustalenie F4 przeglądu
+   fazy 1 F-01. **Zablokowane przez brak S-04**, a S-04 to P6, którego nie wolno zaczynać.
+   Sama kolejka to przewiduje: „razem z pomiarem CPU, bo dopiero wtedy jest co mierzyć".
+   Bez generatora nie ma zapytania, którego CPU miałoby znaczenie — dołożenie pola teraz dałoby
+   martwy kod i zero liczby. To zarazem jedyna rzecz blokująca **jedyną realną decyzję
+   właściciela** (Workers Paid), więc powinna być pierwsza po S-04.
+2. **Stronicowanie katalogu składników i debounce wyszukiwarki** — ustalenie F6 przeglądu S-03
+   fazy 2, odłożone „gdy pula urośnie". Urosła **pula dań** (20 → 56), ale to ustalenie dotyczy
+   **katalogu składników**, który urósł z 35 do 51 pozycji. Pełny katalog to dalej jedno małe
+   żądanie, a filtrowanie po stronie klienta przy 51 pozycjach jest niezauważalne. Odkładam
+   z jawnym progiem zamiast „na kiedyś": **wraca przy 150 składnikach albo gdy `GET /api/catalog`
+   przekroczy 100 kB**. Wcześniejsze robienie tego byłoby optymalizacją bez pomiaru.

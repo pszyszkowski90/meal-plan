@@ -1,0 +1,30 @@
+{
+  "slug": "chleb-z-maslem-orzechowym-i-bananem",
+  "name": "Chleb z masłem orzechowym i bananem",
+  "mealSlots": [
+    "snack",
+    "breakfast"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 440,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 60
+    },
+    {
+      "ingredientName": "masło orzechowe, bez soli",
+      "grams": 30
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 80
+    }
+  ],
+  "steps": [
+    "Rozsmaruj masło orzechowe na chlebie.",
+    "Ułóż na wierzchu plastry banana."
+  ]
+}

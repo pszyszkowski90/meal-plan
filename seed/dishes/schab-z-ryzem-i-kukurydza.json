@@ -1,0 +1,41 @@
+{
+  "slug": "schab-z-ryzem-i-kukurydza",
+  "name": "Schab z ryżem i kukurydzą",
+  "mealSlots": [
+    "lunch",
+    "dinner"
+  ],
+  "prepMinutes": 35,
+  "modelKcalHint": 820,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "schab wieprzowy, surowy",
+      "grams": 180
+    },
+    {
+      "ingredientName": "ryż biały, suchy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "kukurydza z puszki, odsączona",
+      "grams": 100
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 15
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Ryż ugotuj w osolonej wodzie 15 minut.",
+    "Schab pokrój na kotlety i dopraw solą.",
+    "Rozgrzej olej i smaż mięso po 5 minut z każdej strony.",
+    "Kukurydzę odsącz i podgrzej na patelni po mięsie.",
+    "Podaj wszystko razem."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "slug": "jogurt-grecki-z-maslem-orzechowym",
+  "name": "Jogurt grecki z masłem orzechowym",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 440,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jogurt grecki, pełnotłusty",
+      "grams": 200
+    },
+    {
+      "ingredientName": "masło orzechowe, bez soli",
+      "grams": 30
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 80
+    }
+  ],
+  "steps": [
+    "Masło orzechowe wmieszaj w jogurt.",
+    "Banana pokrój w plastry i ułóż na wierzchu."
+  ]
+}

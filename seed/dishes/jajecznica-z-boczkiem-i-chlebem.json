@@ -1,0 +1,39 @@
+{
+  "slug": "jajecznica-z-boczkiem-i-chlebem",
+  "name": "Jajecznica z boczkiem i chlebem",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 780,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "boczek wędzony, surowy",
+      "grams": 40
+    },
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 80
+    },
+    {
+      "ingredientName": "masło",
+      "grams": 10
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Boczek pokrój w kostkę i wytop na suchej patelni.",
+    "Dodaj masło, a gdy się rozpuści, wlej roztrzepane jajka.",
+    "Smaż na małym ogniu, mieszając, aż jajka się zetną.",
+    "Dopraw solą i podaj z chlebem."
+  ]
+}

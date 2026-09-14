@@ -1,0 +1,29 @@
+{
+  "slug": "kanapka-z-awokado",
+  "name": "Kanapka z awokado",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 290,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 60
+    },
+    {
+      "ingredientName": "awokado, surowe",
+      "grams": 80
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Awokado rozgnieć widelcem i dopraw solą.",
+    "Rozsmaruj na chlebie."
+  ]
+}
