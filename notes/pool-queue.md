@@ -277,3 +277,28 @@ Co zacommitowane: `src/components/ui/text-field.tsx`, `tests/e2e/preferences-scr
 Werdykt przeglądu: zielony; wszystkie ustalenia mają decyzje
 PR: #15, #16, #17
 Do decyzji: —
+
+### 11:47 UTC — P3 Domknięcie S-03
+Wynik: ok
+Co zrobione: **konto testowe B założone przez agenta** — nie z przeglądarki: ekran `/sign-up`
+montuje Smart CAPTCHA Clerka, która w Chromium sterowanym przez Playwrighta nigdy się nie kończy
+(żądanie rejestracji nie wychodzi w ogóle, bez błędu na ekranie — sprawdzone headless i z oknem).
+Zadziałała rejestracja z emulatora, gdzie Clerk pomija CAPTCHA; poświadczenia w `.env` harnessu,
+poza repozytorium. **1.6 zamknięte** dwoma testami w `account-isolation.spec.ts` (przez ekran
+i z pominięciem UI), sprawdzonymi celowym zepsuciem filtra `user_id` — obie asercje czerwone,
+po przywróceniu zielone. Przy okazji zamyka to 2.9 z S-02 i fazę 3 z `test-plan.md`.
+**2.9 i 2.10 nie przeszły z marszu — oba ujawniły realne defekty, oba naprawione:**
+(1) natywnie podpowiedzi wyszukiwarki renderują się pod klawiaturą, a dotknięcie podpowiedzi przy
+otwartej klawiaturze tylko ją chowało (`keyboardShouldPersistTaps` domyślnie `'never'`);
+(2) na webie poniżej ~750 px kolumna treści nie schodzi poniżej szerokości swojej treści i jest
+obcinana z obu stron — 743 px w oknie 400 px, ten sam defekt na ekranie profilu. Harness jeździ
+na 1280 px, więc nie miał jak tego zobaczyć. Statusy w `roadmap.md` i `test-plan.md` doprowadzone
+do stanu faktycznego (S-03 `done`, F-01 `implementing`, fazy 2–4 planu testów `complete`).
+Pełny zestaw E2E: 44/44, `npm test` 100/100, `tsc`, `expo lint` i `check-conventions` czyste.
+Co zacommitowane: `src/app/(app)/preferences.tsx`, `src/app/(app)/profile.tsx`,
+`tests/e2e/account-isolation.spec.ts`, `tests/e2e/support/sign-in.ts`, `tests/e2e/README.md`,
+`context/changes/dietary-preferences/plan.md`, `context/foundation/roadmap.md`,
+`context/foundation/test-plan.md`, `notes/pool-queue.md`
+Werdykt przeglądu: <do uzupełnienia po przebiegu na PR>
+PR: <do uzupełnienia>
+Do decyzji: —

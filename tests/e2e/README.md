@@ -38,10 +38,27 @@ Do `playwright.config.ts` w tym katalogu wstaw konfigurację wskazującą `testD
 załóż plik `.env`:
 
 ```
-MEALPLAN_E2E_EMAIL=<konto testowe instancji development Clerka>
-MEALPLAN_E2E_PASSWORD=<hasło>
-MEALPLAN_E2E_CODE=<stały kod weryfikacyjny konta +clerk_test>
+MEALPLAN_E2E_EMAIL=<konto A instancji development Clerka>
+MEALPLAN_E2E_PASSWORD=<hasło konta A>
+MEALPLAN_E2E_CODE=<stały kod weryfikacyjny kont +clerk_test>
+MEALPLAN_E2E_EMAIL_B=<konto B — istnieje wyłącznie dla dowodu izolacji>
+MEALPLAN_E2E_PASSWORD_B=<hasło konta B>
 ```
+
+`MEALPLAN_E2E_CODE` jest **wspólny dla obu kont**: oba używają adresu `+clerk_test`, który
+w instancji development przyjmuje ten sam stały kod. Druga zmienna byłaby kopią tej samej
+wartości i jeszcze jednym miejscem do rozjazdu.
+
+### Jak założyć konto B
+
+**Nie przez sterowaną przeglądarkę.** Ekran `/sign-up` montuje Smart CAPTCHA Clerka
+(Cloudflare Turnstile), a ta w Chromium sterowanym przez Playwrighta **nigdy się nie kończy** —
+żądanie rejestracji nie wychodzi w ogóle, bez błędu na ekranie i bez wpisu w konsoli. Sprawdzone
+14.09.2026 zarówno headless, jak i z oknem.
+
+Droga, która działa: **rejestracja z klienta natywnego** (emulator Androida, Expo Go), gdzie
+Clerk pomija krok CAPTCHA. Adres z `+clerk_test` weryfikuje się stałym kodem, bez skrzynki
+pocztowej. Poświadczenia wpisz do `.env` harnessu — **nigdy do repozytorium**.
 
 ## Uruchomienie
 
@@ -86,20 +103,30 @@ Numery ryzyk odsyłają do `context/foundation/test-plan.md` §2.
 | `data-boundary.spec.ts` | #1 | Trasy danych odmawiają bez tożsamości i przy podrobionym tokenie, i nic nie oddają |
 | `profile-api.spec.ts` | #4, #6 | Kontrakt profilu po HTTP z pominięciem UI — kryteria fazy 2: 2.6, 2.7, 2.8 |
 | `profile-screen.spec.ts` | #4, #6, #3 | Formularz profilu w przeglądarce — kryteria fazy 3: 3.7–3.11, 3.13 |
+| `account-isolation.spec.ts` | #1 | **Dwa konta naraz**: B nie widzi wykluczeń A ani ich nie nadpisuje — przez ekran i z pominięciem UI (kryterium 1.6 S-03, 2.9 S-02) |
+| `preferences-api.spec.ts` | #1, #6 | Kontrakt preferencji po HTTP — kryteria fazy 1: 1.4, 1.5 |
+| `preferences-screen.spec.ts` | #3 | Ekran preferencji w przeglądarce — kryteria fazy 2: 2.5–2.8 |
 | `auth.setup.ts` | — | Infrastruktura: loguje się raz i zapisuje sesję poza repo |
 
-**Czego NIE pokrywa:** pełnego dowodu izolacji między dwoma kontami (kryterium 2.9 — potrzebne
-drugie konto, faza 3 wdrożenia z planu testów), stanu „konto bez zapisanego profilu" (2.5 — konto
-testowe profil ma) oraz **całej warstwy natywnej** (3.12 — Expo Go, klawiatury liczbowe, ikona
-zakładki; emulator nie startuje).
+**Czego NIE pokrywa:** ~~izolacji między dwoma kontami~~ — pokryte od 14.09.2026 przez
+`account-isolation.spec.ts`; stanu „konto bez zapisanego profilu" (2.5 — konto A profil ma,
+a konto B jest zajęte dowodzeniem izolacji); **warstwy natywnej** (3.12 — Expo Go, klawiatury
+liczbowe, ikona zakładki), którą sprawdza się ręcznie na emulatorze; oraz **wąskich szerokości** —
+projekt `chromium` jedzie na `Desktop Chrome` 1280 px, więc żaden test nie patrzy na układ przy
+400 px. To nie jest teoretyczna luka: dokładnie tam siedział defekt obcinania treści, znaleziony
+dopiero ręcznym zrzutem przy kryterium 2.10.
 
 ## Dlaczego jeden worker
 
-`workers: 1` i `fullyParallel: false` są **celowe**. Mamy jedno konto testowe, więc wiersz profilu
-w D1 jest zasobem współdzielonym przez cały zestaw: `profile-api` i `profile-screen` piszą do tego
-samego rekordu. Przy przebiegu równoległym zestaw sypał się losowo mniej więcej raz na dwa
-uruchomienia, zawsze w innym miejscu. `retries` zamiotłyby ten wyścig pod dywan — a wyścig jest
-prawdziwy. Gdy pojawi się drugie konto testowe, można wrócić do równoległości.
+`workers: 1` i `fullyParallel: false` są **celowe**. Wiersz profilu i wiersz preferencji konta A
+są zasobem współdzielonym przez cały zestaw: `profile-api` i `profile-screen` piszą do tego samego
+rekordu, `preferences-api` i `preferences-screen` do drugiego. Przy przebiegu równoległym zestaw
+sypał się losowo mniej więcej raz na dwa uruchomienia, zawsze w innym miejscu. `retries` zamiotłyby
+ten wyścig pod dywan — a wyścig jest prawdziwy.
+
+**Drugie konto tego nie zmienia** — i to jest pułapka warta zapisania. Konto B powstało 14.09.2026,
+ale istnieje po to, żeby udowodnić izolację, a nie żeby rozłożyć na dwa konta testy, które i tak
+piszą do konta A. Równoległość wymagałaby konta **na plik**, a nie jednego zapasowego.
 
 ## Pułapka: oba ekrany zakładek są zamontowane naraz
 

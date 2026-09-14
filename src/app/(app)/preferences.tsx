@@ -378,6 +378,19 @@ export default function PreferencesScreen() {
     <ScrollView
       style={[styles.scrollView, { backgroundColor: theme.background }]}
       contentInset={insets}
+      /*
+       * Bez tego wyszukiwarka składników jest NATYWNIE nieużywalna, choć na webie działa —
+       * zmierzone na emulatorze 14.09.2026 (kryterium 2.9). Domyślne `keyboardShouldPersistTaps`
+       * to `'never'`: pierwsze dotknięcie przy otwartej klawiaturze **chowa klawiaturę i nie
+       * dociera do elementu**. Podpowiedzi renderują się pod polem, czyli dokładnie tam, gdzie
+       * klawiatura je zasłania — użytkownik musiał więc przewinąć, dotknąć (klawiatura znika,
+       * nic się nie dzieje) i dotknąć drugi raz. Na webie klawiatury nie ma, więc cały defekt
+       * był niewidoczny dla harnessu.
+       *
+       * `'handled'`, nie `'always'`: klawiatura ma dalej znikać przy dotknięciu tła, ale nie
+       * kosztem dotknięcia, które trafia w podpowiedź.
+       */
+      keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.contentContainer, contentPlatformStyle]}>
       <ThemedView style={styles.container}>
         <ThemedText type="subtitle">Preferencje</ThemedText>
@@ -572,6 +585,16 @@ const styles = StyleSheet.create({
   container: {
     maxWidth: MaxContentWidth,
     flexGrow: 1,
+    /*
+     * `flexShrink` i `minWidth` NIE są ozdobą: bez nich ta kolumna jest na WEBIE obcinana
+     * z obu stron poniżej ~750 px. `contentContainer` jest wierszem z `justifyContent: 'center'`,
+     * a dziecko z samym `flexGrow: 1` ma na webie domyślne `min-width: auto`, czyli nie zejdzie
+     * poniżej szerokości swojej treści — wyśrodkowana kolumna 743 px w oknie 400 px traci po
+     * ~170 px z każdej strony (zmierzone 14.09.2026 przy 20 wykluczeniach). Natywnie defekt nie
+     * występuje, a harness jeździ na `Desktop Chrome` 1280 px, więc nikt go nie widział.
+     */
+    flexShrink: 1,
+    minWidth: 0,
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },

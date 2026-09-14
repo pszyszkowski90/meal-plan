@@ -359,9 +359,12 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 - [x] 1.3 Podwójne wykluczenie tego samego składnika nie tworzy duplikatu — 76c1128
 - [x] 1.4 `GET`/`PUT /api/preferences` bez tokenu i z podrobionym tokenem → 401 — 76c1128
 - [x] 1.5 `GET` zwraca `Cache-Control: no-store` — 76c1128
-- [ ] 1.6 Konto A nie widzi wykluczeń konta B — **BLOCKED-MANUAL**: wymaga drugiego konta
-      testowego, którego repo nie ma (ta sama blokada co kryterium 2.9 S-02). Warstwa zewnętrzna
-      granicy — odmowa bez tożsamości i przy podrobionym tokenie — jest pokryta w 1.4.
+- [x] 1.6 Konto A nie widzi wykluczeń konta B — `tests/e2e/account-isolation.spec.ts`, dwa testy
+      na dwóch prawdziwych tożsamościach: przez ekran i z pominięciem UI. Blokada zdjęta 14.09.2026
+      — drugie konto testowe (`+clerk_test`) założył agent z emulatora, bo Smart CAPTCHA Clerka
+      nie przepuszcza rejestracji ze sterowanej przeglądarki, a natywnie ten krok jest pomijany.
+      Poświadczenia w `.env` harnessu, poza repozytorium. Test sprawdzony celowym zepsuciem filtra
+      `user_id` w `listExclusions` — obie asercje czerwone, po przywróceniu zielone.
 - [x] 1.7 `listAllowedDishes` odsiewa danie, którego nazwa nie zawiera wykluczonego składnika —
       wykluczenie po `ingredient_id` („borowiki, suszone"), nie po słowie „grzyby" — 76c1128
 - [x] 1.8 Wykluczenie grupowe „grzyby" odsiewa danie z borowikami, bez wymieniania borowików — 76c1128
@@ -387,7 +390,16 @@ to jedyna twarda zależność kolejnościowa tej zmiany.
 
 #### Manual
 
-- [ ] 2.9 Expo Go: zakładka Preferencje z ikoną, wyszukiwarka używalna jedną ręką —
-      **niesprawdzone**: warstwy natywnej harness nie pokrywa, wymaga urządzenia
-- [ ] 2.10 Lista wykluczeń czytelna przy 20 pozycjach — **niesprawdzone**: ocena wizualna
-      przy realnej liczbie wpisów, do zrobienia przy pierwszym pełnym użyciu
+- [x] 2.9 Expo Go: zakładka Preferencje z ikoną, wyszukiwarka używalna jedną ręką — sprawdzone
+      14.09.2026 na emulatorze (API 35, Expo Go, `adb reverse` na lokalnego `wrangler dev`).
+      Zakładka i ikona były w porządku od razu; **wyszukiwarka nie była**: podpowiedzi renderują
+      się pod polem, czyli tam, gdzie zasłania je klawiatura, a dotknięcie podpowiedzi przy
+      otwartej klawiaturze tylko ją chowało i nie docierało do elementu (domyślne
+      `keyboardShouldPersistTaps: 'never'`). Naprawione w tej samej sesji; po naprawie jedno
+      dotknięcie dodaje wykluczenie, klawiatura zostaje.
+- [x] 2.10 Lista wykluczeń czytelna przy 20 pozycjach — sprawdzone 14.09.2026 na 20 wpisach
+      (12 składników + 8 grup) w dwóch szerokościach. Przy 1280 px lista była czytelna od razu.
+      Przy 400 px **nie była**, ale nie z powodu liczby wpisów: kolumna treści ma na webie
+      `min-width: auto`, więc nie schodzi poniżej szerokości swojej treści i wyśrodkowana
+      w wąskim oknie jest obcinana z obu stron (743 px w oknie 400 px). Ten sam defekt miał ekran
+      profilu — oba naprawione `flexShrink: 1` + `minWidth: 0`.

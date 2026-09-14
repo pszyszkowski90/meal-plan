@@ -490,6 +490,16 @@ const styles = StyleSheet.create({
   container: {
     maxWidth: MaxContentWidth,
     flexGrow: 1,
+    /*
+     * `flexShrink` i `minWidth` NIE są ozdobą: bez nich ta kolumna jest na WEBIE obcinana
+     * z obu stron poniżej ~750 px. `contentContainer` jest wierszem z `justifyContent: 'center'`,
+     * a dziecko z samym `flexGrow: 1` ma na webie domyślne `min-width: auto`, czyli nie zejdzie
+     * poniżej szerokości swojej treści — wyśrodkowana kolumna 743 px w oknie 400 px traci po
+     * ~170 px z każdej strony (zmierzone 14.09.2026 przy 20 wykluczeniach). Natywnie defekt nie
+     * występuje, a harness jeździ na `Desktop Chrome` 1280 px, więc nikt go nie widział.
+     */
+    flexShrink: 1,
+    minWidth: 0,
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
   },

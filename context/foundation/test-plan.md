@@ -69,9 +69,9 @@ jako dostawców. To temat obserwowalności i komunikatu o niedostępności, nie 
 | # | Nazwa fazy | Cel (jedna linia) | Ryzyka | Typy testów | Status | Folder zmiany |
 |---|---|---|---|---|---|---|
 | 1 | Ścieżka krytyczna w przeglądarce | Udowodnić, że bramka sesji i granica danych trzymają się na zbudowanym artefakcie | #2, #1, #7 | e2e + dymny | `complete` | — (harness powstał w ramach `profile-and-calorie-target`, zarchiwizowanej 13.09.2026) |
-| 2 | Ścieżka profilu i cel kaloryczny | Udowodnić, że liczba widziana i liczba zapisana to ta sama liczba, a błędne dane nie jadą do sieci | #4, #6, #3 | e2e + jednostkowe | `not started` | — |
-| 3 | Odporność granicy danych | Dwie tożsamości i żądania z pominięciem UI jako stały test, nie ręczne sprawdzenie | #1, #6, #5 | integracyjne | `not started` | — |
-| 4 | Bramki jakości | Zabetonować dolną granicę, żeby regresja nie przeszła po cichu | przekrojowe | bramki | `not started` | — |
+| 2 | Ścieżka profilu i cel kaloryczny | Udowodnić, że liczba widziana i liczba zapisana to ta sama liczba, a błędne dane nie jadą do sieci | #4, #6, #3 | e2e + jednostkowe | `complete` | — (wykonane w `profile-and-calorie-target`: `profile-api.spec.ts`, `profile-screen.spec.ts`) |
+| 3 | Odporność granicy danych | Dwie tożsamości i żądania z pominięciem UI jako stały test, nie ręczne sprawdzenie | #1, #6, #5 | integracyjne | `complete` | — (wykonane w `dietary-preferences`: `account-isolation.spec.ts` na dwóch kontach, `data-boundary.spec.ts`, `preferences-api.spec.ts`) |
+| 4 | Bramki jakości | Zabetonować dolną granicę, żeby regresja nie przeszła po cichu | przekrojowe | bramki | `complete` | — (trzy warstwy lokalne w `hooks/` + `quality-gate.yml` w CI, działają od 13.09.2026) |
 
 **Słownictwo statusu:** `not started` → `change opened` → `researched` → `planned` →
 `implementing` → `complete`.
@@ -139,7 +139,11 @@ z uruchomienia implementacji.
 
 ### 6.2 Test integracyjny
 
-TBD — patrz §3 faza 3, wzorzec „dwie tożsamości, jedno żądanie z pominięciem UI".
+Wzorzec odniesienia: `tests/e2e/account-isolation.spec.ts` — dwa prawdziwe konta naraz, jedno
+z zapisanej sesji, drugie zalogowane w świeżym kontekście, i ta sama własność sprawdzona dwiema
+drogami: przez ekran i przez żądanie z pominięciem UI. Sprawdzone celowym zepsuciem filtra
+`user_id` (14.09.2026) — bez dowodu, że test potrafi się zaczerwienić, zielony przebieg niczego
+nie znaczy.
 
 ### 6.3 Test e2e
 
