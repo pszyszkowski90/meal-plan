@@ -97,8 +97,9 @@ Trzy pierwsze są uszeregowane kosztem złamania, nie tematem. Rozwinięcia zost
 - **Dodanie zakładki znaczy edycję obu plików** — [app-tabs.tsx](src/components/app-tabs.tsx)
   (natywny) i [app-tabs.web.tsx](src/components/app-tabs.web.tsx) (web). Inaczej trasa istnieje,
   ale jest nieosiągalna na jednej z platform.
-- **Nigdy nie uruchamiaj** `npm run reset-project` (przenosi kod startera do `app-example/`
-  i zostawia puste `src/app/`) ani `npm audit fix --force` (cofa `expo` o kilka wersji major).
+- **Nigdy nie uruchamiaj** `npm audit fix --force` (cofa `expo` o kilka wersji major).
+  Starterowy `reset-project` (przenosił kod do `app-example/` i zostawiał puste `src/app/`)
+  został usunięty z repo 15.09.2026 razem ze skryptem w `package.json`.
 - **Nie commituj `/ios` ani `/android`** — to workflow zarządzany, konfiguracja natywna idzie przez
   [app.json](app.json) i pluginy. Nie zmieniaj w nim `slug` ani `scheme`.
 - **Wdrożenie idzie wyłącznie przez `expo-server/adapter/workerd` + `assets.directory`.** `[site]`,
@@ -417,8 +418,10 @@ w stanie **przejrzeć**, i ani jednego więcej.
   synchronizuje `.claude/skills/` do stanu żądanej lekcji. Lekcje modułu 4 deklarują zero skilli,
   więc `10x get m4l1` usuwa cały łańcuch 10x, a `CLAUDE.md` bywa przy tym przepisywany.
   Uruchamiaj wyłącznie przy czystym `git status`, żeby dało się cofnąć przez
-  `git checkout <sha> -- .claude CLAUDE.md`. Stan obecny: manifest m3l5 (24 skille) plus siedem
-  skilli modułu 5 nałożonych ręcznie — łącznie 30.
+  `git checkout <sha> -- .claude CLAUDE.md`. Stan obecny (15.09.2026): manifest m3l5 (23 skille)
+  plus cztery skille modułu 5 nałożone ręcznie (`10x-goal-implement`, `10x-impl-review-ci`,
+  `10x-mom-test`, `10x-opportunity-map`) — łącznie 27. Trzy skille spoza kursu (`pack-init`,
+  `setup-cicd`, `tf-registry`), wciągnięte przy nocnej odbudowie 12.09, usunięto 15.09.
 - ~~`npx tsc --noEmit` na świeżym klonie zgłasza dwa fałszywe błędy o `.css`.~~ **Rozwiązane
   13.09.2026** przez [expo-types.d.ts](expo-types.d.ts) — jedną linijkę `reference` do `expo/types`
   trzymaną w repozytorium. Wcześniej deklaracje `.css` przychodziły wyłącznie z gitignorowanego
