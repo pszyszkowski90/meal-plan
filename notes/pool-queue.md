@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/pool-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj P6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **P4**. P1, P2 i P3 są zrobione (patrz Dziennik).
+Kolejne zadanie do wzięcia: **P5**. P1-P4 są zrobione (patrz Dziennik).
 
 ---
 
@@ -44,6 +44,15 @@ migawka z rana, nie przepisuj jej:
 | Konto testowe B | istnieje, poświadczenia w `.env` harnessu (`MEALPLAN_E2E_*_B`), poza repo |
 | Bramka przeglądu | czwarty defekt naprawiony (#21): brak **należnego** raportu to teraz błąd |
 | `roadmap.md` / `test-plan.md` | statusy doprowadzone do stanu faktycznego; F-01 `implementing` |
+
+**Po P4 (14.09, po scaleniu #24 i #25):**
+
+| Co | Stan |
+|---|---|
+| D1 produkcyjna | **20 dań**, 90 składników w daniach, 82 kroki; 35 składników, wszystkie z `usda_fdc_id` |
+| S-04 | **odblokowane** — jest z czego wybierać i czym liczyć kalorii |
+| Raport wykonalności | `seed/FEASIBILITY.md`: 1600-2400 kcal OK, **2800 na granicy, 3200 nieosiągalne** |
+| Wejście do P5 | nie sama liczba dań, ale **kompozycja kaloryczna** — warunki w `seed/FEASIBILITY.md` |
 
 ---
 
@@ -127,7 +136,7 @@ git show origin/<galaz>:context/changes/<id>/reviews/impl-review.md | grep -E "V
 - Po tym: `/10x-archive` dla `dietary-preferences`, statusy w `roadmap.md` (S-03 → `done`,
   F-01 → `implementing`) i `test-plan.md` §3 (faza 4 działa, nie jest `not started`).
 
-### P4 — F-01 faza 3: pilot 20 dań · duże · **następne do wzięcia; jedyna rzecz blokująca generator**
+### ~~P4 — F-01 faza 3: pilot 20 dań~~ · ZROBIONE 14.09 (#24, #25) · **blokada generatora zdjęta**
 
 Tabela `dish` ma na produkcji **0 wierszy**. Nocny seed dołożył wyłącznie składniki i grupy, bo
 do CRUD-a na wykluczeniach dania nie były potrzebne. S-04 nie ma z czego wybierać ani czym liczyć
@@ -167,7 +176,7 @@ wyszedł z pętli, więc **sito jest jedyną obroną i musi być ostrzejsze niż
 4. `reviewedBy` zapisuje prawdę: `agent (upoważnienie właściciela 14.09.2026)`. Nigdy cudze
    nazwisko.
 
-### P5 — F-01 faza 4: skalowanie puli · duże
+### P5 — F-01 faza 4: skalowanie puli · duże · **następne do wzięcia**
 
 Reszta puli do minimów (≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji, ≥ 12 przekąsek), seed
 `--remote`, `seed/FEASIBILITY.md`, opis puli i skryptów w `CLAUDE.md`.
