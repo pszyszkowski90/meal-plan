@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/pool-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj P6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **P3**. P1 i P2 są zrobione (patrz Dziennik).
+Kolejne zadanie do wzięcia: **P4**. P1, P2 i P3 są zrobione (patrz Dziennik).
 
 ---
 
@@ -31,6 +31,19 @@ Kolejne zadanie do wzięcia: **P3**. P1 i P2 są zrobione (patrz Dziennik).
 | `roadmap.md` | F-01 `planning` (jest `implementing`), S-03 `planning` (jest po fazie 2) |
 | `test-plan.md` §3 | fazy 2–4 `not started`, choć faza 4 (bramki w CI) działa od 13.09 |
 | E2E | 42 testy, pełny zestaw zielony; `npm test` 100/100 |
+
+
+**Co się zmieniło po P3 (14.09, po scaleniu #20–#22)** — reszta tabeli wyżej zostaje jako
+migawka z rana, nie przepisuj jej:
+
+| Co | Stan |
+|---|---|
+| `main` | `c8ba60a`; produkcja zdrowa (`/api/health` → `{"ok":true,"d1":true}`, `/` 200, 404 dla nieznanej, `/api/account` 401) |
+| S-03 | **zamknięte i zarchiwizowane** — `context/archive/2026-09-13-dietary-preferences/` |
+| E2E | **44 testy** (było 42), pełny zestaw zielony; `npm test` 100/100 |
+| Konto testowe B | istnieje, poświadczenia w `.env` harnessu (`MEALPLAN_E2E_*_B`), poza repo |
+| Bramka przeglądu | czwarty defekt naprawiony (#21): brak **należnego** raportu to teraz błąd |
+| `roadmap.md` / `test-plan.md` | statusy doprowadzone do stanu faktycznego; F-01 `implementing` |
 
 ---
 
@@ -98,7 +111,7 @@ git show origin/<galaz>:context/changes/<id>/reviews/impl-review.md | grep -E "V
 
 ### ~~P2 — reszta ustaleń przeglądu i domknięcie werdyktu~~ · ZROBIONE 14.09 (#15, #16, #17)
 
-### P3 — domknięcie S-03 · ~1–2 h · **następne do wzięcia**
+### ~~P3 — domknięcie S-03~~ · ZROBIONE 14.09 (#20, #21, #22)
 
 - **1.6 — konto A nie widzi wykluczeń konta B.** Wymaga **drugiego konta testowego**.
   **Zakłada je agent, nie właściciel**: konto testowe używa adresu `+clerk_test`, który instancja
@@ -114,7 +127,7 @@ git show origin/<galaz>:context/changes/<id>/reviews/impl-review.md | grep -E "V
 - Po tym: `/10x-archive` dla `dietary-preferences`, statusy w `roadmap.md` (S-03 → `done`,
   F-01 → `implementing`) i `test-plan.md` §3 (faza 4 działa, nie jest `not started`).
 
-### P4 — F-01 faza 3: pilot 20 dań · duże · **jedyna rzecz blokująca generator**
+### P4 — F-01 faza 3: pilot 20 dań · duże · **następne do wzięcia; jedyna rzecz blokująca generator**
 
 Tabela `dish` ma na produkcji **0 wierszy**. Nocny seed dołożył wyłącznie składniki i grupy, bo
 do CRUD-a na wykluczeniach dania nie były potrzebne. S-04 nie ma z czego wybierać ani czym liczyć
@@ -299,8 +312,9 @@ Co zacommitowane: `src/app/(app)/preferences.tsx`, `src/app/(app)/profile.tsx`,
 `tests/e2e/account-isolation.spec.ts`, `tests/e2e/support/sign-in.ts`, `tests/e2e/README.md`,
 `context/changes/dietary-preferences/plan.md`, `context/foundation/roadmap.md`,
 `context/foundation/test-plan.md`, `notes/pool-queue.md`
-Werdykt przeglądu: <do uzupełnienia po przebiegu na PR>
-PR: <do uzupełnienia>
+Werdykt przeglądu: ZATWIERDZONY, 0 krytycznych; ustalenia F1 i F2 naprawione, F3 i F4 (dotyczą
+samej bramki) rozliczone osobnym PR-em — patrz wpis P3a
+PR: #20
 Do decyzji: —
 
 ### 12:12 UTC — P3a Bramka werdyktu, czwarty defekt
@@ -323,7 +337,7 @@ Co zacommitowane: `.github/workflows/impl-review.yml`,
 `context/changes/dietary-preferences/reviews/impl-review-p3.md`, `notes/pool-queue.md`
 Werdykt przeglądu: recenzent wyłączony na tym PR-ze z założenia (walidacja workflow wobec
 gałęzi domyślnej) — to udokumentowane zachowanie, nie usterka
-PR: <do uzupełnienia>
+PR: #21
 Do decyzji: —
 
 ### 12:18 UTC — P3b Archiwizacja S-03
@@ -339,6 +353,6 @@ bez oporu, a git rozpoznał wszystkie sześć plików jako zmianę nazwy, więc 
 Co zacommitowane: `context/archive/2026-09-13-dietary-preferences/` (6 plików, zmiana nazwy),
 `context/foundation/roadmap.md`, `notes/pool-queue.md`
 Werdykt przeglądu: brak raportu i brak planu w `context/changes/` — bramka przepuszcza notką,
-zgodnie z rozróżnieniem wprowadzonym w #21
-PR: <do uzupełnienia>
+zgodnie z rozróżnieniem wprowadzonym w #21; recenzent potwierdził to samodzielnie
+PR: #22
 Do decyzji: —
