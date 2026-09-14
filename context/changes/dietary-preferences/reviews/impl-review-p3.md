@@ -1,6 +1,7 @@
 # Przegląd implementacji — domknięcie S-03 (PR #20)
 
 **Werdykt:** `ZATWIERDZONY` — 0 krytycznych, 1 ostrzeżenie, 1 obserwacja
+(plus F3 i F4 dopisane przy rozliczaniu — dotyczą samej bramki, nie tej zmiany)
 **Plan:** [../plan.md](../plan.md)
 **Zakres:** cały PR #20 (kryteria 1.6, 2.9 i 2.10)
 **Data:** 2026-09-14
@@ -31,7 +32,7 @@
   podczas gdy `change.md` miał dalej `status: impl_reviewed` i `archived_at: null`, a folder leżał
   w `context/changes/`. PR, którego deklarowanym celem jest doprowadzenie statusów do stanu
   faktycznego, w tym jednym wierszu robił dokładnie odwrotnie: opisywał zamiar jako fakt.
-- **Decyzja:** **NAPRAWIONE** — komórka mówi teraz `do zarchiwizowania`. Archiwizacja idzie
+- **Decyzja**: NAPRAWIONE 14.09.2026 — komórka mówi teraz `do zarchiwizowania`. Archiwizacja idzie
   osobnym PR-em świadomie: `/10x-archive` przenosi folder do `context/archive/`, a razem z nim
   **ten raport**, którego bramka pod tą ścieżką już nie znajdzie. Zrobione w jednym PR-ze
   oznaczałoby, że przegląd tej zmiany nie ma jak zadziałać.
@@ -44,7 +45,7 @@
 - **Opis:** Komentarze uzasadniające wewnątrz `StyleSheet.create({ container: { … } })` miały
   wcięcie 2 spacji, podczas gdy wszystkie właściwości obiektu obok — 4. Nie łapie tego ani
   `expo lint`, ani `check-conventions`, bo reguły wcięć w tym repo nie ma.
-- **Decyzja:** **NAPRAWIONE** — oba bloki wyrównane do 4 spacji.
+- **Decyzja**: NAPRAWIONE 14.09.2026 — oba bloki wyrównane do 4 spacji.
 
 ## F3 — bramka werdyktu znowu meldowała sukces, nie przeczytawszy niczego
 
@@ -61,9 +62,30 @@ Ustalenie **dopisane przy rozliczaniu**, nie pochodzi od agenta — agent opisa�
   go, wypisuje notkę „Brak raportu — prawdopodobnie PR nie dotyczy żadnego planu" i kończy się
   sukcesem. Ta notka jest **prawdziwa tylko dla PR-ów bez planu**; tutaj plan był, przegląd się
   odbył i wystawił dwa ustalenia PENDING — a bramka i tak przepuściła.
-- **Decyzja:** **NAPRAWIANE OSOBNYM PR-em**, nie tutaj. Zmiana `impl-review.yml` wyłącza
+- **Decyzja**: NAPRAWIANE OSOBNYM PR-em 14.09.2026, nie tutaj. Zmiana `impl-review.yml` wyłącza
   recenzenta na swoim własnym PR-ze (walidacja wobec gałęzi domyślnej), więc wciągnięcie jej do
   #20 kosztowałoby przegląd całej reszty tej pracy.
+
+## F4 — bramka nie widzi ustalenia zapisanego w prawdopodobnym wariancie formatu
+
+Ustalenie **znalezione przy rozliczaniu tego właśnie raportu**, na nim samym.
+
+- **Waga:** OSTRZEŻENIE
+- **Wymiar:** Bezpieczeństwo i jakość
+- **Miejsce:** `.github/workflows/impl-review.yml` — krok „Sprawdź werdykt przeglądu"
+- **Opis:** Bramka szuka pola wyrażeniem `^- [*][*](Decision|Decyzja)[*][*]:`, czyli wymaga
+  **dwukropka poza pogrubieniem** (`- **Decyzja**: …`). Pierwsza wersja tego raportu miała
+  `- **Decyzja:** …` — dwukropek wewnątrz — i bramka policzyła **zero** ustaleń: zero
+  rozliczonych i zero otwartych. Werdykt był tu zatwierdzający, więc przebieg i tak byłby
+  zielony, ale przy werdykcie odrzucającym **każde `PENDING` zapisane w tym wariancie byłoby
+  dla bramki niewidoczne**. Format nie jest nigdzie udokumentowany poza samym wyrażeniem
+  regularnym, a oba zapisy renderują się w Markdownie identycznie — więc to nie jest literówka
+  do wytknięcia autorowi, tylko bramka wymagająca niewidocznej konwencji.
+- **Decyzja**: NAPRAWIONE 14.09.2026 w tym raporcie (pola doprowadzone do formatu, którego bramka
+  szuka), a **przyczyna naprawiana osobnym PR-em razem z F3**: wyrażenie ma przyjmować oba
+  warianty, a raport z zerem pól decyzji ma być błędem, nie cichą zgodą. Raport bez ani jednego
+  pola `Decyzja` znaczy dziś dokładnie to samo, co raport ze wszystkim rozliczonym — a to jest ta
+  sama cicha zgoda, którą ta bramka miała zlikwidować.
 
 ## Uwaga agenta o weryfikacji
 
