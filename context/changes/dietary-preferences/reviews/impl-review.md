@@ -5,7 +5,7 @@
 - **Scope**: Full plan (CI review on PR #10) — Phase 2 only, Phase 1 was reviewed separately (PR #8)
 - **Date**: 2026-09-13
 - **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34785096943
-- **Verdict**: REJECTED
+- **Verdict**: REJECTED — **ustalenia rozliczone 14.09.2026**, patrz pola `Decision`
 - **Findings**: 1 critical, 3 warnings, 2 observations
 
 ## Verdicts
@@ -37,7 +37,14 @@
   This is a materially new risk versus the `profile.tsx` pattern this screen is modeled on: `profile.tsx`'s required fields make an accidental complete-and-submit before load unlikely, but here only two of the three pieces of form state (`maxPrepMinutes`, `mealsPerDay`) need to be filled for `validation.ok` to pass, while the third (`exclusions`) silently defaults to "empty is fine."
 - **Fix**: Block `handleSave` (or disable `ActionButton`) while `load.kind !== 'ready'`.
   - Example: `if (load.kind !== 'ready') { return; }` at the top of `handleSave`, mirroring the existing early-return-on-invalid pattern immediately below it.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 (`be62b08`) — **ale nie tak, jak proponowało ustalenie**.
+  Sama klauzula `if (load.kind !== 'ready') return;` została napisana i test odtwarzający utratę
+  danych **nadal był czerwony**: bramkowanie zapisu zamyka wyłącznie okno PRZED zakończeniem
+  pobrania, a po nim lista jest pusta tak samo, bo wspólny strażnik `touched` zablokował jej
+  zastosowanie. Prawdziwą przyczyną był JEDEN strażnik na dwa niezależne byty. Rozdzielony na
+  `touchedPreferences` i `touchedExclusions`; bramkowanie stanem pobrania zostało jako druga
+  warstwa, rozszerzona o `offline` i `error`, w których też nie wiadomo, co jest w bazie.
+  Test regresyjny sprawdza własność, nie mechanizm, i był czerwony przed naprawą.
 
 ### F2 — `TextField`'s doc comment claims `aria-errormessage` closes the error loop, but the attribute is never set
 
@@ -47,7 +54,11 @@
 - **Location**: `src/components/ui/text-field.tsx:30` (comment) vs. `:44-46` (implementation)
 - **Detail**: The doc comment states *"`aria-invalid` i `aria-errormessage` domykają błąd"* (both attributes close the loop on the error state), but the JSX only sets `aria-invalid={error ? true : undefined}` (line 46) — `aria-errormessage` is not set anywhere in the file or in any caller. A screen reader on web can tell the field is invalid but has no programmatic link to the specific error text rendered below it (line 56-60), so the error message is only available visually, not to assistive tech. This is a narrower gap than it looks: the plan's literal Phase 2 contract also called for `id` + `aria-labelledby`/`aria-describedby` (`plan.md:208-211`), and the actual implementation uses a simpler `aria-label` scheme throughout instead — which is a reasonable, documented simplification that still satisfies criterion 2.8 (`getByRole` addressability), but the error-association piece of that simplification was dropped without updating the comment that describes it.
 - **Fix**: Add `aria-errormessage` wired to a stable `id` on the rendered error `ThemedText`, or, if the simpler scheme is intentional, correct the comment to stop claiming an association that doesn't exist.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 — wybrano implementację, nie korektę komentarza.
+  `TextField` ustawia `aria-errormessage` wskazujące element z treścią błędu (`useId()`, bo
+  prymityw nie wie, ile razy wystąpi na ekranie), a obok `aria-describedby`, bo wsparcie dla
+  `aria-errormessage` w czytnikach ekranu jest do dziś nierówne. Pokryte testem, który celuje
+  w pole PRZEZ TO POWIĄZANIE.
 
 ### F3 — No test proves a group exclusion survives removal + reload
 
@@ -57,7 +68,9 @@
 - **Location**: `tests/e2e/preferences-screen.spec.ts` (missing case) / `src/app/(app)/preferences.tsx:201-214` (`toggleGroup`)
 - **Detail**: `preferences-screen.spec.ts` has a dedicated test for ingredient-exclusion removal surviving reload ("usunięcie wykluczenia też przeżywa przeładowanie", lines 78-97), but `toggleGroup` — the group-kind removal path exercised by clicking a checked "grzyby" chip again — has no equivalent. Criterion 2.5 ("wykluczenie przeżywa zapis i przeładowanie") is proven for add, and for ingredient-kind remove, but not for group-kind remove.
 - **Fix**: Add a case that checks the group chip, saves, reloads (confirming it persisted — already partially covered by the existing 2.5 test), then unchecks it, saves, reloads, and asserts the chip is unchecked again.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 — test `F3 usunięcie wykluczenia GRUPOWEGO też przeżywa
+  przeładowanie`. Sprawdza też, że chip wraca do `aria-checked="false"` — inaczej ekran kłamałby
+  o tym, co jest zapisane.
 
 ### F4 — Validation-blocks-save-before-network path has no test, despite an established sibling precedent
 
@@ -67,7 +80,9 @@
 - **Location**: `tests/e2e/preferences-screen.spec.ts` (missing case) / `src/app/(app)/preferences.tsx:162-174, 254-257`
 - **Detail**: `preferences.tsx` reuses the exact `submitted`/`blurredPrep`-gated `errorFor()` pattern from `profile.tsx`, including the "don't call the network when client validation fails" early return in `handleSave` (line 254-257). `profile-screen.spec.ts` has two dedicated tests for this exact class of behavior on the analogous field (`F4 nieliczbowy tekst w „Własny cel" daje błąd, a nie ciche zniknięcie`, line 292; `F4 zapis jest zatrzymany przed siecią...`, line 306) — tests that exist precisely because this was a real, previously-shipped bug in the sibling screen. `preferences-screen.spec.ts` has no equivalent for an out-of-range `maxPrepMinutes` value, even though the code path is structurally identical.
 - **Fix**: Add a test entering an out-of-range `maxPrepMinutes` (e.g. `"1"` or `"500"`), blurring, asserting the inline bounds error appears, and asserting no `PUT` request fires — mirroring `profile-screen.spec.ts`'s `F4` tests.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 — test `F4 walidacja zatrzymuje zapis PRZED siecią i wiąże
+  błąd z polem`. Asercja idzie przez `aria-errormessage`, a nie przez treść: „5–240" stoi także
+  w stałej podpowiedzi pod listą, więc dopasowanie po tekście trafiało w dwa elementy naraz.
 
 ### F5 — Automated non-test Success Criteria (tsc/lint/export/wrangler dev) could not be independently re-run
 
@@ -77,7 +92,11 @@
 - **Location**: N/A (review environment)
 - **Detail**: This review ran in a sandboxed CI environment where `npm ci` required interactive approval that was never grantable, so `node_modules` is absent and `npx tsc --noEmit`, `npx expo lint`, `expo export` + `wrangler deploy --dry-run`, and `wrangler dev` could not be executed here. Criteria 2.1-2.4, checked `[x]` in `plan.md`'s Progress section at commit `f20aea5`, are taken on the author's word. Static reading of the diff found no obvious type errors, lint violations (no raw colors/spacing, no manual memoization, no `../` imports, no `setState` outside promise callbacks), or `wrangler.jsonc`/bundling concerns — but this is not a substitute for actually running the tools. If `quality-gate.yml` is green on this PR, that is stronger evidence than this review could produce on its own.
 - **Fix**: N/A — re-run these commands in an environment with dependencies installed and network access if stronger confidence is needed.
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, bez zmian w kodzie. Ograniczenie środowiska
+  przeglądu, nie usterka. Kryteria 2.1-2.4 mają mocniejszy dowód niż słowo autora: zielona bramka
+  jakości na PR #10 (`tsc`, `expo lint`, `npm test`, `check-conventions`, `npm ci` na Linuksie)
+  plus lokalne przebiegi `expo export`, `wrangler deploy --dry-run` i `wrangler dev`, opisane
+  w Dzienniku `notes/cert-queue.md`.
 
 ### F6 — Ingredient catalog has no pagination and is filtered client-side on every keystroke
 
@@ -87,7 +106,10 @@
 - **Location**: `src/server/repository/preferences.ts:265-281` (`listCatalog`) / `src/app/(app)/preferences.tsx:216-233` (search filter)
 - **Detail**: `GET /api/catalog` returns the entire `ingredient` table with no limit, and the screen does a full linear `fold()`/`includes()` scan over it on every keystroke with no debounce. At the current seed size (~35 ingredients) this is not a problem, but there is no ceiling — if the catalog grows into the hundreds, this becomes an unbounded payload and an O(n) per-keystroke scan.
 - **Fix**: No action needed now; worth revisiting if/when the ingredient catalog grows substantially past its current seed size.
-- **Decision**: PENDING
+- **Decision**: ODŁOŻONE ŚWIADOMIE 14.09.2026. Przy 35 składnikach pełny katalog i filtr
+  liniowy są tańsze niż stronicowanie i debounce, a ruch jest jednorazowy (`private, max-age=300`).
+  Sufit jest realny, ale przyjdzie razem z pulą: **wraca do rozważenia w fazie 4 F-01**, gdy liczba
+  składników urośnie wraz z daniami. Zapisane jako pozycja do przemyślenia, nie jako dług cichy.
 
 ## Findings without a line anchor
 

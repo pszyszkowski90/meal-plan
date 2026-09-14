@@ -30,9 +30,19 @@ Migracja: `migrations/0004_dish_ingredient_index.sql` + para wsteczna. Zastosowa
 `SCAN`. Para wsteczna sprawdzona w obie strony: po jej uruchomieniu indeks znika, `migrations list
 --local` znów pokazuje `0004` jako zaległą, a ponowne `apply` ją odtwarza.
 
-**`--remote` NIE wykonane i to jest świadome.** Reguła `CLAUDE.md` mówi, że warunek produkcyjny
-wchodzi przed commitem fazy, która go **potrzebuje** — a `listAllowedDishes` jeszcze nie istnieje.
-Do uruchomienia przez człowieka razem z migracją preferencji albo przed fazą 4.
+~~**`--remote` NIE wykonane i to jest świadome.**~~ **Wykonane 13.09.2026** — dokładnie tak, jak
+zapowiadał ten akapit: „razem z migracją preferencji". `migrations apply --remote` przy `0005`
+zabrało zaległe `0004`, bo wrangler stosuje wszystkie zaległe migracje po kolei, nie tylko
+najnowszą. Potwierdzone 14.09.2026 zapytaniem o księgę:
+
+```sh
+npx wrangler d1 execute mealplan --remote --command "select name from d1_migrations order by id;"
+# 0001_app_user.sql, 0002_user_profile.sql, 0003_dish_pool.sql,
+# 0004_dish_ingredient_index.sql, 0005_preferences.sql
+```
+
+Zostawione przekreśleniem, a nie usunięte: pierwotne rozumowanie („warunek produkcyjny wchodzi
+przed fazą, która go POTRZEBUJE") było poprawne i nadal obowiązuje — zmienił się fakt, nie reguła.
 
 **Czego nadal nie wiem**: czy przy ~800 wierszach (sto dań × osiem składników) indeks będzie
 odróżnialny od skanu w czasie. Możliwe, że nie — i wtedy uzasadnieniem zostaje wyłącznie budżet
