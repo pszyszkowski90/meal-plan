@@ -9,8 +9,10 @@
   zaimplementowane i zrecenzowane (PR #32, #33, #34).
 - **Date**: 2026-09-14
 - **CI run**: uruchomiony jako odpowiedź na `@claude` w komentarzu PR (nie zadanie `impl-review.yml`)
-- **Verdict**: NEEDS ATTENTION → po poprawkach APPROVED (3 naprawione, 1 świadomie odłożone)
-- **Findings**: 0 critical · 3 warnings · 1 observation
+- **Verdict**: NEEDS ATTENTION (3 z 4 ustaleń naprawione i zweryfikowane niezależnie w tym przebiegu;
+  werdykt zostaje `NEEDS ATTENTION`, nie `APPROVED` — patrz F5, wymiar Test Coverage jest nadal FAIL)
+- **Findings**: 0 critical · 3 warnings · 1 observation (F1–F4, rozliczone) + 1 nowe ustalenie
+  z tego przebiegu (F5, poniżej)
 
 ## Verdicts
 
@@ -147,5 +149,59 @@ porównane wprost z kontraktem Fazy 4 i z kryteriami 4.1–4.14 w `plan.md`.
   zachowania.
 - **Decision**: PRZYJĘTE, naprawione. `key={`${index}-${item.name}`}` i to samo dla kroków.
   Ryzyko niskie, ale poprawka jednoliniowa i bez zmiany zachowania — nie ma powodu jej odkładać.
+
+### F5 — Nagłówek raportu deklarował `APPROVED` sprzecznie z własną tabelą Verdicts
+
+- **Severity**: ⚠️ WARNING
+- **Impact**: 🏃 LOW — pole tekstowe, nie kod, ale to dokładnie to pole, po które sięga bramka
+  workflow (`- **Verdict**: REJECTED` → czerwony check) i każdy przyszły triage
+- **Dimension**: Success Criteria
+- **Location**: `context/changes/first-weekly-plan/reviews/impl-review.md:12` (przed tą poprawką)
+- **Detail**: Commit `d530985` zmienił pole `**Verdict**` z `NEEDS ATTENTION` na
+  `NEEDS ATTENTION → po poprawkach APPROVED`, mimo że tabela Verdicts bezpośrednio pod nim nadal
+  pokazywała `Test Coverage: FAIL` i `Success Criteria: WARNING` — obie niezmienione przez tę samą
+  poprawkę. Reguła tego repo (`references/impl-review-instructions.md:113`) jest jednoznaczna:
+  „APPROVED — all PASS, or PASS with at most 2 minor warnings total" — żaden wariant nie dopuszcza
+  wymiaru FAIL. F2 (osiem kryteriów bez testu) zostaje świadomie ACKNOWLEDGED, nie naprawione, więc
+  `Test Coverage` uczciwie zostaje `FAIL` — ale werdykt ogólny w nagłówku twierdził co innego niż
+  tabela dwie linijki niżej. To jest dokładnie klasa błędu, przed którą ostrzega `lessons.md`:
+  stempel statusu, który nie zgadza się z dowodem obok niego.
+- **Fix**: Werdykt w nagłówku ma być pochodną tabeli, nie osobną deklaracją — przy jakimkolwiek
+  wymiarze `FAIL` nagłówek zostaje `NEEDS ATTENTION` (albo `REJECTED`, gdyby FAIL był krytyczny),
+  niezależnie od tego, ile z pozostałych ustaleń naprawiono w międzyczasie. Naprawione w tym
+  przebiegu: nagłówek wraca do `NEEDS ATTENTION` z wyjaśnieniem, które ustalenie je trzyma.
+  - Strength: Przywraca kontrakt pliku jako pole odczytywane maszynowo, nie prozę.
+  - Tradeoff: Brak — to czysta korekta niespójności, bez zmiany w ocenie żadnego z F1–F4.
+  - Confidence: HIGH — reguła werdyktu jest jawnie wypisana w instrukcjach tej umiejętności.
+  - Blind spot: Nie wiem, czy commit `d530985` był triage'owany przez człowieka, czy przez sesję
+    agenta — w obu przypadkach reguła się nie zmienia.
+- **Decision**: PRZYJĘTE, naprawione w tym przebiegu — patrz pole `Verdict` w nagłówku wyżej.
+
+## Niezależna re-weryfikacja tego przebiegu (PR synchronize, commit `d530985`)
+
+Środowisko tego przebiegu ma to samo ograniczenie co poprzedni: `node_modules` niezainstalowane,
+`npm install` zakazane przez `CLAUDE.md`, więc `tsc`/`npm test`/`expo lint`/`check-conventions`/E2E
+nie zostały odtworzone niezależnie również tym razem — `Success Criteria` zostaje `WARNING`
+z tego samego powodu co poprzednio, nie z powodu nowego dowodu przeciwnego.
+
+To, co dało się zweryfikować czytaniem kodu i diffu (`git diff origin/main...HEAD` oraz
+`git show d530985`), potwierdza rozliczenie autora:
+
+- **F1 naprawione naprawdę.** `tests/e2e/plan-screen.spec.ts:22-26,66-77` dodaje `parseKcal` i
+  faktycznie parsuje liczbę z nagłówka dnia oraz z tekstu celu, porównując do okna `[0.9, 1.1] ×
+  targetKcal` — nie jest to kosmetyczna zmiana nazwy testu.
+- **F3 naprawione naprawdę.** `plan.md:822-838` ma teraz mieszankę `[x]`/`[ ]` zgodną ze stanem
+  faktycznym (4.3, 4.4, 4.10, 4.11 odhaczone — dokładnie te z dowodem; reszta zostaje otwarta),
+  nie masowe odhaczenie całej fazy.
+- **F4 naprawione naprawdę.** `src/app/(app)/plan.tsx:132,143` — oba klucze list mają teraz prefiks
+  `${index}-`.
+- **F2 pozostaje otwarte, uczciwie.** Wciąż brak testu dla ośmiu kryteriów; `notes/plan-queue.md`
+  nadal ma wpis „Do decyzji: czy uzupełnić pominięte kryteria fazy 4 osobną zmianą" — nierozwiązany,
+  co jest zgodne ze stanem faktycznym, nie regresją.
+- **Zero nowych ustaleń w kodzie źródłowym tego commitu** — diff `d530985` dotyka wyłącznie
+  `plan.tsx` (dwie linijki kluczy), testu i dokumentów; nie wprowadza nowego zachowania do
+  zweryfikowania.
+- Diff zakładek (`app-tabs.tsx`/`.web.tsx`) i test parzystości (`profile-screen.spec.ts`) z tego PR
+  sprawdzone ponownie — bez zmian od poprzedniego przebiegu, nadal spójne.
 
 <!-- End of report -->
