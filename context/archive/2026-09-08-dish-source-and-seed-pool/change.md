@@ -1,10 +1,10 @@
 ---
 change_id: dish-source-and-seed-pool
 title: Wybór źródła przepisów z makrami i zseedowanie minimalnej puli dań
-status: impl_reviewed
+status: archived
 created: 2026-09-08
 updated: 2026-09-14
-archived_at: null
+archived_at: 2026-09-14T16:00:00Z
 ---
 
 ## Notes

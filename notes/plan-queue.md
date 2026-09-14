@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G1**.
+Kolejne zadanie do wzięcia: **G2**.
 
 ---
 
@@ -96,7 +96,7 @@ o Workers Paid jest zgadywaniem, a z liczbą jest arytmetyką.
 
 ## 2. Zadania
 
-### G1 — Archiwizacja F-01 i statusy · ~30 min · **następne do wzięcia**
+### G1 — Archiwizacja F-01 i statusy · ~30 min · **zrobione 14.09**
 
 Plan `dish-source-and-seed-pool` ma **zero oczekujących pozycji** w obu fazach, a zmiana dalej
 leży w `context/changes/`. To ten sam dług, co przy S-03: status opisuje zamiar, nie stan.
@@ -107,7 +107,7 @@ leży w `context/changes/`. To ten sam dług, co przy S-03: status opisuje zamia
 - **Osobny PR**, przed G3 — archiwizacja przenosi raport przeglądu poza `context/changes/`,
   więc zrobiona razem z pracą wyłączyłaby bramkę werdyktu (to samo, co przy S-03)
 
-### G2 — PRD kłamie o czterech z pięciu Otwartych pytań · ~45 min
+### G2 — PRD kłamie o czterech z pięciu Otwartych pytań · ~45 min · **następne do wzięcia**
 
 `prd.md` §Open Questions wymienia pięć pytań, z których **cztery są rozstrzygnięte od 13.09**,
 a PRD dalej opisuje je jako blokujące (`Blokuje: tak — cały generator planu`):
@@ -249,3 +249,28 @@ Do decyzji: <albo ->
 ```
 
 <!-- DZIENNIK PONIŻEJ -->
+
+### 16:02 UTC — G1 Archiwizacja F-01 i statusy
+Wynik: ok
+Co zrobione: `dish-source-and-seed-pool` przeniesione do
+`context/archive/2026-09-08-dish-source-and-seed-pool/` (9 plików, git rozpoznał jako `R` —
+historia zachowana), `change.md` ostemplowane `status: archived` + `archived_at`. W `roadmap.md`
+F-01 zamknięte w trzech miejscach: tabela „W skrócie" → `done`, linia `- **Status:**` w bloku
+`### F-01` → `done` z liczbami z produkcji, wpis w sekcji „Zrobione". W tabeli „Przekazanie
+do backlogu" F-01 → **Zrobione**, a S-04 → `yes` (wszystkie trzy wymagania wstępne zamknięte).
+Sekcja „Otwarte pytania dotyczące mapy drogowej" **celowo nietknięta** — należy do G2.
+Co zacommitowane: `context/changes/dish-source-and-seed-pool/` → `context/archive/2026-09-08-dish-source-and-seed-pool/`
+(change.md, options.md, plan.md, plan-brief.md, research.md, follow-ups/review-fixes.md,
+reviews/impl-review.md, reviews/impl-review-phase-1.md, reviews/plan-review.md),
+`context/foundation/roadmap.md`, `notes/plan-queue.md`. Stage po ścieżkach, zero `git add -A`.
+Werdykt przeglądu: przeczytany, bez blokerów. Jedno ustalenie — cztery martwe odnośniki
+do starej ścieżki `context/changes/dish-source-and-seed-pool/` (`CLAUDE.md` 32 i 38,
+`roadmap.md` 131 i 203). Zasadne, bo psuje je dokładnie ten PR. Naprawione na gałęzi przed
+scaleniem, plus piąty odnośnik, którego recenzent nie widział (`notes/night-decisions.md:267` —
+też żywy wskaźnik do `options.md`). Odnośniki w Dziennikach `notes/*-queue.md` **zostawione**:
+zapisują, co zacommitowano w danym dniu, więc są faktem historycznym, nie martwym linkiem.
+PR: #30
+Do decyzji: —
+Uwaga operacyjna: `git mv` padło na Windowsie `Permission denied` (dwa razy, także po ponowieniu).
+Obejściem było `Move-Item` w PowerShellu plus `git add` po obu ścieżkach — git i tak wykrył
+dziewięć zmian nazwy. Warto o tym pamiętać przy kolejnych archiwizacjach w tym repo.
