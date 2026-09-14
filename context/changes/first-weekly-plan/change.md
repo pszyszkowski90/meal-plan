@@ -1,7 +1,7 @@
 ---
 change_id: first-weekly-plan
 title: Generator tygodniowego jadłospisu z guardrailem ±10% i widokiem przepisu
-status: plan_reviewed
+status: impl_reviewed
 created: 2026-09-14
 updated: 2026-09-14
 archived_at: null
