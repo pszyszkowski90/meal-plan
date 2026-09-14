@@ -216,18 +216,48 @@ użytkownik nie ma dostępu do żadnego widoku produktowego poza rejestracją i 
 
 ## Open Questions
 
-1. **Skąd biorą się przepisy i makra?** — nierozstrzygnięte. Rozważane opcje: generowanie przez
-   model AI na żądanie, własna ręcznie zseedowana pula dań, publiczna baza składników
-   (USDA / Open Food Facts) plus własne przepisy. Właściciel: użytkownik. Blokuje: tak — cały
-   generator planu (FR-008) oraz guardrail ±10% kcal stoją na jakości makr.
-2. **Czy wybrane źródło przepisów daje instrukcję rozbitą na kroki?** — warunek konieczny dla
-   FR-016. Wynika wprost z wyzwania sokratejskiego przy tym FR. Właściciel: użytkownik. Do
-   rozstrzygnięcia razem z pytaniem 1.
+Stan na 14.09.2026. Numeracja 1–5 jest zachowana, bo odwołują się do niej `CLAUDE.md`,
+`roadmap.md` i zarchiwizowane zmiany — pytanie rozstrzygnięte zostaje na swoim numerze
+z odpowiedzią, nie znika z listy.
+
+**Cztery z pięciu są zamknięte.** Otwarta jest jedna rzecz i jest nią treść komunikatu
+z pytania 3, nie kierunek produktu.
+
+1. ~~**Skąd biorą się przepisy i makra?**~~ — **Rozstrzygnięte 13.09.2026** (decyzja D14,
+   `notes/night-decisions.md`). Hybryda: model językowy autoryzuje przepisy **raz, poza
+   runtime** (polskie nazwy, gramatury, kroki, czas), człowiek przegląda ilości, makra liczy
+   deterministycznie skrypt z tabeli **USDA FoodData Central** (CC0), a Worker w runtime czyta
+   **wyłącznie D1** — nigdy nie woła modelu. Odrzucone: model na żądanie (makra z błędem energii
+   rzędu 36%, więc guardrail sprawdzałby liczbę, która sama jest błędna) i zewnętrzne API
+   przepisów (licencja zakazuje przechowywania, co wyklucza wymaganie offline). Pełne rozpisanie
+   z konsekwencjami: `context/archive/2026-09-08-dish-source-and-seed-pool/options.md` §2.
+   **Wdrożone:** pula stoi na produkcji — 58 dań, 51 składników, każdy z `usda_fdc_id`.
+   Nie blokuje niczego.
+2. ~~**Czy wybrane źródło przepisów daje instrukcję rozbitą na kroki?**~~ — **Rozstrzygnięte
+   13.09.2026** razem z pytaniem 1. **Tak, bo jesteśmy autorem przepisów**: kroki powstają jako
+   osobne rekordy z kolejnością (tabela `dish_step`), nie jako blok tekstu. To zdejmuje warunek
+   z FR-016. Nie blokuje niczego.
 3. **Jak zachowuje się produkt, gdy wykluczeń jest tyle, że planu nie da się ułożyć w ±10%?** —
-   kierunek zapisany w kryteriach akceptacji US-01 (jawny komunikat), ale próg i treść
-   komunikatu wymagają doprecyzowania. Właściciel: użytkownik.
-4. **Jak rozdzielone są wykluczenia składnikowe od daniowych?** — wynika z wyzwania
-   sokratejskiego przy FR-004; bez tego rozdzielenia guardrail o wykluczeniach będzie łamany.
-   Właściciel: użytkownik.
-5. **Jak produkt uzasadnia wyliczone zapotrzebowanie kaloryczne i czy użytkownik może nadpisać
-   cel ręcznie?** — wynika z wyzwania sokratejskiego przy FR-003. Właściciel: użytkownik.
+   **kierunek rozstrzygnięty, treść otwarta.** `CLAUDE.md` przesądza kształt jako ograniczenie
+   twarde: zwróć **błąd nazywający, którego z trzech ograniczeń** (kalorie, wykluczenia, czas)
+   nie da się spełnić, i **nie zwracaj planu ani planu częściowego**. Otwarte zostaje słownictwo
+   komunikatów i próg, przy którym generator uznaje dobór za niewykonalny — a progu **nie da się
+   zgadnąć, trzeba go zmierzyć na realnej puli**, co jest możliwe dopiero przy S-04
+   (`first-weekly-plan`). Szkic trzech komunikatów: `context/archive/2026-09-08-dish-source-and-seed-pool/options.md` §5.
+   **Właściciel: agent** (upoważnienie w `notes/plan-queue.md` §4 — string jest rzeczą
+   odwracalną, kształt już zapadł). **Blokuje: nic** — S-04 domyka to po drodze, a nie czeka
+   na to.
+4. ~~**Jak rozdzielone są wykluczenia składnikowe od daniowych?**~~ — **Rozstrzygnięte
+   13.09.2026** (D14, doprecyzowane przez D21 w `notes/lesson-decisions.md`). **Jedna** tabela
+   `exclusion` z polem `kind` (`ingredient` / `dish` / `group`), plus tabela `exclusion_group`
+   na grupy słownikowe. Rozdzielenie jest jawne przez `kind`, a nie przez drugi mechanizm —
+   dzięki temu wykluczenia z preferencji (FR-004) i oznaczenia dań z planu (FR-011) zasilają
+   **tę samą** listę, zgodnie z rozstrzygnięciem sokratejskim przy FR-011.
+   **Wdrożone** w S-03 (`dietary-preferences`, migracja `0005`). Nie blokuje niczego.
+5. ~~**Jak produkt uzasadnia wyliczone zapotrzebowanie kaloryczne i czy użytkownik może
+   nadpisać cel ręcznie?**~~ — **Rozstrzygnięte i wdrożone 12.09.2026** w S-03
+   (`profile-and-calorie-target`). Ekran profilu pokazuje wzór Mifflin-St Jeor z podstawionymi
+   wartościami użytkownika, a nadpisanie ręczne jest dostępne i przycinane do widełek
+   **1000–6000 kcal** (decyzja D16). Cel obowiązujący to nadpisanie, a gdy go nie ma —
+   wyliczenie; jedno źródło prawdy dla ekranu i dla generatora to `src/lib/calorie-target.ts`.
+   Nie blokuje niczego.
