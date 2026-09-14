@@ -1,0 +1,31 @@
+{
+  "slug": "jogurt-grecki-z-bananem-i-slonecznikiem",
+  "name": "Jogurt grecki z bananem i słonecznikiem",
+  "mealSlots": [
+    "snack",
+    "breakfast"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 420,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jogurt grecki, pełnotłusty",
+      "grams": 200
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "nasiona słonecznika, łuskane",
+      "grams": 20
+    }
+  ],
+  "steps": [
+    "Banana pokrój w plastry.",
+    "Wymieszaj z jogurtem.",
+    "Posyp nasionami słonecznika."
+  ]
+}

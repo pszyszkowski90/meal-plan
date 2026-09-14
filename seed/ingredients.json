@@ -334,6 +334,124 @@
       "usdaDescription": "Salt, table",
       "category": "przyprawy",
       "groups": []
+    },
+    {
+      "name": "wołowina mielona 10% tłuszczu, surowa",
+      "fdcId": 174030,
+      "usdaDescription": "Beef, ground, 90% lean meat / 10% fat, raw",
+      "category": "mieso",
+      "groups": []
+    },
+    {
+      "name": "pierś z indyka, surowa",
+      "fdcId": 174515,
+      "usdaDescription": "Turkey, retail parts, breast, meat only, raw",
+      "category": "mieso",
+      "groups": []
+    },
+    {
+      "name": "jogurt grecki, pełnotłusty",
+      "fdcId": 171304,
+      "usdaDescription": "Yogurt, Greek, plain, whole milk",
+      "category": "nabial",
+      "groups": [
+        "nabial"
+      ]
+    },
+    {
+      "name": "ser feta",
+      "fdcId": 173420,
+      "usdaDescription": "Cheese, feta",
+      "category": "nabial",
+      "groups": [
+        "nabial"
+      ]
+    },
+    {
+      "name": "kasza gryczana, sucha",
+      "fdcId": 170685,
+      "usdaDescription": "Buckwheat groats, roasted, dry",
+      "category": "suche",
+      "groups": []
+    },
+    {
+      "name": "ryż brązowy, suchy",
+      "fdcId": 169703,
+      "usdaDescription": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)",
+      "category": "suche",
+      "groups": []
+    },
+    {
+      "name": "awokado, surowe",
+      "fdcId": 171705,
+      "usdaDescription": "Avocados, raw, all commercial varieties",
+      "category": "owoce",
+      "groups": []
+    },
+    {
+      "name": "oliwki czarne, z puszki",
+      "fdcId": 169094,
+      "usdaDescription": "Olives, ripe, canned (small-extra large)",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "ogórek, surowy",
+      "fdcId": 168409,
+      "usdaDescription": "Cucumber, with peel, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "cukinia, surowa",
+      "fdcId": 169291,
+      "usdaDescription": "Squash, summer, zucchini, includes skin, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "kapusta biała, surowa",
+      "fdcId": 169975,
+      "usdaDescription": "Cabbage, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "kukurydza z puszki, odsączona",
+      "fdcId": 169214,
+      "usdaDescription": "Corn, sweet, yellow, canned, whole kernel, drained solids",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "olej rzepakowy",
+      "fdcId": 172336,
+      "usdaDescription": "Oil, canola",
+      "category": "tluszcze",
+      "groups": []
+    },
+    {
+      "name": "miód",
+      "fdcId": 169640,
+      "usdaDescription": "Honey",
+      "category": "inne",
+      "groups": []
+    },
+    {
+      "name": "nasiona słonecznika, łuskane",
+      "fdcId": 170562,
+      "usdaDescription": "Seeds, sunflower seed kernels, dried",
+      "category": "suche",
+      "groups": []
+    },
+    {
+      "name": "masło orzechowe, bez soli",
+      "fdcId": 172470,
+      "usdaDescription": "Peanut butter, smooth style, without salt",
+      "category": "suche",
+      "groups": [
+        "orzechy"
+      ]
     }
   ]
 }

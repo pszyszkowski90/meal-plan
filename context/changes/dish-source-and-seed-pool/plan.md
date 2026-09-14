@@ -547,14 +547,24 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 
 #### Automated
 
-- [ ] 4.1 Minima per pora posiłku spełnione
-- [ ] 4.2 Wszystkie dania mają `reviewedBy`; seed `--remote` bez odmów
-- [ ] 4.3 `migrations list --remote` bez zaległych przed seedem
-- [ ] 4.4 Raport wykonalności dla pięciu celów × trzech scenariuszy
-- [ ] 4.5 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste; `git diff --exit-code` na lockfile
+- [x] 4.1 Minima per pora posiłku spełnione — **20 śniadań** (min 12), **29 obiadów** (min 18),
+      **33 kolacje** (min 18), **15 przekąsek** (min 12), policzone na produkcji
+- [x] 4.2 Wszystkie dania mają `reviewedBy`; seed `--remote` przeszedł bez odmów — 58 dań
+- [x] 4.3 `migrations list --remote` bez zaległych przed seedem — „No migrations to apply!"
+- [x] 4.4 Raport wykonalności dla pięciu celów × trzech scenariuszy **× czterech liczb posiłków**
+      — [seed/FEASIBILITY.md](../../../seed/FEASIBILITY.md). Główny wynik: 3200 kcal przeszło
+      **z nieosiągalnego (0% wszędzie) do 38%** przy sześciu posiłkach, a 2800 z 12% do 68%
+- [x] 4.5 `npm test` 100/100, `npx tsc --noEmit`, `npx expo lint`, `check-conventions` czyste;
+      `git diff --exit-code package-lock.json` bez zmian
 
 #### Manual
 
-- [ ] 4.6 Raport wykonalności oceniony przez właściciela
-- [ ] 4.7 Pula policzona na produkcji zapytaniem `--remote`
-- [ ] 4.8 `CLAUDE.md` opisuje pulę i skrypty
+- [x] 4.6 Raport wykonalności oceniony **przez agenta** (upoważnienie z `notes/pool-queue.md` §4).
+      Werdykt: pula się broni — każdy z pięciu celów ma trafienia także po odfiltrowaniu limitu
+      30 minut i czterech wykluczeń. Wąskie gardło, które **nie zniknęło**: obiady i kolacje
+      w limicie 30 minut (29 → 12 i 33 → 16). To pierwsza rzecz do dołożenia przy dalszym wzroście
+- [x] 4.7 Pula policzona na produkcji: **58 dań, 51 składników** (wszystkie z `usda_fdc_id`),
+      255 powiązań składnikowych, 227 kroków, 93 przypisania do pór, zero niekompletnych,
+      polskie znaki nietknięte
+- [x] 4.8 `CLAUDE.md` opisuje pulę i skrypty — blokada S-04 zdjęta, potok `seed/` opisany
+      tabelą artefaktów i czterema regułami, które psują guardrail ±10%

@@ -1,0 +1,40 @@
+{
+  "slug": "omlet-z-cukinia-i-feta",
+  "name": "Omlet z cukinią i fetą",
+  "mealSlots": [
+    "dinner",
+    "breakfast"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 520,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "cukinia, surowa",
+      "grams": 120
+    },
+    {
+      "ingredientName": "ser feta",
+      "grams": 40
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 10
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Cukinię zetrzyj na grubej tarce i odciśnij.",
+    "Jajka roztrzep z solą.",
+    "Rozgrzej olej, wrzuć cukinię i smaż 3 minuty.",
+    "Zalej jajkami, posyp pokruszoną fetą i smaż pod przykryciem 5 minut."
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "slug": "banan-z-maslem-orzechowym",
+  "name": "Banan z masłem orzechowym",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 320,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 120
+    },
+    {
+      "ingredientName": "masło orzechowe, bez soli",
+      "grams": 35
+    }
+  ],
+  "steps": [
+    "Banana pokrój wzdłuż na pół.",
+    "Rozsmaruj masło orzechowe na przekroju."
+  ]
+}

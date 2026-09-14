@@ -1,13 +1,16 @@
 <!-- IMPL-REVIEW-REPORT -->
-# Implementation Review: Wybór źródła przepisów z makrami i zseedowanie minimalnej puli dań — Faza 3 (pilot 20 dań)
+# Implementation Review: Wybór źródła przepisów z makrami i zseedowanie minimalnej puli dań — Faza 4 (skalowanie puli i pomiar końcowy)
 
 - **Plan**: `context/changes/dish-source-and-seed-pool/plan.md`
-- **Scope**: Full plan (CI review on PR #25) — porównanie skupione na Fazie 3, jedynej fazie
-  dotkniętej tym PR-em (kryteria 3.1–3.11 przeszły z `[ ]` na `[x]`); Faza 4 pozostaje `[ ]` i poza
-  zakresem tego diffu.
+- **Scope**: Full plan (CI review on PR #27, re-run after `synchronize`) — Fazy 1–3 były już
+  zamknięte i przejrzane wcześniej (patrz `change.md`); ten PR dotyczy wyłącznie Fazy 4
+  (kryteria 4.1–4.8, wszystkie `[x]`). Ten przebieg zastępuje poprzedni raport z tego samego pliku
+  (commit `b716ea5`), po tym jak PR-branch dostał commit `3eaf674` rozliczający jego jedyne
+  ustalenie (F1).
 - **Date**: 2026-09-14
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34861113235
 - **Verdict**: APPROVED
-- **Findings**: 0 critical, 0 warnings, 2 observations
+- **Findings**: 0 critical, 0 warnings, 0 observations
 
 ## Verdicts
 
@@ -23,66 +26,44 @@
 
 ## Zakres i metoda
 
-Trzy równoległe subagenty pokryły trzy wymiary przeglądu (dryf planu, bezpieczeństwo/jakość/wzorce,
-pokrycie testami), niezależnie od tego przebiegu głównego, który dodatkowo zweryfikował statycznie
-(odczyt kodu) kluczowe fragmenty `scripts/seed-dishes.mjs` i `scripts/check-pool-feasibility.mjs`.
+Commit `3eaf674` — jedyny nowy commit tej rundy — dotyka wyłącznie cztery pliki prozy:
+`context/changes/dish-source-and-seed-pool/change.md`, `context/changes/dish-source-and-seed-pool/plan.md`
+(notatka ręczna przy kryterium 4.6), `context/changes/dish-source-and-seed-pool/reviews/impl-review.md`
+(pole `Decision` na wcześniejszym wniosku F1) i `seed/REVIEW.md`. Zero plików źródłowych, zero
+danych dań/składników zmienionych względem poprzedniej (APPROVED) rundy — więc dimensions 2 i 3
+(bezpieczeństwo/jakość, pokrycie testami) dziedziczą ocenę z tamtej rundy bez zmian w danych do
+ponownej weryfikacji.
 
-**Ograniczenie tego przebiegu**: sesja CI nie miała zgody na wykonywanie `node`/`npm`/`npx`
-w Bashu (wymagały zatwierdzenia, którego nikt nieinteraktywnie nie udzielił) ani na `git fetch`
-(sieć). Subagent 3 obszedł to, czytając log uruchomionego już joba bramki jakości GitHub Actions
-(run `34852770840`, checked out przy SHA `fd81074`) zamiast uruchamiać polecenia lokalnie —
-`tsc`, `npm test` (100/100), `expo lint`, `check-conventions` i `check-lock` wszystkie zielone
-w tym logu. Twierdzenia dotyczące `wrangler`/D1 (walidator odrzuca zepsute danie, idempotencja,
-osierocone wiersze, bramka `--remote`) nie dały się odtworzyć w tym sandboxie (brak `wrangler`,
-brak `.dev.vars`) — zweryfikowane statycznym czytaniem kodu (ścieżki istnieją dokładnie tak, jak
-opisano), nie uruchomieniem. PR-body i `notes/pool-queue.md` Dziennik twierdzą, że te sprawdzenia
-wykonano na żywo przed tym commitem (zgodnie z regułą warunku produkcyjnego z `CLAUDE.md`) — to
-twierdzenie jest wewnętrznie spójne z kodem, ale nieweryfikowalne niezależnie z tej sesji.
+**Zweryfikowano bezpośrednio w tej rundzie:**
+
+- `git show 3eaf674` — diff obejmuje dokładnie cztery linie w czterech plikach, wszystkie to
+  literały liczbowe (56→58, 27/31/10/14→29/33/12/16) plus jeden akapit `Decision` w raporcie.
+- `seed/REVIEW.md:9` teraz brzmi „Wszystkie 58 dań" (było „56").
+- `plan.md`, notatka 4.6: „obiady i kolacje w limicie 30 minut (29 → 12 i 33 → 16)" — zgodne
+  z `seed/FEASIBILITY.md` i z policzeniem plików niżej.
+- `change.md` (wpis dopisany przez poprzednią rundę) teraz mówi „20 → 58 dań".
+- Ponowne przeliczenie plików `seed/dishes/*.json`: **58 plików**, wszystkie z niepustym
+  `reviewedBy`/`reviewedAt`; dwa wcześniej osierocone składniki (`oliwki czarne, z puszki`,
+  `boczniaki, świeże` — ustalenie F2 poprzedniej rundy) mają teraz swoje dania
+  (`makaron-z-oliwkami-i-feta.json`, `makaron-z-boczniakami.json`, oba zawierają dosłowny literał
+  składnika).
+- `git diff --exit-code origin/main...HEAD -- package-lock.json` — pusty, zero nowych zależności.
+- `mcp__github_ci__get_ci_status` — workflow „Bramka jakości" zakończył się `success` dla
+  dokładnie commita `3eaf674` (ten sam run co ten przegląd), co niezależnie potwierdza `tsc`,
+  `npm test`, `expo lint`, `check-conventions` i `check-lock` bez potrzeby ich ponownego
+  uruchamiania w tym sandboxie.
+
+**Rezydualne z poprzednich rund (bez zmian w tej):** 20 śniadań / 29 obiadów / 33 kolacje /
+15 przekąsek (min. 12/18/18/12 z planu, z zapasem); wszystkie `ingredientName` w plikach dań
+istnieją dosłownie w `seed/ingredients.json`; 16 nowych wierszy USDA mają komplet `fdcId` +
+`category` i przechodzą niezmiennik Atwatera (próg względny 10% lub bezwzględny 12 kcal per
+decyzja D20).
 
 ## Findings
 
-### F1 — Nazwa dania w komentarzu SQL nie jest zabezpieczona przed znakiem nowej linii
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — szybka decyzja, poprawka jednowierszowa i wąsko zakresowa
-- **Dimension**: Safety & Quality
-- **Location**: scripts/seed-dishes.mjs:201
-- **Detail**: `` `-- ${dish.name} — ${dish.macros.kcal} kcal` `` interpoluje `dish.name`
-  bezpośrednio do komentarza SQL bez przejścia przez `quote()` (poprawnie — to komentarz, nie
-  literał). Wszystkie właściwe literały tekstowe (`slug`, `name` w `VALUES`, `meal_slot`,
-  `ingredientName`, kroki) poprawnie przechodzą przez `quote()`, który podwaja apostrofy — to
-  jedyne miejsce, gdzie SQLite wymaga ucieczki. Ryzyko tu jest inne: nazwa dania zawierająca
-  literalny znak nowej linii przerwałaby jednowierszowy komentarz SQL (`-- ...`) i wypisała
-  resztę na nieprzedrostkowanym wierszu. W praktyce nieszkodliwe, bo dane wejściowe to
-  wyłącznie przejrzane JSON-y w repo, nie dane użytkownika w runtime — ale skrypt sam siebie
-  opisuje jako wzorzec do naśladowania w dalszych fazach.
-- **Fix**: Zastąp nowe linie spacją przed wstawieniem do komentarza:
-  `` `-- ${dish.name.replace(/\n/g, ' ')} — ${dish.macros.kcal} kcal` ``.
-- **Decision**: NAPRAWIONE 14.09.2026 — nazwa w komentarzu przechodzi przez
-  `replace(/\s+/g, ' ')`. Ustalenie jest trafne co do zasady, choć nie co do dzisiejszego ryzyka:
-  dane wejściowe to przejrzane pliki z repozytorium, nie wejście użytkownika w runtime. Poprawka
-  wchodzi dlatego, że ten skrypt jest **wzorcem dla faz 4 i dalszych** i nie ma uczyć skrótu.
-  Rozważona i odrzucona alternatywa: zakaz białych znaków sterujących w `validateDish`. Byłaby
-  naprawą u źródła, ale zmienia moduł z `src/lib/` objęty testami jednostkowymi, więc jest osobną
-  zmianą, a nie poprawką obserwacji.
-
-### F2 — `check:pool` w `package.json` nie jest literalnie wymienione w kontrakcie planu
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — nieszkodliwe rozszerzenie, zgodne z celem fazy
-- **Dimension**: Scope Discipline
-- **Location**: package.json:55
-- **Detail**: Plan Fazy 3, punkt 3 wymienia wpisy `package.json` → `scripts`:
-  `seed:dishes`, `import:usda`, `distill:usda` (dwa ostatnie już istniały z wcześniejszego commitu).
-  Ten PR dodaje też `check:pool`, którego plan nie nazywa wprost — ale `scripts/check-pool-feasibility.mjs`
-  jest jawnie zaplanowanym artefaktem punktu 5 tej samej fazy ("Pomiar pilotowy i decyzja"), więc
-  wpis operacjonalizuje coś, co plan już zamawiał, nie dokłada nowego zakresu. Klasyfikacja: EXTRA,
-  łagodne — nie sprzeczne z listą wykluczeń ("Czego NIE robimy").
-- **Fix**: Brak działania wymagane — udokumentowanie w raporcie wystarcza.
-- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, bez zmian. `check:pool` operacjonalizuje
-  `scripts/check-pool-feasibility.mjs` — artefakt jawnie zamówiony w punkcie 5 tej samej fazy
-  („Pomiar pilotowy i decyzja"). Wpis w `package.json`, którego plan nie wymienia z nazwy, ale
-  który uruchamia zaplanowany skrypt, jest wykonaniem planu, nie rozszerzeniem zakresu. Usunięcie
-  go zostawiłoby zaplanowany skrypt bez sposobu uruchomienia opisanego w repozytorium.
+Brak. Jedyne ustalenie poprzedniej rundy (F1 — liczby w prozie sprzed naprawy F2) zostało
+rozliczone tym commitem w czterech miejscach, nie tylko w dwóch wskazanych — zobacz `Decision`
+w git history tego pliku (commit `3eaf674`) dla pełnego uzasadnienia. Weryfikacja w sekcji
+powyżej potwierdza, że żadna z poprawionych liczb nie pozostała w tyle.
 
 <!-- End of report -->

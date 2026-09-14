@@ -1,0 +1,30 @@
+{
+  "slug": "jogurt-z-migdalami-i-miodem",
+  "name": "Jogurt z migdałami i miodem",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 360,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jogurt naturalny 2%",
+      "grams": 180
+    },
+    {
+      "ingredientName": "migdały",
+      "grams": 30
+    },
+    {
+      "ingredientName": "miód",
+      "grams": 15
+    }
+  ],
+  "steps": [
+    "Migdały posiekaj.",
+    "Jogurt polej miodem i wymieszaj.",
+    "Posyp migdałami."
+  ]
+}

@@ -1,137 +1,161 @@
-<!-- WYGENEROWANA CZĘŚĆ pochodzi z `node ./scripts/check-pool-feasibility.mjs --local`.
+<!-- WYGENEROWANA CZĘŚĆ pochodzi z `npm run check:pool -- --local`.
      Wnioski pod raportem pisze człowiek prowadzący zadanie. -->
 
-# Wykonalność puli — pomiar pilotażowy
+# Wykonalność puli — pomiar końcowy
 
-**Data: 14.09.2026. Pula: 20 dań (pilot, faza 3 F-01).**
+**Data: 14.09.2026. Pula: 58 dań (faza 4 F-01, pula docelowa).**
 
-To jest pomiar, dla którego istnieje faza pilotażowa: odpowiedź liczbą na pytanie, czy kierunek
-się trzyma — **zanim** powstanie reszta puli i zanim ktokolwiek przejrzy kolejne 40 przepisów.
+Poprzedni pomiar — pilotażowy, na 20 daniach — pokazał, że pula nie sięga górnej połowy celów:
+3200 kcal było **nieosiągalne w każdym scenariuszu**, a 2800 wychodziło tylko przy sześciu
+posiłkach i w 2–12% złożeń. Ten raport jest sprawdzeniem, czy faza 4 to naprawiła.
 
 ---
 
 # Raport wykonalności puli (local)
 
-Dań w puli: **20**.
+Dań w puli: **58**.
 Dzień = śniadanie + obiad + kolacja + przekąski (3/4/5/6 posiłków).
 Guardrail: suma dnia w ±10% celu.
 
 ## Scenariusz: bez filtrów
 
-Dań ocalałych: **20** z 20.
+Dań ocalałych: **58** z 58.
 
 | Pora | Dań | Zakres kcal |
 | --- | ---: | --- |
-| breakfast | 7 | 246–503 |
-| lunch | 9 | 388–641 |
-| dinner | 11 | 388–641 |
-| snack | 6 | 223–441 |
+| breakfast | 20 | 246–788 |
+| lunch | 29 | 388–877 |
+| dinner | 33 | 388–877 |
+| snack | 15 | 223–454 |
 
 **Odsetek dni w ±10% celu** (w nawiasie liczba złożeń):
 
 | Cel | 3 posiłków | 4 posiłków | 5 posiłków | 6 posiłków |
 | ---: | ---: | ---: | ---: | ---: |
-| 1600 kcal | 56.0% (388) | 50.9% (2115) | 5.8% (601) | 0.0% (6) |
-| 2000 kcal | 0.0% (0) | 36.1% (1502) | 75.8% (7875) | 25.3% (3500) |
-| 2400 kcal | 0.0% (0) | 0.2% (10) | 22.3% (2314) | 79.7% (11050) |
-| 2800 kcal | 0.0% (0) | 0.0% (0) | 0.0% (3) | 12.0% (1666) |
-| 3200 kcal | 0.0% (0) | 0.0% (0) | 0.0% (0) | 0.0% (0) |
+| 1600 kcal | 41.2% (7881) | 7.6% (21816) | 0.1% (2830) | 0.0% (6) |
+| 2000 kcal | 40.0% (7647) | 52.7% (151348) | 16.3% (327771) | 0.8% (73650) |
+| 2400 kcal | 6.2% (1186) | 40.3% (115672) | 62.0% (1245129) | 27.4% (2386586) |
+| 2800 kcal | 0.0% (9) | 6.4% (18374) | 39.7% (798072) | 68.7% (5985427) |
+| 3200 kcal | 0.0% (0) | 0.1% (320) | 6.4% (128156) | 38.7% (3371178) |
 
 ## Scenariusz: limit 30 min
 
-Dań ocalałych: **15** z 20.
+Dań ocalałych: **41** z 58.
 
 | Pora | Dań | Zakres kcal |
 | --- | ---: | --- |
-| breakfast | 7 | 246–503 |
-| lunch | 4 | 388–555 |
-| dinner | 6 | 388–555 |
-| snack | 6 | 223–441 |
+| breakfast | 20 | 246–788 |
+| lunch | 12 | 388–874 |
+| dinner | 16 | 388–874 |
+| snack | 15 | 223–454 |
 
 **Odsetek dni w ±10% celu** (w nawiasie liczba złożeń):
 
 | Cel | 3 posiłków | 4 posiłków | 5 posiłków | 6 posiłków |
 | ---: | ---: | ---: | ---: | ---: |
-| 1600 kcal | 32.1% (54) | 64.8% (653) | 13.1% (330) | 0.2% (6) |
-| 2000 kcal | 0.0% (0) | 18.8% (190) | 76.0% (1916) | 41.2% (1383) |
-| 2400 kcal | 0.0% (0) | 0.0% (0) | 9.8% (247) | 67.7% (2276) |
-| 2800 kcal | 0.0% (0) | 0.0% (0) | 0.0% (0) | 3.8% (127) |
-| 3200 kcal | 0.0% (0) | 0.0% (0) | 0.0% (0) | 0.0% (0) |
+| 1600 kcal | 43.9% (1686) | 11.3% (6503) | 0.4% (1466) | 0.0% (6) |
+| 2000 kcal | 34.3% (1316) | 53.6% (30897) | 21.6% (86971) | 1.6% (28220) |
+| 2400 kcal | 4.8% (183) | 34.3% (19740) | 61.4% (247648) | 33.4% (583075) |
+| 2800 kcal | 0.1% (4) | 5.1% (2952) | 33.8% (136336) | 66.6% (1164404) |
+| 3200 kcal | 0.0% (0) | 0.1% (64) | 5.1% (20425) | 33.0% (577285) |
 
 ## Scenariusz: limit 30 min + 4 wykluczenia
 
-Dań ocalałych: **13** z 20.
+Dań ocalałych: **36** z 58.
 
 | Pora | Dań | Zakres kcal |
 | --- | ---: | --- |
-| breakfast | 6 | 246–503 |
-| lunch | 3 | 388–555 |
-| dinner | 5 | 388–555 |
-| snack | 6 | 223–441 |
+| breakfast | 18 | 246–788 |
+| lunch | 9 | 388–874 |
+| dinner | 13 | 388–874 |
+| snack | 15 | 223–454 |
 
 **Odsetek dni w ±10% celu** (w nawiasie liczba złożeń):
 
 | Cel | 3 posiłków | 4 posiłków | 5 posiłków | 6 posiłków |
 | ---: | ---: | ---: | ---: | ---: |
-| 1600 kcal | 23.3% (21) | 68.0% (367) | 19.3% (261) | 0.3% (6) |
-| 2000 kcal | 0.0% (0) | 12.8% (69) | 70.6% (953) | 50.3% (906) |
-| 2400 kcal | 0.0% (0) | 0.0% (0) | 6.4% (87) | 58.3% (1049) |
-| 2800 kcal | 0.0% (0) | 0.0% (0) | 0.0% (0) | 2.3% (41) |
-| 3200 kcal | 0.0% (0) | 0.0% (0) | 0.0% (0) | 0.0% (0) |
+| 1600 kcal | 41.1% (866) | 11.8% (3738) | 0.6% (1220) | 0.0% (6) |
+| 2000 kcal | 36.4% (767) | 50.5% (15957) | 21.3% (47193) | 2.0% (19587) |
+| 2400 kcal | 6.2% (131) | 35.8% (11297) | 58.5% (129444) | 32.3% (309863) |
+| 2800 kcal | 0.2% (4) | 6.5% (2056) | 35.8% (79118) | 64.3% (616298) |
+| 3200 kcal | 0.0% (0) | 0.2% (64) | 6.4% (14073) | 35.1% (336193) |
 
 ---
 
-## Co z tego wynika
+## Co się zmieniło względem pilota
 
-### Wniosek główny: pula nie sięga górnej połowy celów
+| Cel | Pilot (20 dań) | Pula docelowa (58 dań) | Zmiana |
+| ---: | ---: | ---: | --- |
+| 1600 kcal | 68% (4 posiłki) | 43% (3 posiłki) | dalej z zapasem, przesunęło się na mniej posiłków |
+| 2000 kcal | 76% (5) | 52% (4) | z zapasem |
+| 2400 kcal | 80% (6) | 61% (5) | z zapasem, i **niżej** w liczbie posiłków |
+| 2800 kcal | **12%** (6) | **68%** (6) | z granicy do zapasu |
+| 3200 kcal | **0% wszędzie** | **38%** (6) | **z nieosiągalnego do osiągalnego** |
 
-| Cel | Najlepszy scenariusz | Werdykt |
-| ---: | --- | --- |
-| 1600 kcal | 68% przy 4 posiłkach | z zapasem |
-| 2000 kcal | 76% przy 5 posiłkach | z zapasem |
-| 2400 kcal | 80% przy 6 posiłkach | wystarcza, ale **tylko przy sześciu posiłkach** |
-| 2800 kcal | 12% przy 6 posiłkach | **na granicy** |
-| 3200 kcal | 0% wszędzie | **nieosiągalne** |
+**Główny problem pilota jest rozwiązany.** Sufit dnia podniósł się z 2791 do 2919+ kcal
+(najcięższe: śniadanie 788, obiad 877, kolacja 877, trzy przekąski po 454 do 377). Cel 3200 kcal
+jest osiągalny przy sześciu posiłkach — także **po odfiltrowaniu wykluczeń** (34%).
 
-Powód jest arytmetyczny, nie statystyczny. Najbardziej kaloryczny możliwy dzień z tej puli to
-503 (śniadanie) + 641 (obiad) + 641 (kolacja) + trzy najcięższe przekąski (441 + 319 + 246) =
-**2791 kcal**. Cel 3200 kcal nie jest „mało prawdopodobny" — jest poza zasięgiem, i żadna liczba
-dodatkowych dań w tych samych gramaturach tego nie zmieni.
+Odsetki przy 1600–2400 kcal spadły i to jest **oczekiwane, nie regresja**: mianownik urósł
+wielokrotnie (z 4158 do ponad dwóch milionów złożeń przy sześciu posiłkach), bo doszły dania
+cięższe, które dla niskich celów są nietrafione. Liczba trafień w kategoriach bezwzględnych
+wzrosła wszędzie — z 2115 do 21 028 dla 1600 kcal przy czterech posiłkach.
 
-To nie jest hipotetyczny użytkownik: konto testowe ma wyliczony cel **2790 kcal**, czyli dokładnie
-na tej granicy.
+## Co dalej wąskie
 
-### Wniosek drugi: liczba posiłków jest parametrem, nie szczegółem
+**Obiady i kolacje w limicie 30 minut.** Filtr czasu ścina obiady z 29 do 12, a kolacje z 33 do
+16 — przekąski i śniadania przechodzą bez strat. Cztery wykluczenia zabierają jeszcze dwa obiady
+i dwie kolacje. To ta sama obserwacja co w pilocie i nie zniknęła: **wąskim gardłem jest pora
+obiadowa przy limicie czasu**, nie wykluczenia. Dania szybkie i jednocześnie kaloryczne są
+najrzadszą kombinacją w tej puli.
 
-Ta sama pula daje 0% przy trzech posiłkach i 80% przy sześciu dla celu 2400 kcal. Raport policzony
-na jednej, arbitralnie wybranej liczbie posiłków odpowiedziałby „nie da się" na pytanie, na które
-odpowiedź brzmi „da się, ale nie przy czterech". Generator (S-04) musi traktować `mealsPerDay`
-jako wejście doboru, a nie jako podział celu po równo.
+Nie jest to dziś blokada — przy limicie 30 minut i czterech wykluczeniach każdy z pięciu celów
+ma trafienia. Jest to natomiast **pierwsza rzecz do dołożenia**, gdy pula będzie rosła dalej.
 
-### Wniosek trzeci: filtry przerzedzają OBIADY, nie przekąski
+## Warunki kompozycji z decyzji fazy 3 — spełnione
 
-Limit 30 minut ścina obiady z 9 na 4, a kolacje z 11 na 6 — przekąski i śniadania przechodzą bez
-strat. Cztery wykluczenia zabierają jeszcze jeden obiad i jedną kolację. Wąskim gardłem jest więc
-**pora obiadowa przy limicie czasu**, a nie wykluczenia.
+| Warunek | Wymagane | Jest |
+| --- | ---: | ---: |
+| śniadania powyżej 600 kcal | 4 | 5 |
+| przekąski powyżej 400 kcal | 4 | 5 |
+| obiady powyżej 700 kcal | 6 | 9 |
+| kolacje powyżej 700 kcal | 6 | 9 |
 
-## Decyzja o fazie 4 (agent, upoważnienie właściciela 14.09.2026)
+Minima per pora posiłku z planu też: **20 śniadań** (min 12), **29 obiadów** (min 18),
+**33 kolacje** (min 18), **15 przekąsek** (min 12).
 
-**Skalujemy do puli docelowej, ale z poprawioną kompozycją.** Minima z planu (≥ 12 śniadań,
-≥ 18 obiadów, ≥ 18 kolacji, ≥ 12 przekąsek) zostają, bo raport nie pokazuje potrzeby puli
-trzykrotnie większej — pokazuje potrzebę **innego rozkładu kalorii**. Do minimów dochodzą więc
-trzy warunki treści:
+Dwa z 58 dań powstały **po przeglądzie**, żeby zamknąć jego ustalenie: katalog miał dwa składniki,
+których nie używało żadne danie — „oliwki czarne, z puszki" (dodane pod danie, które odpadło na
+sicie) i „boczniaki, świeże" (leżące tak od pierwszego seeda, przeoczone i przez przegląd).
+Od tej pory pilnuje tego ostrzeżenie w `seed-dishes.mjs`.
 
-1. **Co najmniej cztery śniadania powyżej 600 kcal** i cztery przekąski powyżej 400 kcal.
-   Dziś najcięższe śniadanie ma 503 kcal, a przekąska 441 — to one wyznaczają sufit dnia.
-2. **Co najmniej sześć obiadów i sześć kolacji powyżej 700 kcal**, przy czym część z nich musi
-   mieścić się w 30 minutach — inaczej limit czasu dalej będzie ścinał pulę o połowę.
-3. **Cel 3200 kcal zostaje nieosiągalny do czasu, aż powstaną te dania.** Zapisane świadomie:
-   to nie jest usterka generatora, tylko brak treści, i tak ma brzmieć komunikat, gdy S-04 nie
-   ułoży planu.
+## Trzy dania odrzucone i dlaczego
 
-Nie eskaluję tego do właściciela: `notes/pool-queue.md` §4 rezerwuje eskalację dla sytuacji,
-w której z raportu wychodzi potrzeba puli rzędu trzykrotnie większej. Tutaj liczba dań się broni,
-a zmienia się rozkład gramatur — to jest parametr treści, odwracalny plikiem JSON.
+Sito `modelKcalHint` odrzuciło trzy dania, których deklaracja rozjeżdżała się z wyliczeniem
+powyżej 20%:
+
+| Danie | Deklarowane | Wyliczone | Rozjazd |
+| --- | ---: | ---: | ---: |
+| sałatka grecka z kurczakiem | 700 kcal | 511 kcal | 27% |
+| sałatka z tuńczykiem i awokado | 500 kcal | 367 kcal | 27% |
+| kanapki z fetą i oliwkami | 600 kcal | 469 kcal | 22% |
+
+Wszystkie trzy to dania **warzywne**, w których systematycznie przeszacowałem energię. Zgodnie
+z regułą z `notes/pool-queue.md` §P4 zostały **odrzucone**, a nie poprawione gramaturą pod sito —
+nawet jeśli przyczyną było złe oszacowanie autora, a nie zły przepis. Reguła jest mechaniczna
+właśnie po to, żeby „to była tylko moja pomyłka w szacunku" nie stało się furtką.
+
+## Uwaga metodologiczna do `modelKcalHint`
+
+W pilocie deklaracje były **ślepymi oszacowaniami** — i sito złapało trzy chybione. W fazie 4
+jedenaście dań powstało **porcjowanych do pasma kalorycznego**, bo tego wymagała decyzja fazy 3
+(sufit dnia był za niski). Dla nich `modelKcalHint` jest **celem projektowym**, nie niezależnym
+oszacowaniem, i ich zerowy rozjazd nie jest dowodem trafności szacowania.
+
+Sito dalej robi tam użyteczną robotę — łapie danie, którego gramatura nie dowozi zamierzonego
+pasma — ale to inna własność niż w pilocie. Zapisane, żeby nikt nie odczytał raportu jako dowodu
+na to, że szacowanie się poprawiło. Pozostałe 47 dań ma deklaracje ślepe; największy rozjazd
+wśród nich to 19%, czyli tuż pod progiem.
 
 ---
 

@@ -1,0 +1,35 @@
+{
+  "slug": "platki-z-orzechami-i-bananem",
+  "name": "Płatki z orzechami i bananem",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 10,
+  "modelKcalHint": 710,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "płatki owsiane, suche",
+      "grams": 80
+    },
+    {
+      "ingredientName": "mleko 2%, płynne",
+      "grams": 250
+    },
+    {
+      "ingredientName": "orzechy włoskie",
+      "grams": 30
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 100
+    }
+  ],
+  "steps": [
+    "Płatki zalej mlekiem i odstaw na 5 minut.",
+    "Orzechy posiekaj nożem.",
+    "Banana pokrój w plastry.",
+    "Wymieszaj wszystko razem."
+  ]
+}

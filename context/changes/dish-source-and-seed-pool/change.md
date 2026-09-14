@@ -1,7 +1,7 @@
 ---
 change_id: dish-source-and-seed-pool
 title: Wybór źródła przepisów z makrami i zseedowanie minimalnej puli dań
-status: implementing
+status: impl_reviewed
 created: 2026-09-08
 updated: 2026-09-14
 archived_at: null
@@ -9,6 +9,37 @@ archived_at: null
 
 ## Notes
 
+- **Faza 4, trzecia runda przeglądu (CI) 14.09.2026** (PR #27, commit `3eaf674`, `synchronize`) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
+  0 obserwacji. Jedyne ustalenie poprzedniej rundy (F1 — liczby w prozie sprzed naprawy F2)
+  rozliczone tym commitem w czterech miejscach zamiast dwóch wskazanych: `seed/REVIEW.md:9`,
+  notatka 4.6 w `plan.md`, `change.md` i opis PR-a. Zero plików źródłowych ani danych dań/składników
+  zmienionych względem poprzedniej rundy — bramka jakości potwierdzona zielona dla dokładnie tego
+  commita przez `mcp__github_ci__get_ci_status`.
+- **Faza 4, druga runda przeglądu (CI) 14.09.2026** (PR #27, commit `4b56c3a`, `synchronize`) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 1 ostrzeżenie,
+  0 obserwacji. Poprzednia runda (F1: brakujący `seed/REVIEW.md`; F2: osierocony składnik) została
+  rozliczona tym commitem — `seed/REVIEW.md` powstał, dwa osierocone składniki dostały prawdziwe
+  dania, pula urosła z 56 do **58**. Jedno nowe, drobne ustalenie: ten sam commit, który to
+  naprawił, zostawił `seed/REVIEW.md` (linia 9) i notatkę 4.6 w `plan.md` z liczbami sprzed
+  dodania tych dwóch dań (56 zamiast 58; 27/31/10/14 zamiast 29/33/12/16) — czysto tekstowe,
+  artefakty, które faktycznie coś bramkują (`plan.md` §4.1/4.7, `CLAUDE.md`, `FEASIBILITY.md`) mają
+  już poprawne liczby. Zero wpływu na dane czy runtime. Ta runda miała dostęp do
+  `mcp__github_ci__get_ci_status` i potwierdziła przez niego zieloną bramkę jakości dla tego
+  commita, zamiast przybliżać ją statycznie od zera.
+- **Faza 4 (skalowanie puli, 20 → 58 dań) przejrzana (CI) 14.09.2026** (PR #27) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt WYMAGA UWAGI: 0 krytycznych,
+  1 ostrzeżenie, 2 obserwacje. Ustalenie: `seed/REVIEW.md` nigdy nie powstał, choć plan wymienia
+  go wprost w Fazie 3 i 4 — substancja (narracja przeglądu gramatur) jest w praktyce pokryta
+  Dziennikiem w `notes/pool-queue.md`, ale plik jako taki wciąż nie istnieje. Dwie obserwacje:
+  jeden nowy składnik (`oliwki czarne, z puszki`) nie jest użyty w żadnym daniu — najpewniej
+  ślad po dwóch daniach odrzuconych sitem `modelKcalHint`; i ograniczenie samego przebiegu —
+  bez zgody na `npm`/`npx`/`node -e` w Bashu, kryteria 4.1–4.5 zweryfikowane statycznie
+  (przeliczenie liczby dań per pora, sprawdzenie `reviewedBy`, istnienia składników i
+  niezmiennika Atwatera dla 16 nowych wierszy USDA), nie wykonaniem — ten sam rodzaj
+  ograniczenia co w przeglądach PR #24 i #25 poniżej. **To zamyka plan F-01 w całości**:
+  wszystkie cztery fazy mają teraz `[x]` na każdym kryterium, więc status zmienia się na
+  `impl_reviewed` (poprzednie rundy zostawały przy `implementing`, bo dotyczyły fragmentu planu).
 - **Faza 3 (pilot 20 dań) przejrzana (CI) 14.09.2026** (PR #25, commit `928a056`) —
   [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
   2 obserwacje (komentarz SQL nieodporny na znak nowej linii w nazwie dania; wpis `check:pool`

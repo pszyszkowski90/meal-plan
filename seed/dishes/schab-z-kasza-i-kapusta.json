@@ -1,0 +1,45 @@
+{
+  "slug": "schab-z-kasza-i-kapusta",
+  "name": "Schab z kaszą i kapustą",
+  "mealSlots": [
+    "lunch",
+    "dinner"
+  ],
+  "prepMinutes": 40,
+  "modelKcalHint": 760,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "schab wieprzowy, surowy",
+      "grams": 160
+    },
+    {
+      "ingredientName": "kasza gryczana, sucha",
+      "grams": 80
+    },
+    {
+      "ingredientName": "kapusta biała, surowa",
+      "grams": 150
+    },
+    {
+      "ingredientName": "cebula, surowa",
+      "grams": 50
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Kaszę gotuj w osolonej wodzie 15 minut.",
+    "Kapustę poszatkuj, cebulę posiekaj.",
+    "Na oleju zeszklij cebulę, dodaj kapustę i duś 10 minut.",
+    "Schab pokrój na kotlety, dopraw solą i usmaż po 5 minut z każdej strony.",
+    "Podaj mięso z kaszą i kapustą."
+  ]
+}

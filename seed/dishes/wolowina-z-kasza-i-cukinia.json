@@ -1,0 +1,45 @@
+{
+  "slug": "wolowina-z-kasza-i-cukinia",
+  "name": "Wołowina z kaszą i cukinią",
+  "mealSlots": [
+    "lunch",
+    "dinner"
+  ],
+  "prepMinutes": 40,
+  "modelKcalHint": 820,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "wołowina mielona 10% tłuszczu, surowa",
+      "grams": 150
+    },
+    {
+      "ingredientName": "kasza gryczana, sucha",
+      "grams": 90
+    },
+    {
+      "ingredientName": "cukinia, surowa",
+      "grams": 150
+    },
+    {
+      "ingredientName": "cebula, surowa",
+      "grams": 50
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Kaszę wsyp do wrzącej, osolonej wody i gotuj 15 minut.",
+    "Cebulę posiekaj, cukinię pokrój w półplasterki.",
+    "Na oleju zeszklij cebulę, dodaj mięso i smaż 8 minut, rozdrabniając łyżką.",
+    "Dorzuć cukinię i smaż jeszcze 5 minut.",
+    "Dopraw solą i podaj z kaszą."
+  ]
+}

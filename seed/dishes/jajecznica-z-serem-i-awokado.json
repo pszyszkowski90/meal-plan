@@ -1,0 +1,44 @@
+{
+  "slug": "jajecznica-z-serem-i-awokado",
+  "name": "Jajecznica z serem i awokado",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 780,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 200
+    },
+    {
+      "ingredientName": "ser gouda",
+      "grams": 40
+    },
+    {
+      "ingredientName": "awokado, surowe",
+      "grams": 80
+    },
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 60
+    },
+    {
+      "ingredientName": "masło",
+      "grams": 10
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Rozgrzej masło na patelni.",
+    "Wlej roztrzepane jajka i smaż na małym ogniu, mieszając.",
+    "Gdy jajka prawie się zetną, wsyp starty ser i wymieszaj.",
+    "Awokado pokrój w plastry i ułóż obok.",
+    "Dopraw solą i podaj z chlebem."
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "slug": "jogurt-grecki-z-miodem-i-orzechami",
+  "name": "Jogurt grecki z miodem i orzechami",
+  "mealSlots": [
+    "breakfast",
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 450,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jogurt grecki, pełnotłusty",
+      "grams": 200
+    },
+    {
+      "ingredientName": "miód",
+      "grams": 20
+    },
+    {
+      "ingredientName": "orzechy włoskie",
+      "grams": 25
+    }
+  ],
+  "steps": [
+    "Orzechy posiekaj nożem.",
+    "Jogurt przełóż do miski i polej miodem.",
+    "Posyp orzechami."
+  ]
+}

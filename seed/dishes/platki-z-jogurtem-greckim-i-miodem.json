@@ -1,0 +1,30 @@
+{
+  "slug": "platki-z-jogurtem-greckim-i-miodem",
+  "name": "Płatki z jogurtem greckim i miodem",
+  "mealSlots": [
+    "snack",
+    "breakfast"
+  ],
+  "prepMinutes": 6,
+  "modelKcalHint": 430,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "płatki owsiane, suche",
+      "grams": 50
+    },
+    {
+      "ingredientName": "jogurt grecki, pełnotłusty",
+      "grams": 150
+    },
+    {
+      "ingredientName": "miód",
+      "grams": 20
+    }
+  ],
+  "steps": [
+    "Płatki wymieszaj z jogurtem i odstaw na 5 minut.",
+    "Polej miodem i wymieszaj."
+  ]
+}

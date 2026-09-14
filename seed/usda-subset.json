@@ -29,6 +29,16 @@
       }
     },
     {
+      "fdcId": 168409,
+      "description": "Cucumber, with peel, raw",
+      "per100g": {
+        "kcal": 15,
+        "protein": 0.65,
+        "carbs": 3.63,
+        "fat": 0.11
+      }
+    },
+    {
       "fdcId": 168462,
       "description": "Spinach, raw",
       "per100g": {
@@ -59,6 +69,26 @@
       }
     },
     {
+      "fdcId": 169094,
+      "description": "Olives, ripe, canned (small-extra large)",
+      "per100g": {
+        "kcal": 116,
+        "protein": 0.84,
+        "carbs": 6.04,
+        "fat": 10.9
+      }
+    },
+    {
+      "fdcId": 169214,
+      "description": "Corn, sweet, yellow, canned, whole kernel, drained solids",
+      "per100g": {
+        "kcal": 67,
+        "protein": 2.29,
+        "carbs": 14.34,
+        "fat": 1.22
+      }
+    },
+    {
       "fdcId": 169251,
       "description": "Mushrooms, white, raw",
       "per100g": {
@@ -69,6 +99,36 @@
       }
     },
     {
+      "fdcId": 169291,
+      "description": "Squash, summer, zucchini, includes skin, raw",
+      "per100g": {
+        "kcal": 17,
+        "protein": 1.21,
+        "carbs": 3.11,
+        "fat": 0.32
+      }
+    },
+    {
+      "fdcId": 169640,
+      "description": "Honey",
+      "per100g": {
+        "kcal": 304,
+        "protein": 0.3,
+        "carbs": 82.4,
+        "fat": 0
+      }
+    },
+    {
+      "fdcId": 169703,
+      "description": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)",
+      "per100g": {
+        "kcal": 367,
+        "protein": 7.54,
+        "carbs": 76.25,
+        "fat": 3.2
+      }
+    },
+    {
       "fdcId": 169736,
       "description": "Pasta, dry, enriched",
       "per100g": {
@@ -76,6 +136,16 @@
         "protein": 13.04,
         "carbs": 74.67,
         "fat": 1.51
+      }
+    },
+    {
+      "fdcId": 169975,
+      "description": "Cabbage, raw",
+      "per100g": {
+        "kcal": 25,
+        "protein": 1.28,
+        "carbs": 5.8,
+        "fat": 0.1
       }
     },
     {
@@ -149,6 +219,16 @@
       }
     },
     {
+      "fdcId": 170562,
+      "description": "Seeds, sunflower seed kernels, dried",
+      "per100g": {
+        "kcal": 584,
+        "protein": 20.78,
+        "carbs": 20,
+        "fat": 51.46
+      }
+    },
+    {
       "fdcId": 170567,
       "description": "Nuts, almonds",
       "per100g": {
@@ -156,6 +236,16 @@
         "protein": 21.15,
         "carbs": 21.55,
         "fat": 49.93
+      }
+    },
+    {
+      "fdcId": 170685,
+      "description": "Buckwheat groats, roasted, dry",
+      "per100g": {
+        "kcal": 346,
+        "protein": 11.73,
+        "carbs": 74.95,
+        "fat": 2.71
       }
     },
     {
@@ -199,6 +289,16 @@
       }
     },
     {
+      "fdcId": 171304,
+      "description": "Yogurt, Greek, plain, whole milk",
+      "per100g": {
+        "kcal": 97,
+        "protein": 9,
+        "carbs": 3.98,
+        "fat": 5
+      }
+    },
+    {
       "fdcId": 171413,
       "description": "Oil, olive, salad or cooking",
       "per100g": {
@@ -229,6 +329,16 @@
       }
     },
     {
+      "fdcId": 171705,
+      "description": "Avocados, raw, all commercial varieties",
+      "per100g": {
+        "kcal": 160,
+        "protein": 2,
+        "carbs": 8.53,
+        "fat": 14.66
+      }
+    },
+    {
       "fdcId": 171955,
       "description": "Fish, cod, Atlantic, raw",
       "per100g": {
@@ -249,6 +359,26 @@
       }
     },
     {
+      "fdcId": 172336,
+      "description": "Oil, canola",
+      "per100g": {
+        "kcal": 884,
+        "protein": 0,
+        "carbs": 0,
+        "fat": 100
+      }
+    },
+    {
+      "fdcId": 172470,
+      "description": "Peanut butter, smooth style, without salt",
+      "per100g": {
+        "kcal": 598,
+        "protein": 22.21,
+        "carbs": 22.31,
+        "fat": 51.36
+      }
+    },
+    {
       "fdcId": 173410,
       "description": "Butter, salted",
       "per100g": {
@@ -256,6 +386,16 @@
         "protein": 0.85,
         "carbs": 0.06,
         "fat": 81.11
+      }
+    },
+    {
+      "fdcId": 173420,
+      "description": "Cheese, feta",
+      "per100g": {
+        "kcal": 265,
+        "protein": 14.21,
+        "carbs": 3.88,
+        "fat": 21.49
       }
     },
     {
@@ -309,6 +449,16 @@
       }
     },
     {
+      "fdcId": 174030,
+      "description": "Beef, ground, 90% lean meat / 10% fat, raw",
+      "per100g": {
+        "kcal": 176,
+        "protein": 20,
+        "carbs": 0,
+        "fat": 10
+      }
+    },
+    {
       "fdcId": 174210,
       "description": "Crustaceans, shrimp, mixed species, raw (may contain additives to retain moisture)",
       "per100g": {
@@ -326,6 +476,16 @@
         "protein": 23.91,
         "carbs": 63.1,
         "fat": 2.17
+      }
+    },
+    {
+      "fdcId": 174515,
+      "description": "Turkey, retail parts, breast, meat only, raw",
+      "per100g": {
+        "kcal": 114,
+        "protein": 23.34,
+        "carbs": 0,
+        "fat": 2.33
       }
     },
     {

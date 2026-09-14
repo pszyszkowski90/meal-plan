@@ -31,9 +31,45 @@ autoryzuje przepisy **raz, poza runtime**, człowiek przegląda gramatury, a mak
 z tabeli USDA. **Worker nigdy nie woła modelu** — w runtime czyta wyłącznie D1. Konsekwencje
 i odrzucone opcje: [options.md](context/changes/dish-source-and-seed-pool/options.md).
 
-**Blokada nadal obowiązuje, ale z innego powodu:** generatora planu (S-04) nie implementuj, zanim
-nie powstanie pula dań — nie ma z czego wybierać ani czym liczyć kalorii. Plan puli:
+~~**Blokada nadal obowiązuje:** generatora planu (S-04) nie implementuj, zanim nie powstanie pula
+dań.~~ **ZDJĘTA 14.09.2026** — pula stoi na produkcji: **58 dań i 51 składników**, minima per pora
+posiłku spełnione (20 śniadań, 29 obiadów, 33 kolacje, 15 przekąsek). S-04 ma z czego wybierać
+i czym liczyć kalorie. Plan puli:
 [dish-source-and-seed-pool](context/changes/dish-source-and-seed-pool/plan.md).
+
+**Pula dań jest DANYMI w `seed/`, nie kodem** — i ma własny potok, opisany w
+[seed/README.md](seed/README.md) oraz regułami autorskimi w [seed/PROMPT.md](seed/PROMPT.md):
+
+| Artefakt | Kto pisze | Po co |
+| --- | --- | --- |
+| `seed/ingredients.json` | człowiek | mapowanie polska nazwa → `fdcId` USDA, kategoria, grupy |
+| `seed/usda-subset.json` | `npm run distill:usda` | makra na 100 g, wersjonowane, 51 wierszy |
+| `seed/REVIEW.md` | człowiek | co stempel `reviewedBy` obejmuje, a czego **nie** |
+| `seed/dishes/<slug>.json` | człowiek | gramatury, kroki, pory posiłku, `reviewedBy` |
+| `seed/FEASIBILITY.md` | `npm run check:pool` + wnioski | czy da się ułożyć dzień w ±10% |
+
+**Cztery reguły, których złamanie psuje guardrail ±10%:**
+
+- **Makra pochodzą z wiersza USDA, nigdy z pamięci modelu.** 13.09 zaseedowano 35 składników
+  z makrami „z głowy"; weryfikacja 14.09 pokazała, że **osiem nie zgadzało się z żadnym wierszem**
+  (boczek 541 kcal wobec 393). Wszystkie przeszły sito Atwatera, bo były wewnętrznie spójne.
+- **Nazwa składnika niesie STAN** („ryż biały, suchy"). Suchy ma ~365 kcal, ugotowany ~130 —
+  różnica rzędu 180%, czyli wielokrotność całego budżetu ±10%.
+- **Kolejność ma znaczenie: najpierw składniki, potem dania.** `seed-dishes.mjs` waliduje wobec
+  `seed/ingredients.json`, a nie wobec bazy, więc danie z nowym składnikiem przejdzie walidację
+  i **padnie dopiero przy wgrywaniu** na `NOT NULL constraint failed: dish_ingredient.ingredient_id`.
+  D1 wycofuje wtedy cały plik, więc baza zostaje spójna — ale to jest ten błąd, nie inny.
+- **`reviewedBy` zapisuje prawdę o tym, kto sprawdzał.** Seed `--remote` odmawia dla dania bez
+  tego pola; `--local` przepuszcza (praca w toku). Nigdy nie wpisuj tam cudzego nazwiska.
+
+```sh
+npm run distill:usda                                  # .usda/ (gitignore) → seed/usda-subset.json
+npm run --silent import:usda > .wrangler/ingredients.sql   # --silent OBOWIĄZKOWE, patrz README
+npx wrangler d1 execute mealplan --local --file .wrangler/ingredients.sql
+node ./scripts/seed-dishes.mjs --local                # → .wrangler/dishes.sql
+npx wrangler d1 execute mealplan --local --file .wrangler/dishes.sql
+npm run check:pool -- --local                         # raport wykonalności
+```
 
 ## Twarde reguły
 
@@ -202,7 +238,8 @@ Nie dodawaj własnego hashowania ani tabel sesji.
 ## Komendy i weryfikacja
 
 Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`, `check-conventions`,
-`distill:usda`, `import:usda`, `hooks:install`) są w [package.json](package.json); lint to
+`distill:usda`, `import:usda`, `seed:dishes`, `check:pool`, `hooks:install`) są
+w [package.json](package.json); lint to
 `expo lint` z flat configiem w [eslint.config.js](eslint.config.js). Potok składników — skąd
 biorą się makra i dlaczego nazwa składnika jest jego tożsamością — opisuje
 [seed/README.md](seed/README.md).

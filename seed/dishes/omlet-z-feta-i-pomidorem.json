@@ -1,0 +1,36 @@
+{
+  "slug": "omlet-z-feta-i-pomidorem",
+  "name": "Omlet z fetą i pomidorem",
+  "mealSlots": [
+    "breakfast",
+    "dinner"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 560,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "ser feta",
+      "grams": 50
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "olej rzepakowy",
+      "grams": 10
+    }
+  ],
+  "steps": [
+    "Jajka roztrzep.",
+    "Rozgrzej olej na patelni i wlej jajka.",
+    "Gdy spód się zetnie, rozłóż na połowie pokruszoną fetę i plastry pomidora.",
+    "Złóż omlet na pół i smaż jeszcze minutę pod przykryciem."
+  ]
+}
