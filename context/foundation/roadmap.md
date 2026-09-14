@@ -3,7 +3,7 @@ project: "MealPlan"
 version: 1
 status: draft
 created: 2026-08-31
-updated: 2026-09-13
+updated: 2026-09-14
 prd_version: 1
 main_goal: speed
 top_blocker: decisions
@@ -63,7 +63,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 
 | ID    | Change ID                    | Wynik (użytkownik może …)                                          | Wymagania wstępne  | Odnośniki PRD                     | Status   |
 | ----- | ---------------------------- | ------------------------------------------------------------------ | ------------------ | --------------------------------- | -------- |
-| F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | implementing |
+| F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | done |
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
 | S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | done        |
 | S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | done     |
@@ -140,8 +140,8 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   źródła dają trzy zupełnie różne plany implementacyjne (zapytanie do własnej bazy kontra
   wywołanie modelu na żądanie), więc `/10x-plan` na S-04 przed tą decyzją byłby zmarnowany.
   Ryzyko wtórne: jeśli źródło nie daje kroków, FR-016 wymaga ręcznej obróbki każdego przepisu.
-- **Status:** implementing — fazy 1 i 2 wykonane (schemat i walidacja), fazy 3 i 4 (pula dań)
-  jeszcze nie. Status `planning` do 14.09.2026 był nieaktualny: opisywał stan sprzed fazy 1.
+- **Status:** done — wszystkie cztery fazy wykonane i przejrzane; pula stoi na produkcji
+  (58 dań, 51 składników). Zarchiwizowane 2026-09-14.
 
 ## Fragmenty
 
@@ -320,11 +320,11 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 
 | Identyfikator | Change ID                    | Sugerowany tytuł                                          | Gotowe do `/10x-plan` | Uwagi                                                     |
 | ------------- | ---------------------------- | --------------------------------------------------------- | --------------------- | --------------------------------------------------------- |
-| F-01          | `dish-source-and-seed-pool`  | Wybór źródła przepisów i zseedowanie puli dań              | no                    | Czeka na Otwarte pytania 1 i 2 (decyzja użytkownika)      |
+| F-01          | `dish-source-and-seed-pool`  | Wybór źródła przepisów i zseedowanie puli dań              | —                     | **Zrobione** 14.09.2026; zmiana zarchiwizowana             |
 | S-01          | `account-and-login`          | Konto e-mail + hasło i granica danych użytkownika          | yes                   | Uruchom `/10x-plan account-and-login`                      |
 | S-02          | `profile-and-calorie-target` | Profil użytkownika i wyliczone zapotrzebowanie             | no                    | Po ukończeniu S-01                                         |
 | S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | —                     | **Zrobione** 14.09.2026; zmiana zarchiwizowana             |
-| S-04          | `first-weekly-plan`          | Generator tygodniowego jadłospisu z widokiem przepisu      | no                    | Po F-01, S-02 i S-03                                       |
+| S-04          | `first-weekly-plan`          | Generator tygodniowego jadłospisu z widokiem przepisu      | yes                   | F-01, S-02 i S-03 zrobione — uruchom `/10x-plan first-weekly-plan` |
 | S-05          | `swap-and-reject-dish`       | Wymiana dania i trwałe odrzucenie                          | no                    | Po S-04                                                    |
 | S-06          | `step-by-step-cooking`       | Tryb gotowania krok po kroku                               | no                    | Po F-01 i S-04; wykonalność zależy od Otwartego pytania 2  |
 | S-07          | `shopping-list-from-days`    | Lista zakupów z zaznaczonych dni, w kategoriach            | no                    | Po F-01 i S-04                                             |
@@ -387,3 +387,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **S-03: użytkownik wskazuje potrawy i składniki, których nie chce jeść, maksymalny czas
   przygotowania posiłku oraz liczbę posiłków dziennie — i może to później zmienić** —
   Zarchiwizowane 2026-09-14 → `context/archive/2026-09-13-dietary-preferences/`. Lekcja: —.
+- **F-01: (fundament) źródło przepisów jest wybrane, a w bazie leży pula dań wystarczająca,
+  by ułożyć jeden tydzień w granicy ±10% przy typowych wykluczeniach; każde danie ma składniki
+  z ilościami i kategorią sklepową, makra oraz instrukcję rozbitą na kroki** — Zarchiwizowane
+  2026-09-14 → `context/archive/2026-09-08-dish-source-and-seed-pool/`. Lekcja: —.
