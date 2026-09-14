@@ -17,7 +17,7 @@ na produkcji działa ekran, który potrafi po cichu skasować komuś listę wykl
 | Produkcja | wdrożenie z 13.09 22:26 UTC, smoke czysty: `/` 200, nieznana ścieżka 404, `/api/health` `{"ok":true,"d1":true}`, cztery trasy API bez nagłówka 401 |
 | D1 produkcyjna | **0 dań**, 35 składników, 8 grup wykluczeniowych, 20 przypisań |
 | Migracje `--remote` | `0001`–`0005` **wszystkie zastosowane** (sprawdzone zapytaniem o `d1_migrations`) |
-| S-03 faza 2 | przegląd **REJECTED**, cztery ustalenia `Decision: PENDING`, **kod nienaprawiony**, a `change.md` nosi `impl_reviewed` |
+| S-03 faza 2 | przegląd **REJECTED** — ~~cztery ustalenia `PENDING`, kod nienaprawiony~~ **rozliczone 14.09.2026**: F1 w #14, F2/F3/F4 w #16, wszystkie sześć ustaleń ma decyzję |
 | F-01 | fazy 1 i 2 zrobione, faza 2 **nieprzejrzana**, fazy 3 i 4 zerowe |
 | `seed/` | **nie istnieje**; w `scripts/` jest tylko `seed-ingredients.mjs` |
 | `roadmap.md` | F-01 `planning` (jest `implementing`), S-03 `planning` (jest po fazie 2) |
@@ -40,32 +40,37 @@ Wystarczy poprawić ten akapit w `review-fixes.md`; to część P2.
 Pełny zestaw w `cert-queue.md` §1 — obowiązuje bez zmian. Tu tylko nowa reguła, wyprowadzona
 z tego, jak powstał dług z P1, plus te, o które najłatwiej się potknąć.
 
-### Nowa: zielony przebieg przeglądu agentowego to NIE jest zatwierdzenie
+### Nowa: bramka przeglądu blokuje OTWARTE USTALENIA — i to ona się psuła
 
-`impl-review.yml` kończy się **sukcesem niezależnie od werdyktu** — i to jest świadome
-(`CLAUDE.md`: przegląd agentowy nie jest piątą warstwą bramek, bo nie jest deterministyczny).
-Werdykt leży w treści raportu, nie w statusie przebiegu.
+`impl-review.yml` ma krok **„Sprawdź werdykt przeglądu"**, który ma zatrzymać scalenie, gdy
+przegląd czegoś nie przepuścił. **Ten krok był zepsuty i przez to meldował sukces, sprawdzając
+nie ten plik** — dlatego PR #10 przeszedł na zielono z werdyktem ODRZUCONYM i ustaleniem
+krytycznym o cichej utracie danych. Trzy defekty, naprawione 14.09.2026:
 
-13.09 PR #10 został scalony przy dwóch zielonych przebiegach, a raport w środku mówił
-**REJECTED**, z jednym ustaleniem krytycznym. Nikt go nie przeczytał.
+1. **Zły selektor** (`git ls-files … | tail -1`) — brał alfabetycznie ostatni raport w całym
+   repozytorium, nie raport tego PR-a. Zawsze wygrywał `dish-source-and-seed-pool`, a raport
+   `dietary-preferences` z werdyktem ODRZUCONY nie był czytany **nigdy** (#15).
+2. **Nieudany odczyt** — `git pull --ff-only` kończył się `Invalid username or token`, więc nawet
+   dobry selektor czytałby kopię sprzed przebiegu agenta. Raport bierzemy teraz przez `gh`
+   z gałęzi PR-a, a pusty odczyt jest błędem, nie cichą zgodą (#15).
+3. **Zły sygnał** — pierwsza wersja naprawy pilnowała samego werdyktu, a werdykt jest MIGAWKĄ
+   i zostaje w raporcie na zawsze. Blokowałaby więc każdy późniejszy PR dotykający raportu,
+   łącznie z tym, który ustalenia zamyka. Bramka patrzy teraz na pola `Decision`/`Decyzja`
+   o wartości PENDING (#17).
 
-**Przed każdym scaleniem:**
+**Co z tego wynika dla pracy:**
 
-```sh
-gh pr checks <nr>                                        # to mówi tylko, że workflow się wykonał
-git fetch origin <galaz> && git show origin/<galaz>:context/changes/<id>/reviews/impl-review.md \
-  | grep -E "Verdict|Severity|Decision"                  # to mówi, co orzekł
-```
-
-- Werdykt `REJECTED` albo jakiekolwiek `Decision: PENDING` → **nie scalaj**, dopóki nie ma
-  decyzji przy każdym ustaleniu (naprawione / świadomie odrzucone z uzasadnieniem).
+- Scalenie zatrzyma **otwarte ustalenie**, nie napis w nagłówku. Rozliczenie ustalenia znaczy
+  wpisanie decyzji: naprawione, zaakceptowane, odroczone — każda z uzasadnieniem.
 - **Nie stempluj `status: impl_reviewed`**, dopóki ustalenia są `PENDING`. Stempel znaczy
   „przejrzane i rozliczone", nie „przejrzane".
+- Zielony przebieg **nadal nie zwalnia z przeczytania raportu**. Bramka łapie brak decyzji, nie
+  złą decyzję — a przy F1 okazało się, że **proponowana w przeglądzie naprawa była
+  niewystarczająca** i test nadal świecił na czerwono.
 
-> Nie proponuję robić z przeglądu agentowego twardej bramki — decyzja, że nią nie jest, ma
-> w `CLAUDE.md` uzasadnienie i zostaje. Zmienia się tylko to, że werdykt trzeba **przeczytać**.
-> Jeśli to za mało, najtańszy mechanizm to jedna linijka w workflow: komentarz na PR z linią
-> `Verdict`. Do decyzji właściciela, nie do zrobienia po cichu.
+```sh
+git show origin/<galaz>:context/changes/<id>/reviews/impl-review.md | grep -E "Verdict|Decision"
+```
 
 ### Przypomnienia
 
@@ -237,3 +242,32 @@ Do decyzji: <albo ->
 ```
 
 <!-- DZIENNIK PONIŻEJ -->
+
+### 07:40 UTC — P1 Strażnik zapisu (F1)
+Wynik: ok
+Co zrobione: test odtwarzający utratę danych napisany PRZED naprawą i czerwony, z dowodem
+w wyniku — wychodził prawdziwy `PUT` z `"exclusions":[]`. **Naprawa z przeglądu okazała się
+niewystarczająca**: sama klauzula `if (load.kind !== 'ready') return;` nie przechodziła testu, bo
+bramkuje tylko okno PRZED zakończeniem pobrania. Prawdziwą przyczyną był jeden strażnik `touched`
+na dwa niezależne byty — rozdzielony na `touchedPreferences` i `touchedExclusions`. Bramkowanie
+stanem pobrania zostało jako druga warstwa, rozszerzona o `offline` i `error`.
+Co zacommitowane: `src/app/(app)/preferences.tsx`, `tests/e2e/preferences-screen.spec.ts`
+Werdykt przeglądu: przeczytany ręcznie (bramka była wtedy jeszcze zepsuta)
+PR: #14
+Do decyzji: —
+
+### 07:45 UTC — P2 Pozostałe ustalenia i bramka werdyktu
+Wynik: ok
+Co zrobione: F2 zaimplementowane (`aria-errormessage` + `aria-describedby`, `useId()`), F3 i F4
+pokryte testami, poprawiony akapit o `0004 --remote` w `review-fixes.md`, wszystkie sześć ustaleń
+rozliczone decyzjami. Przy okazji **naprawiona bramka werdyktu**, która sprawdzała raport innej
+zmiany i przez to przepuściła PR #10 — trzy defekty, opisane w §1. Usunięta też przyczyna
+migotania testów: `openPreferences` czekało na ODPOWIEDŹ, a nie na jej ZASTOSOWANIE.
+Co zacommitowane: `src/components/ui/text-field.tsx`, `tests/e2e/preferences-screen.spec.ts`,
+`context/changes/dietary-preferences/reviews/impl-review.md`,
+`context/changes/dish-source-and-seed-pool/follow-ups/review-fixes.md`,
+`.github/workflows/impl-review.yml`
+Werdykt przeglądu: zielony; wszystkie ustalenia mają decyzje
+PR: #15, #16, #17
+Do decyzji: zostaje P3 — drugie konto testowe zakładam sam adresem `+clerk_test`, bez maila
+właściciela.
