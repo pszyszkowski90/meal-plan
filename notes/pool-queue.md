@@ -302,3 +302,26 @@ Co zacommitowane: `src/app/(app)/preferences.tsx`, `src/app/(app)/profile.tsx`,
 Werdykt przeglądu: <do uzupełnienia po przebiegu na PR>
 PR: <do uzupełnienia>
 Do decyzji: —
+
+### 12:12 UTC — P3a Bramka werdyktu, czwarty defekt
+Wynik: ok
+Co zrobione: przy rozliczaniu przeglądu PR #20 wyszło, że bramka **znowu** meldowała sukces,
+nie przeczytawszy niczego — i to dwoma niezależnymi drogami. (1) Agent nie ma zgody na
+`git commit`, więc raport wystawił **wyłącznie jako komentarz**; bramka czyta plik, nie znalazła
+go i wypisała notkę „PR nie dotyczy żadnego planu", mając przed sobą dwa ustalenia PENDING.
+(2) Pole decyzji musiało mieć dwukropek POZA pogrubieniem (`- **Decyzja**: …`); raport napisany
+w drugim, identycznie renderującym się wariancie dał **zero** ustaleń — przy werdykcie
+odrzucającym każde PENDING byłoby niewidzialne. Obie drogi zamknięte: brak należnego raportu
+(PR rusza `plan.md`) to teraz błąd, wyrażenie przyjmuje oba warianty, a raport z ustaleniami
+i zerem decyzji też blokuje. Logika sprawdzona lokalnie na sześciu przypadkach — kody wyjścia
+zgodne z oczekiwanymi.
+**Czego świadomie NIE zrobiono:** nie ruszono uprawnień agenta. `--allowedTools` **zastępuje**
+domyślny zestaw narzędzi, więc może odebrać mu narzędzia MCP do komentarza i etykiet, a skutku
+nie da się sprawdzić na PR-ze, który tę zmianę wprowadza (recenzent jest na nim wyłączony).
+Do czasu naprawy raport do PR-a o planie commituje prowadzący zadanie.
+Co zacommitowane: `.github/workflows/impl-review.yml`,
+`context/changes/dietary-preferences/reviews/impl-review-p3.md`, `notes/pool-queue.md`
+Werdykt przeglądu: recenzent wyłączony na tym PR-ze z założenia (walidacja workflow wobec
+gałęzi domyślnej) — to udokumentowane zachowanie, nie usterka
+PR: <do uzupełnienia>
+Do decyzji: —
