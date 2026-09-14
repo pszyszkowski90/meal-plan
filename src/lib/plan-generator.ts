@@ -330,10 +330,11 @@ function findDay(
       return fits;
     }
     const slot = slots[position];
+    // Niezmiennik: `generatePlan` kończy działanie w kroku 1 diagnozy, gdy którakolwiek pora ma
+    // mniej dań, niż dzień potrzebuje, a `pools` nie jest mutowane w trakcie przeszukiwania
+    // (użycie śledzą `usedToday` i `usesLeft`, nikt nie usuwa z listy). Lista jest więc tu
+    // zawsze niepusta.
     const list = pools[slot];
-    if (list.length === 0) {
-      return false;
-    }
     const start = offsets[position] % list.length;
     // Dwa zakresy, każdy rosnący po kaloriach — dlatego `break` wewnątrz zakresu jest poprawny.
     const ranges: readonly (readonly [number, number])[] = [

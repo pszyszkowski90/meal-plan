@@ -156,7 +156,14 @@ generatora.
 - **Fix**: Usunąć gałąź `if (list.length === 0) { return false; }` — niezmiennik, który ją
   czynił martwą, jest już udokumentowany komentarzem przy kroku 1 diagnozy kilka linii wyżej
   w tym samym pliku, więc usunięcie nie traci wiedzy.
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE, naprawione. Ustalenie jest trafne i konsekwentne: to ta sama klasa
+  martwego strażnika, którą poprzednia runda usunęła w F11, a niezmiennik rzeczywiście zachodzi
+  (krok 1 diagnozy kończy działanie dla każdej pory uboższej niż potrzeby dnia, a `pools` nie jest
+  mutowane w trakcie przeszukiwania). Gałąź usunięta, a niezmiennik — który był wiedzą niesioną
+  przez ten strażnik — zapisany komentarzem w jej miejscu, żeby usunięcie nie było utratą
+  informacji. Sprawdzone, że usunięcie jest bezpieczne także gdyby niezmiennik kiedyś przestał
+  zachodzić: przy pustej liście `start` byłoby `NaN`, oba zakresy nie wykonałyby ani jednej
+  iteracji i `walk` zwróciłby `false` — dokładnie to, co robił strażnik.
 
 ## Co przegląd potwierdził jako poprawne (bez zastrzeżeń)
 
