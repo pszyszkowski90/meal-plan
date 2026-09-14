@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -27,12 +28,21 @@ export type TextFieldProps = TextInputProps & {
  *   * `aria-label` — droga webowa. Podana wprost, a nie zostawiona tłumaczeniu React Native Web,
  *     żeby nazwa nie zależała od tego, które propsy ta warstwa akurat mapuje.
  *
- * `aria-invalid` i `aria-errormessage` domykają błąd: pole w błędzie ma być rozpoznawalne bez
- * czytania tekstu pod nim. Obie wartości są nadpisywalne przez `rest` — wywołujący, który wie
- * lepiej, nie musi walczyć z prymitywem.
+ * **Błąd jest POWIĄZANY z polem, a nie tylko narysowany pod nim.** `aria-invalid` mówi, że pole
+ * jest w błędzie; `aria-errormessage` wskazuje element z treścią tego błędu, dzięki czemu czytnik
+ * ekranu przeczyta powód, a nie samo „niepoprawne". Identyfikator generuje `useId()`, bo prymityw
+ * nie wie, ile razy wystąpi na ekranie — dwa pola z tym samym `id` wskazywałyby ten sam komunikat.
+ *
+ * `aria-describedby` idzie obok celowo, mimo że powiela powiązanie: wsparcie dla
+ * `aria-errormessage` w czytnikach ekranu jest do dziś nierówne, a `describedby` działa wszędzie.
+ * Kosztuje jeden atrybut, a jest różnicą między „przeczytany powód" a „wiadomo, że coś nie gra".
+ *
+ * Wszystkie trzy są nadpisywalne przez `rest` — wywołujący, który wie lepiej, nie musi walczyć
+ * z prymitywem.
  */
 export function TextField({ label, error, style, ...rest }: TextFieldProps) {
   const theme = useTheme();
+  const errorId = useId();
 
   return (
     <ThemedView style={styles.container}>
@@ -44,6 +54,8 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
         accessibilityLabel={label}
         aria-label={label}
         aria-invalid={error ? true : undefined}
+        aria-errormessage={error ? errorId : undefined}
+        aria-describedby={error ? errorId : undefined}
         style={[
           styles.input,
           { backgroundColor: theme.backgroundElement, color: theme.text },
@@ -54,7 +66,7 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
       />
 
       {error ? (
-        <ThemedText type="small" themeColor="textDanger">
+        <ThemedText id={errorId} nativeID={errorId} type="small" themeColor="textDanger">
           {error}
         </ThemedText>
       ) : null}
