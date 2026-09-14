@@ -342,6 +342,7 @@ test.describe('Faza 3 — ekran profilu w przeglądarce', () => {
     await expect(page.getByText('MealPlan').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Home', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Profil', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Jadłospis', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Preferencje', exact: true })).toBeVisible();
 
     // Starter zniknął: żadnego „Docs", żadnego „Explore".
