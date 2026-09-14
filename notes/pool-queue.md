@@ -136,11 +136,23 @@ Do zbudowania od zera — **jedenaście kryteriów, zero odhaczonych**:
 idempotentny po tożsamości wiersza, a **sito Atwatera importuje z `src/lib/`, zamiast je
 przepisywać**. Trzymaj się tego: skrypt z kopią progu zasieje dania, których walidator nie przyjmie.
 
-**Podział pracy:** agent buduje potok, generuje kandydatów i **odsiewa maszynowo** — Atwater,
-próg na porcję, gęstość energetyczna plus nowe sito wiarygodności per składnik — po czym sortuje
-dania po podejrzliwości. Do człowieka idą **tylko pozycje odstające**, nie wszystkie dwadzieścia
-(§4). Niezmienne zostaje jedno: **agent nie wpisuje `reviewedBy` za człowieka**, bo to bramka
-przed seedem na produkcję, a nie formalność.
+**Weryfikację przepisów przejmuje agent w całości** (decyzja właściciela z 14.09, §4). Człowiek
+wyszedł z pętli, więc **sito jest jedyną obroną i musi być ostrzejsze niż zakładał pierwotny plan**:
+
+1. **Makra muszą pochodzić z wiersza USDA, nie z pamięci modelu.** Dziś **żaden z 35 składników
+   na produkcji nie ma `usda_fdc_id`** — makra wpisał nocą agent z własnej wiedzy. Przeszły sito
+   Atwatera, co łapie błędy rzędu ×10, ale nie dowodzi, że liczba jest prawdziwa. **Backfill
+   `usda_fdc_id` i weryfikacja tych 35 wierszy wobec USDA to pierwsza robota w P4**, przed
+   dodaniem czegokolwiek nowego.
+2. **Dane USDA są osiągalne bez udziału właściciela** (sprawdzone 14.09): zbiorcze pliki
+   `https://fdc.nal.usda.gov/fdc-datasets/…` pobierają się bez klucza, a API
+   `api.nal.usda.gov/fdc/v1` odpowiada z `DEMO_KEY` i oddaje `fdcId` oraz cztery makra.
+   Preferuj **pobranie zbiorcze** — deterministyczne, wersjonowalne w `seed/usda-subset.json`
+   i bez limitów zapytań. Plik źródłowy zostaje poza repo, w `.gitignore`.
+3. **Rozjazd deklaracji modelu z wyliczeniem z USDA powyżej 20% oznacza odrzucenie dania**, nie
+   korektę gramatury pod sito. Powód do Dziennika.
+4. `reviewedBy` zapisuje prawdę: `agent (upoważnienie właściciela 14.09.2026)`. Nigdy cudze
+   nazwisko.
 
 ### P5 — F-01 faza 4: skalowanie puli · duże
 
@@ -164,10 +176,10 @@ rozstrzyga agent (§4); Workers Paid wraca dopiero po pomiarze CPU z P5 i tylko 
 
 - **Nie implementuj S-04 przed zamknięciem P4.** Blokada z `CLAUDE.md` obowiązuje.
 - **Nie seeduj dań `--remote` bez `reviewedBy`.** Bramka w `seed-dishes.mjs` ma odmawiać.
-- **Nie wpisuj `reviewedBy` za człowieka** — to bramka przed seedem na produkcję. Odsiew
-  maszynowy owszem, podpis nie.
+- **Nie wpisuj `reviewedBy` cudzym nazwiskiem** — zapisuje się tam, kto NAPRAWDĘ sprawdzał.
+- **Nie naginaj gramatury, żeby danie przeszło sito** — odrzuć je i zapisz powód.
 - **Nie odhaczaj 2.9 ani 2.10 bez dowodu** — zrzut albo nic.
-- **Nie rozluźniaj D14** (wariant (b) z §4) bez wyraźnej zgody właściciela.
+- **Nie seeduj składnika bez `usda_fdc_id`** — od 14.09 makra muszą pochodzić z wiersza USDA.
 - **Nie stempluj statusów przed zamknięciem ustaleń.** Dokładnie tak powstał dług z P1.
 - **Nie rób `10x get`** — synchronizuje `.claude/skills/` i kasuje resztę.
 - **Nie ruszaj ustawień repozytorium** ani nie dodawaj współpracowników.
@@ -178,8 +190,8 @@ rozstrzyga agent (§4); Workers Paid wraca dopiero po pomiarze CPU z P5 i tylko 
 ## 4. Co agent rozstrzyga sam, a co należy do właściciela
 
 **Domyślnie rozstrzyga agent.** Ta sekcja miała wcześniej sześć pozycji „do decyzji właściciela"
-i to była pomyłka: pięć z nich było zwykłą pracą, którą da się wykonać i cofnąć. Zostaje jedna
-realna decyzja i jedno pytanie o kompromis.
+i to była pomyłka: pięć z nich było zwykłą pracą, którą da się wykonać i cofnąć. Po decyzji
+z 14.09 (niżej) zostaje **jedna** realna decyzja — i to dopiero po pomiarze.
 
 > **Sprostowanie numeracji.** W PRD jest **pięć** Open Questions. Komunikat „planu nie da się
 > ułożyć" to **pytanie 3**, nie 4. „Workers Paid" **nie jest** Open Question — to pozycja
@@ -194,7 +206,7 @@ realna decyzja i jedno pytanie o kompromis.
 | **Skalowanie puli po pilocie** | Minima są już w planie (≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji, ≥ 12 przekąsek), a raport wykonalności odpowiada, czy się bronią. Eskaluj **wyłącznie**, gdy z raportu wyjdzie potrzeba rzędu trzykrotnie większej puli — to już niespodzianka kosztowa, nie parametr. |
 | **2.10 — czytelność listy przy 20 wpisach** | Wygeneruj 20 wpisów, zrób zrzut, obejrzyj go i zapisz werdykt z dowodem. Osąd wizualny na podstawie zrzutu jest w zasięgu agenta. |
 | **2.9 — Expo Go** | Spróbuj emulatora (obraz API 35, **nie** 36.1; wymaga firmowego DNS). Jeśli wstanie — sprawdź zakładkę, ikonę i wyszukiwarkę, zrób zrzut. Dopiero gdy emulator nie wstanie, oddaj to właścicielowi z opisem błędu. |
-| **Przegląd gramatur — część maszynowa** | D14 chodzi o wyłapanie tego, co model zmyśli (300 g oliwy w porcji), a nie o rytuał. Część sit już istnieje: Atwater, próg na porcję, gęstość energetyczna. Dołóż **sito wiarygodności per składnik** i posortuj dania po podejrzliwości. Do człowieka idą wtedy tylko pozycje odstające, nie wszystkie dwadzieścia. |
+| **Przegląd gramatur — CAŁY** | Właściciel upoważnił agenta 14.09 (niżej). Część sit już istnieje: Atwater, próg na porcję, gęstość energetyczna. Dochodzi weryfikacja wobec prawdziwych wierszy USDA i sito wiarygodności per składnik. |
 
 ### Naprawdę należy do właściciela
 
@@ -203,16 +215,23 @@ realna decyzja i jedno pytanie o kompromis.
    10 ms **zabija wywołanie**, a nie spowalnia — więc gdy pomiar pokaże przekroczenie, przedstaw
    liczbę i zapytaj. Nie wcześniej.
 
-2. **Podpis pod gramaturami — i tylko pod tym, co wystaje.** `reviewedBy` jest bramką przed
-   seedem na produkcję, więc **agent nigdy nie wpisuje tam cudzego nazwiska** — to fałszowanie
-   zapisu, nie skrót. Do wyboru:
-   - **(a, rekomendowane)** właściciel ogląda kilka dań odstających po sicie i podpisuje je;
-     mechanizm D14 zostaje nietknięty, koszt to minuty;
-   - **(b)** świadome rozluźnienie D14: `reviewedBy` przyjmuje wartość automatyczną, gdy wszystkie
-     sita przechodzą i danie nie jest odstające. **Tego nie wprowadzaj bez wyraźnej zgody** —
-     osłabia decyzję, która ma w repo uzasadnienie.
+2. **Ustawienia repozytorium** — gdyby kiedykolwiek były potrzebne.
 
-3. **Ustawienia repozytorium** — gdyby kiedykolwiek były potrzebne.
+### ROZSTRZYGNIĘTE 14.09.2026 — weryfikację przepisów przejmuje agent
+
+Właściciel **upoważnił agenta do zweryfikowania wszystkich przepisów** i zrezygnował z własnego
+przeglądu gramatur. To jest świadome rozluźnienie D14, podjęte przez właściciela po przedstawieniu
+kosztu — nie skrót agenta.
+
+**Co z tego wynika i czego NIE wolno:**
+
+- `reviewedBy` zapisuje **prawdę o tym, kto sprawdzał**: `agent (upoważnienie właściciela
+  14.09.2026)`. Nadal **nie wolno wpisać tam cudzego nazwiska** — bramka `--remote` ma odróżniać
+  danie sprawdzone od niesprawdzonego, a nie udawać, że ktoś je oglądał.
+- **Sito jest teraz JEDYNĄ obroną**, bo człowiek wyszedł z pętli. Dlatego musi być ostrzejsze,
+  a nie takie samo: patrz P4, punkt o weryfikacji wobec USDA.
+- Danie, którego sito nie przepuszcza, **nie jedzie na produkcję** i ląduje w Dzienniku z powodem.
+  Nie „poprawiaj" gramatury tak, żeby przeszła — to obchodzenie własnego guardraila.
 
 ## 5. Dziennik
 
