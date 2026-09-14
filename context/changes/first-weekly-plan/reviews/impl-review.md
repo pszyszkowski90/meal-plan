@@ -5,19 +5,26 @@
 - **Scope**: Faza 2 z czterech (czysty moduł generatora). Faza 1 (schemat) scalona w PR #32; fazy
   3–4 jawnie poza zakresem tego PR-a.
 - **Date**: 2026-09-14
-- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34879232914
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34880202524
 - **Verdict**: APPROVED
-- **Findings**: 0 critical, 0 warnings, 1 observation
+- **Findings**: 0 critical, 0 warnings, 0 observations
 
-> **Metoda tego przebiegu.** Ten przegląd wykonuje się w środowisku, w którym narzędzie Bash
-> odmawia `npm ci` / `npm test` / `npx tsc` / `npx expo lint` / `npm run check-conventions` —
-> każde z nich prosi o zgodę, której nikt w CI nie potwierdzi. Zamiast zgadywać wynik, przegląd
-> użył **rzeczywistego przebiegu równoległego workflow „Bramka jakości"** na tym samym commicie
-> (`34879232958`, job „Typy, lint, testy, konwencje, lockfile", **sukces**, zero nieudanych
-> kroków) jako autorytatywnego dowodu automatycznej weryfikacji — łącznie z surowym logiem
-> testów (`ℹ pass 136` / `ℹ fail 0`). Dryf planu, dyscyplina zakresu, bezpieczeństwo i zgodność
-> wzorców zostały ocenione czytaniem kodu, nie jego uruchomieniem. Jeśli przyszły przebieg ma
-> uruchamiać te komendy samodzielnie, `--allowedTools` tego zadania musi je dopuścić.
+> **Kontekst tego przebiegu.** To jest czwarty commit na gałęzi i drugi przebieg tej umiejętności
+> w CI. Poprzedni przebieg (`34879232914`) zgłosił jedno ustalenie (F1 — martwa gałąź obronna
+> `if (list.length === 0) { return false; }` w `findDay`). Commit `1634237` usuwa dokładnie tę
+> gałąź i zapisuje niezmiennik, który ją czynił martwą, komentarzem w jej miejscu. Ten przebieg
+> weryfikuje **stan po tej poprawce** od zera — pełny plan wobec pełnej różnicy PR-a — a nie tylko
+> deltę względem poprzedniego raportu.
+>
+> **Metoda automatycznej weryfikacji.** Sandbox tego zadania odmawia `npm ci`/`npx tsc`/
+> `npx expo lint`/`npm test`/`npm run check-conventions` przez Bash bez potwierdzenia, którego
+> nikt w CI nie da. Zamiast zgadywać, przegląd użył **rzeczywistego wyniku** równoległego
+> workflow „Bramka jakości" na TYM SAMYM commicie (run `34880202519`, job „Typy, lint, testy,
+> konwencje, lockfile", **sukces**) jako dowodu: `tsc --noEmit` bez błędów, `expo lint` bez błędów,
+> `npm test` → `ℹ pass 136` / `ℹ fail 0`, `check-conventions: czysto (51 plików)`,
+> `check-lock: package-lock.json spójny — 1127 pakietów`. Ten sam licznik testów (136) jak przed
+> poprawką potwierdza, że usunięcie gałęzi nie zmieniło zaobserwowanego zachowania — zgodne
+> z tym, że gałąź była martwa.
 
 ## Verdicts
 
@@ -33,151 +40,66 @@
 
 ## Metoda
 
-Porównanie: pełny tekst planu (fazy 2, sekcja „Krytyczne szczegóły implementacji" i pięć
-rozstrzygnięć) wobec `git diff origin/main...HEAD`, przeczytany w całości
-`src/lib/plan-generator.ts` (586 linii) i próbkowany `src/lib/plan-generator.test.ts` (810 linii,
-35 nazwanych testów zmapowanych na kryteria 2.1–2.17), plus porównanie stylu z
-`src/lib/dish-validation.ts` i `src/lib/calorie-target.ts`.
-
-Ten PR jest **trzecim commitem** na gałęzi po lokalnym, adwersaryjnym przeglądzie z mutacjami
-punktowymi (`reviews/impl-review.md` sprzed tego przebiegu, jedenaście ustaleń F1–F11, wszystkie
-rozliczone). Ten przegląd nie powtarza mutacji — weryfikuje **stan po poprawkach** czytaniem kodu
-i potwierdza, że nic z tamtych napraw nie zostało cofnięte.
+Porównanie: pełny tekst planu (Faza 2, sekcje „Krytyczne szczegóły implementacji" i cztery
+niezmienniki udokumentowane przy pętli) wobec `git diff origin/main...HEAD` (5 plików), diff
+commita `1634237` przeczytany w całości (`+7/-4` w `plan-generator.ts`), oraz ponowne przeczytanie
+funkcji `findDay` (`plan-generator.ts:280-410`) w kontekście kroku 1 diagnozy (`:442-491`), żeby
+zweryfikować niezmiennik, na który powołuje się nowy komentarz.
 
 ## Cross-reference: pliki zmienione vs. zaplanowane
 
 | Plik | W planie fazy 2? | Werdykt |
 |---|---|---|
 | `src/lib/plan-generator.ts` | tak | MATCH |
-| `src/lib/plan-generator.test.ts` | tak | MATCH |
-| `context/changes/first-weekly-plan/plan.md` | konwencja Progress | oczekiwane (odhaczenie 2.1–2.17) |
-| `context/changes/first-weekly-plan/reviews/impl-review.md` | konwencja przeglądu | oczekiwane |
+| `src/lib/plan-generator.test.ts` | tak (bez zmian w tym commicie) | MATCH |
+| `context/changes/first-weekly-plan/plan.md` | konwencja Progress | oczekiwane (Faza 2 odhaczona, `f6ff446`) |
+| `context/changes/first-weekly-plan/reviews/impl-review.md` | konwencja przeglądu | oczekiwane (autor rozliczył F1 przed tym przebiegiem) |
 | `notes/plan-queue.md` | konwencja Dziennika (`CLAUDE.md` §Dokumenty projektu) | oczekiwane |
 
-Zero plików fazy 3/4 (`src/server/repository/plans.ts`, `src/app/api/plan+api.ts`,
-`src/app/(app)/plan.tsx`, `migrations/`, `tests/e2e/`). Zero ruchu w `package-lock.json`
-(`git diff --stat` puste).
+Zero plików fazy 3/4. `git diff --stat` dla `package-lock.json` puste.
 
-## Plan drift — kontrakt modułu
+## Weryfikacja poprawki F1
 
-Sygnatury, stałe i niezmienniki z sekcji „Wymagane zmiany → 1. Moduł generatora" porównane
-z `plan-generator.ts:24–414`:
+Poprzedni przebieg: `if (list.length === 0) { return false; }` w `walk()` był nieosiągalny, bo
+krok 1 diagnozy w `generatePlan` gwarantuje `pools[slot].length >= needed >= 1` dla każdej pory
+obecnej w dniu, a `pools` nie jest mutowane w trakcie przeszukiwania.
 
-- `CalorieTolerance = 0.1`, `PlanDays = 7`, `DefaultNodeBudget` — obecne; `DefaultNodeBudget` to
-  **100 000**, nie 200 000 z pierwotnego kontraktu planu. To jest udokumentowana i uzasadniona
-  zmiana z lokalnego przeglądu (F2: 200 000 węzłów ekstrapoluje się do ~12 ms, powyżej limitu
-  10 ms, który budżet ma chronić) — MATCH z **zaktualizowanym** zamiarem planu, nie DRIFT: plan
-  sam nazywa kalibrację tej stałej pracą G4, a wartość startowa „po bezpiecznej stronie" jest
-  zgodna z duchem zapisu.
-- `GeneratorDish`, `GeneratorInput`, `PlanMeal`, `PlanDay`, `PlanFailure`, `GeneratorResult`,
-  `generatePlan(input): GeneratorResult` — kształty identyczne z kontraktem planu, pole po polu.
-- Cztery niezmienniki z sekcji „Krytyczne szczegóły implementacji": sortowanie rosnące + `id` jako
-  rozstrzygacz remisu (`bySlot:257–268`), przycinanie obustronne osobno na dwóch zakresach po
-  zawinięciu ziarna (`findDay:339–390`), zakaz powtórzenia w dniu (`usedToday`, `:365–367`,
-  `:379`), twardy budżet węzłów sprawdzany PRZED odwiedzeniem węzła (`:346–350`) — wszystkie
-  obecne i udokumentowane komentarzem przy pętli, dokładnie jak plan tego żąda.
-- Import wyłącznie `./dish-validation.ts` — potwierdzone `grep -n "^import" plan-generator.ts` →
-  jeden wynik.
-- Piąte ramię diagnozy (`combination`, odróżnione od `searchBudget` i `calories`) — obecne,
-  `reason: 'combination'` zwracane wyłącznie gdy przestrzeń wyczerpana przy nietkniętym budżecie
-  (`:572–585`), zgodnie z minimalnym przykładem z planu (śniadanie/obiad/kolacja ∈ {200,800}).
+Commit `1634237` usuwa gałąź i zostawia komentarz:
 
-Wniosek: **MATCH** na każdym punkcie kontraktu; jedyne odejście (budżet 100k zamiast 200k) jest
-udokumentowaną poprawką znalezioną i uzasadnioną w tym samym cyklu implementacji, nie dryfem.
+```
+// Niezmiennik: `generatePlan` kończy działanie w kroku 1 diagnozy, gdy którakolwiek pora ma
+// mniej dań, niż dzień potrzebuje, a `pools` nie jest mutowane w trakcie przeszukiwania
+// (użycie śledzą `usedToday` i `usesLeft`, nikt nie usuwa z listy). Lista jest więc tu
+// zawsze niepusta.
+const list = pools[slot];
+const start = offsets[position] % list.length;
+```
 
-## Safety, quality, pattern compliance
+Sprawdzone niezależnie, że usunięcie jest bezpieczne **także gdyby niezmiennik przestał
+zachodzić**: przy `list.length === 0`, `start = offsets[position] % 0` daje `NaN`; obie części
+zawinięcia stają się `[NaN, 0]` i `[0, NaN]` — w obu przypadkach warunek pętli `index < to` jest
+fałszywy natychmiast (`NaN < 0` i `0 < NaN` to zawsze `false` w JS), więc żadna iteracja się nie
+wykonuje i `walk` spada do `return false` na końcu funkcji — dokładnie ten sam wynik, jaki dawał
+usunięty strażnik. Usunięcie nie wprowadza więc nowej klasy awarii nawet w scenariuszu, którego
+niezmiennik miał zapobiegać.
 
-Moduł jest czystą funkcją bez I/O — klasy ryzyka „injection", „authn/authz", „CORS" nie mają tu
-zastosowania. Sprawdzone punkty specyficzne dla tego kodu:
+To jest ta sama klasa poprawki, co ustalenie F11 z lokalnego przeglądu adwersaryjnego wcześniej
+na tej gałęzi (`const start = list.length > 0 ? … : 0`) — usunięcie martwego strażnika i zapisanie
+niezmiennika komentarzem zamiast kodem obronnym, który nigdy się nie wykona.
 
-- **Brak nieskończonej pętli/rekursji**: `budget.visited >= budget.limit` sprawdzane przed każdym
-  odwiedzeniem węzła (`:346`), pętla relaksacji ograniczona `maxRelaxation = PlanDays` (`:527`).
-  Ścieżka porażki zawsze kończy zwróceniem `PlanFailure`, nigdy nie zawiesza wywołania.
-- **Brak cichego kłamstwa o kaloriach**: `totalKcal` niesione z sumy przeszukiwania
-  (`foundSum`, `:328`, `:405`), nie przeliczane ponownie przez `find()` — usuwa klasę błędu opisaną
-  w F10 poprzedniego przeglądu (awaryjne `: 0` przy nietrafieniu).
-- **Zero planu częściowego**: `ok: false` nie niesie `days` (sprawdzone typem `GeneratorResult`
-  i testem „porażka nie niesie pola days”); pętla dni przerywa i odrzuca cały tydzień
-  (`failed`/`budgetHit`, `:538–569`) zamiast zwrócić niepełną tablicę.
-- **Jedna drobna obserwacja** (poniżej, F1) — martwa gałąź obronna, nieszkodliwa, ale niespójna
-  z tym, jak repo już raz potraktowało analogiczny przypadek (poprzedni przegląd, ustalenie F11).
-
-**Zgodność wzorców** ze `src/lib/dish-validation.ts` i `src/lib/calorie-target.ts`: styl JSDoc
-tłumaczący DLACZEGO (nie CO), `as const` zamiast `enum`, brak `namespace`, brak właściwości
-w parametrach konstruktora, jawne rozszerzenie `.ts` w imporcie rodzeństwa z tym samym uzasadnieniem
-(`node --test` + okrajanie typów nie zgaduje rozszerzeń). Zero niespójności.
-
-## Test coverage
-
-35 nazwanych testów w 12 blokach `describe`, zmapowane jeden-do-jednego na kryteria 2.1–2.17
-(m.in. `test('suma równa dokładnie 0,9 × cel jest akceptowana')` → 2.2, `test('limit liczy się
-od LICZBY WYBORÓW...')` → 2.9, `test('pora za uboga BEZ winy filtrów kończy się natychmiast...')`
-→ naprawa F1 poprzedniego przeglądu). Trzy testy czytają realną pulę z `seed/` przez `node:fs`
-**w pliku testu** (zgodnie z zakazem importów w module) i liczą wyrocznie niezależnie —
-`realPool()` w `plan-generator.test.ts:706–744` przelicza kcal z `usda-subset.json`, nie kopiuje
-liczb.
-
-Uruchomienie potwierdzone niezależnie: log joba `Typy, lint, testy, konwencje, lockfile`
-(run `34879232958`, ten sam commit) pokazuje `ℹ pass 136` / `ℹ fail 0` — bez ani jednego
-nieudanego testu w całym `src/lib/*.test.ts` (nie tylko w tym pliku).
-
-Brak MISSING TEST i brak FAILING TEST względem zobowiązań planu. Kryterium 2.17 (manualne,
-„wyrocznie przeczytane jako rachunek") ma wiarygodne pokrycie: komentarze przy `realPool()`
-i przy testach powtórzeń wprost tłumaczą, skąd biorą się liczby, zamiast kopiować wyjście
-generatora.
-
-## Success criteria (poza testami)
-
-| Sprawdzenie | Wynik | Źródło |
-|---|---|---|
-| `npx tsc --noEmit` | PASS | log `34879232958`, krok „Run npx tsc --noEmit” bez błędów |
-| `npx expo lint` | PASS | log, krok „Run npx expo lint” bez błędów |
-| `npm run check-conventions` | PASS | log: `check-conventions: czysto (51 plików)` |
-| `npm run check-lock` | PASS | krok zakończony bez błędu |
-| `git diff --exit-code package-lock.json` | PASS | potwierdzone lokalnie, diff pusty |
-
-## Findings
-
-### F1 — OBSERVATION — martwa gałąź obronna w `findDay`
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — jednowierszowa zmiana, zero ryzyka behawioralnego.
-- **Dimension**: Safety & Quality
-- **Location**: `src/lib/plan-generator.ts:334-336`
-- **Detail**: `if (list.length === 0) { return false; }` wewnątrz `walk()` jest nieosiągalne.
-  Jedyne miejsce wywołania `findDay` to `generatePlan`, które PRZED pętlą przeszukiwania
-  gwarantuje `pools[slot].length >= needed >= 1` dla każdej pory obecnej w `distinctSlots`
-  (krok 1 diagnozy, `:442-491`, zwraca `ok: false` wcześniej, jeśli którakolwiek pora jest
-  uboższa). `pools[slot]` nie jest też mutowane w trakcie przeszukiwania (użycie śledzi osobna
-  mapa `usesLeft` i zbiór `usedToday`, nie usuwanie z listy) — więc `list.length` jest stałe
-  i zawsze ≥ 1 dla każdej pozycji, którą `findDay` w ogóle odwiedza. To dokładnie ta sama klasa
-  martwego strażnika, którą poprzedni lokalny przegląd usunął w ustaleniu F11
-  (`const start = list.length > 0 ? … : 0`).
-- **Fix**: Usunąć gałąź `if (list.length === 0) { return false; }` — niezmiennik, który ją
-  czynił martwą, jest już udokumentowany komentarzem przy kroku 1 diagnozy kilka linii wyżej
-  w tym samym pliku, więc usunięcie nie traci wiedzy.
-- **Decision**: PRZYJĘTE, naprawione. Ustalenie jest trafne i konsekwentne: to ta sama klasa
-  martwego strażnika, którą poprzednia runda usunęła w F11, a niezmiennik rzeczywiście zachodzi
-  (krok 1 diagnozy kończy działanie dla każdej pory uboższej niż potrzeby dnia, a `pools` nie jest
-  mutowane w trakcie przeszukiwania). Gałąź usunięta, a niezmiennik — który był wiedzą niesioną
-  przez ten strażnik — zapisany komentarzem w jej miejscu, żeby usunięcie nie było utratą
-  informacji. Sprawdzone, że usunięcie jest bezpieczne także gdyby niezmiennik kiedyś przestał
-  zachodzić: przy pustej liście `start` byłoby `NaN`, oba zakresy nie wykonałyby ani jednej
-  iteracji i `walk` zwróciłby `false` — dokładnie to, co robił strażnik.
+**Wniosek: F1 rozliczone poprawnie, bez regresji.** Zero nowych ustaleń w tym przebiegu.
 
 ## Co przegląd potwierdził jako poprawne (bez zastrzeżeń)
 
-- **Guardrail ±10% ma dwie niezależne bramki** (sprawdzenie końcowe w `walk()` i przycinanie
-  obustronne) — potwierdzone czytaniem kodu i komentarza przy pętli; zgodne z ustaleniem
-  z poprzedniego przeglądu, że usunięcie którejkolwiek osobno nie czerwieni testów, ale usunięcie
-  obu psuje wynik.
-- **Dyscyplina zakresu bez zastrzeżeń** — diff to dokładnie dwa pliki fazy 2 plus konwencyjne
-  odhaczenie Postępu, wpis do Dziennika i ten raport. Zero repozytorium, tras, ekranów, migracji.
-- **`DefaultNodeBudget` po korekcie jest po bezpiecznej stronie** limitu 10 ms — zmierzone
-  w poprzednim lokalnym przeglądzie i nie cofnięte w tym commicie.
-- **Zero regresji względem jedenastu wcześniejszych ustaleń (F1–F11 poprzedniego raportu)** —
-  wszystkie odpowiadające im fragmenty kodu (krok 1 diagnozy kończący się zawsze, klucz
-  `usageKey` jako para danie+pora, `totalKcal` niesione z przeszukiwania, usunięty martwy
-  ternary z `start`) są obecne w bieżącym stanie pliku.
+- **Guardrail ±10% nadal ma dwie niezależne bramki** (sprawdzenie końcowe w `walk()` i przycinanie
+  obustronne, `:320-330` i `:356-364`) — niezmienione tym commitem.
+- **Dyscyplina zakresu bez zastrzeżeń** — diff to jedna ukierunkowana poprawka w module fazy 2 plus
+  konwencyjny wpis do Dziennika i rozliczenie ustalenia w pliku przeglądu. Zero repozytorium, tras,
+  ekranów, migracji.
+- **Zero regresji względem wcześniejszych ustaleń (F1–F11 lokalnego przeglądu i F1 poprzedniego
+  przebiegu CI)** — wszystkie odpowiadające im fragmenty kodu nadal obecne i niezmienione poza
+  samą poprawką F1.
+- **Pokrycie testami niezmienione i wystarczające**: 136/136 przed i po tym commicie — spójne
+  z tym, że usunięta gałąź była martwa i żadne zachowanie się nie zmieniło.
 
 <!-- End of report -->
