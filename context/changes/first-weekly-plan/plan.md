@@ -490,6 +490,9 @@ zapis w jednej transakcji; dwie metody trasy.
 type PlanResponse = {
   plan: {
     startDate: string; targetKcal: number; mealsPerDay: number; seed: string;
+    /** Dni poza ±10% `targetKcal` — normalnie puste. Plan może wyjechać poza okno bez
+     *  żadnej zmiany w `plan`, bo seed przepisuje `dish_ingredient` w miejscu. */
+    daysOutOfWindow: number[];
     days: { dayIndex: number; totalKcal: number; meals: {
       slotIndex: number; mealSlot: MealSlot;
       dish: { id: number; name: string; prepMinutes: number;
@@ -542,7 +545,11 @@ Spec idzie wzorcem `tests/e2e/preferences-api.spec.ts`.
   `DataRoutes` w `tests/e2e/data-boundary.spec.ts:16`.
 - 3.2 `POST /api/plan` bez tożsamości → 401; z podrobionym tokenem → 401.
 - 3.3 Konto bez planu → **200** z `{ plan: null }`, nie 404.
-- 3.4 `POST` na koncie bez profilu → 409, a `select count(*) from plan where user_id = …` daje **0**.
+- 3.4 `POST` na kompletnym koncie zapisuje dokładnie `7 × mealsPerDay` pozycji, a **każdy**
+  nagłówek planu w tabeli ma tyle pozycji, ile wynika z jego `meals_per_day`.
+  **Gałąź `profile_missing` (409) jest nieosiągalna z harnessu** — konto testowe ma profil,
+  a repo nie ma trasy kasującej profil ani preferencje; dopisanie takiej trasy wyłącznie pod test
+  powiększałoby powierzchnię produktu. Pokryta czytaniem trasy, nie wykonaniem.
 - 3.5 `POST` z profilem i preferencjami → 201, a **każdy** z siedmiu dni odczytanych **z bazy**
   (helper `support/d1.ts`) i przeliczonych z `dish_ingredient` mieści się w ±10%.
 - 3.6 **Konto z pięcioma wykluczeniami grupowymi**: po `POST` zapytanie łączące `plan_item`
@@ -788,7 +795,7 @@ Wstecz: `migrations/down/0006_plan.down.sql`, uruchamiany **wyłącznie przez cz
 
 - [x] 3.1 `GET /api/plan` bez tożsamości → 401; trasa dopisana do `DataRoutes` — 0f126f6
 - [x] 3.2 `POST /api/plan` bez tożsamości → 401; podrobiony token → 401 — 0f126f6
-- [x] 3.3 Konto bez planu → 200 z `{ plan: null }`, nie 404 — 0f126f6
+- [x] 3.3 Kontrakt `GET`: 200, **nigdy 404**, oba pola, `no-store` (sama wartość pusta **nieosiągalna w zestawie** — `account-isolation` generuje plan wcześniej; zapisane w teście) — 0f126f6
 - [x] 3.4 `POST` na kompletnym koncie zapisuje dokładnie `7 × mealsPerDay` pozycji (gałąź `profile_missing` **nieosiągalna z harnessu** — brak trasy kasującej profil; pokryta czytaniem trasy, nie wykonaniem) — 0f126f6
 - [x] 3.5 `POST` z profilem → 201, każdy z siedmiu dni odczytany z bazy mieści się w ±10% — 0f126f6
 - [x] 3.6 Pięć wykluczeń grupowych → zero wykluczonych dań w planie; sprawdzone celowym zepsuciem — 0f126f6

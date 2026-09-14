@@ -71,12 +71,36 @@ export function queryD1<T = Record<string, unknown>>(sql: string): T[] {
     throw new Error(`Wrangler nie oddał JSON-a. Wyjście:\n${stdout}`);
   }
 
-  const parsed = JSON.parse(stdout.slice(start)) as { results: T[] }[];
-  return parsed[0]?.results ?? [];
+  const parsed = JSON.parse(stdout.slice(start)) as { results?: T[] }[];
+  const results = parsed[0]?.results;
+  if (results === undefined) {
+    // NIE `?? []`. Puste wyjście znaczy „nie zmierzyłem", a nie „nic nie znalazłem" — a te testy
+    // opierają najmocniejsze asercje guardraila na `toBe(0)`. Cicha pustka czytałaby się jako
+    // DOWÓD ZGODNOŚCI. To ta sama klasa awarii, co `FAIL eslint (0.0s)` z `lessons.md`:
+    // narzędzie, które się nie uruchomiło, nie ma prawa wyglądać jak narzędzie, które nic nie
+    // znalazło.
+    throw new Error(
+      `Wrangler oddał JSON bez pola "results" — zapytanie się nie wykonało. Wyjście:
+${stdout}`
+    );
+  }
+  return results;
 }
 
-/** Liczba wierszy pasujących do warunku — najczęstsze pytanie tych testów. */
+/**
+ * Liczba wierszy pasujących do warunku — najczęstsze pytanie tych testów.
+ *
+ * Rzuca, gdy zapytanie nie oddało wiersza. Zapytanie zliczające ZAWSZE oddaje dokładnie jeden
+ * wiersz, więc brak wiersza znaczy, że policzone nie zostało nic — i wtedy `0` byłoby kłamstwem
+ * po stronie bezpiecznej dla testu, a niebezpiecznej dla produktu.
+ */
 export function countD1(sql: string): number {
   const rows = queryD1<{ n: number }>(sql);
-  return rows[0]?.n ?? 0;
+  if (rows.length === 0 || typeof rows[0]?.n !== 'number') {
+    throw new Error(
+      `Zapytanie zliczające nie oddało liczby — helper nic nie policzył, to NIE jest zero.
+${sql}`
+    );
+  }
+  return rows[0].n;
 }

@@ -1,5 +1,5 @@
 import { computeCalorieTarget } from '@/lib/calorie-target';
-import { generatePlan, type PlanFailure } from '@/lib/plan-generator';
+import { CalorieTolerance, generatePlan, type PlanFailure } from '@/lib/plan-generator';
 import { requireUserId } from '@/server/auth';
 import { ensureAppUser } from '@/server/repository/app-users';
 import { getPreferences } from '@/server/repository/preferences';
@@ -34,6 +34,20 @@ export interface PlanResponse {
     mealsPerDay: number;
     seed: string;
     days: PlanRecipeDay[];
+    /**
+     * Dni, których suma NIE mieści się już w ±10% `targetKcal` — normalnie pusta.
+     *
+     * Istnieje, bo plan jest zapisany jako WSKAZANIA na dania (`plan_item.dish_id`), a treść dań
+     * żyje dalej: `seed-dishes.mjs` przy korekcie gramatury usuwa i wstawia wiersze
+     * `dish_ingredient` na nowo. Zapisany plan może więc wyjechać poza okno **bez żadnej zmiany
+     * w `plan` i `plan_item`** — i bez tego pola `GET` oddawałby go jako całkiem zwyczajny,
+     * a ekran pokazywałby dzień na 2900 kcal obok celu 2200 jak gdyby nigdy nic.
+     *
+     * To jest inny rodzaj nieaktualności niż `currentTargetKcal`: tam zmienił się UŻYTKOWNIK,
+     * tu zmieniła się PULA. Ekran ma o obu powiedzieć wprost, bo rada jest ta sama („wygeneruj
+     * ponownie"), ale powód inny.
+     */
+    daysOutOfWindow: number[];
   } | null;
   /**
    * Cel BIEŻĄCY, liczony z profilu przy odczycie. Osobny od `plan.targetKcal`, który jest faktem
@@ -89,13 +103,22 @@ async function readPlan(userId: string): Promise<PlanResponse> {
     return { plan: null, currentTargetKcal };
   }
 
+  const days = await getPlanWithRecipes(userId);
+  const lower = Math.ceil(header.targetKcal * (1 - CalorieTolerance));
+  const upper = Math.floor(header.targetKcal * (1 + CalorieTolerance));
+
   return {
     plan: {
       startDate: header.startDate,
       targetKcal: header.targetKcal,
       mealsPerDay: header.mealsPerDay,
       seed: header.seed,
-      days: await getPlanWithRecipes(userId),
+      days,
+      // Okno liczone tą samą stałą, której użył generator — `CalorieTolerance` z `@/lib`.
+      // Drugie miejsce z liczbą 0,1 byłoby dokładnie tym rozjazdem, przed którym ta stała powstała.
+      daysOutOfWindow: days
+        .filter((day) => day.totalKcal < lower || day.totalKcal > upper)
+        .map((day) => day.dayIndex),
     },
     currentTargetKcal,
   };
@@ -172,6 +195,10 @@ export async function POST(request: Request): Promise<Response> {
     // Klucz obcy `plan.user_id → app_user.id` wymaga wiersza konta, a powstaje on leniwie.
     await ensureAppUser(auth.userId);
 
+    // DATA KALENDARZOWA UTC i to jest świadomy kontrakt, nie przeoczenie. Dla użytkownika
+    // w Polsce `POST` między lokalną północą a 01:00/02:00 zapisze datę wczorajszą — dlatego
+    // ekran etykietuje dni numerem (`Dzień 1`…`Dzień 7`), a nie datą wyprowadzoną z tego pola.
+    // `start_date` służy do powiedzenia, KIEDY plan powstał, a nie do wyliczania etykiet.
     const startDate = new Date().toISOString().slice(0, 10);
     await savePlan(
       auth.userId,

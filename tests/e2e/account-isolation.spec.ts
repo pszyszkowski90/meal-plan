@@ -248,6 +248,14 @@ test.describe('Ryzyko #1 — izolacja dwóch kont', () => {
     expect(afterA.plan.mealsPerDay).toBe(4);
     expect(afterA.plan.targetKcal).toBe(2200);
     expect(afterA.plan.days).toHaveLength(7);
+    // Porównanie CO DO DANIA, nie tylko co do nagłówka — inaczej `dishesA` byłoby zebrane
+    // i wyrzucone, a test obiecujący „nie miesza się z nim" sprawdzałby trzy pola.
+    const afterDishesA: number[] = afterA.plan.days.flatMap(
+      (day: { meals: { dish: { id: number } }[] }) => day.meals.map((meal) => meal.dish.id)
+    );
+    expect(afterDishesA, 'plan konta A zmienił treść po wygenerowaniu planu przez B').toEqual(
+      dishesA
+    );
 
     // B ma SWÓJ plan, o swoim kształcie — nie kopię planu A.
     expect(planB.plan).not.toBeNull();

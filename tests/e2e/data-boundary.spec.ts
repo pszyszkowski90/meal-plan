@@ -73,4 +73,20 @@ test.describe('Ryzyko #1 — granica danych', () => {
 
     expect(response.status()).toBe(401);
   });
+
+  test('POST /api/plan z podrobionym tokenem nie generuje', async ({ request }) => {
+    // Pętla wyżej sprawdza podrobiony token wyłącznie dla `GET`. `POST` jest tu groźniejszy:
+    // ZASTĘPUJE plan, więc przyjęty podrobiony token kasowałby cudzy tydzień.
+    const forged =
+      'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.' +
+      'eyJzdWIiOiJ1c2VyX3BvZHJvYmlvbnkiLCJleHAiOjQ4ODc2NTQzMjF9.' +
+      'podpis-ktorego-nie-da-sie-zweryfikowac';
+
+    const response = await request.post('/api/plan', {
+      headers: { Authorization: `Bearer ${forged}` },
+      data: {},
+    });
+
+    expect(response.status()).toBe(401);
+  });
 });

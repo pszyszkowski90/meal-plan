@@ -118,8 +118,11 @@ test.describe('Faza 3 S-04 — kontrakt planu po uwierzytelnieniu', () => {
     expect(before.status()).toBe(200);
 
     const body = await before.json();
-    // Plan MOŻE już istnieć z poprzedniego przebiegu — istotne jest, że brak planu to 200,
-    // nigdy 404, i że kontrakt ma oba pola.
+    // UCZCIWA ADNOTACJA: gałąź `plan: null` jest w tym przebiegu NIEOSIĄGALNA i to jest
+    // sprawdzone, nie założone. Playwright porządkuje pliki po ścieżce, `account-isolation`
+    // sortuje się przed `plan-api`, a jego test 3.8 generuje plan dla tego konta — więc konto
+    // ma plan zawsze, także na świeżo zmigrowanej bazie. Ten test dowodzi zatem KONTRAKTU
+    // (200, nigdy 404, oba pola, `no-store`), a nie samej wartości `null`.
     expect(before.status()).not.toBe(404);
     expect(body).toHaveProperty('plan');
     expect(body).toHaveProperty('currentTargetKcal');
@@ -186,6 +189,9 @@ test.describe('Faza 3 S-04 — kontrakt planu po uwierzytelnieniu', () => {
     const lower = Math.ceil(target * 0.9);
     const upper = Math.floor(target * 1.1);
 
+    // Świeżo wygenerowany plan nie ma prawa mieć ANI JEDNEGO dnia poza oknem.
+    expect(body.plan.daysOutOfWindow, 'nowy plan ma dzień poza ±10%').toEqual([]);
+
     // DOWÓD Z BAZY, nie z odpowiedzi trasy.
     const totals = dayTotalsFromDb(userId);
     expect(totals).toHaveLength(7);
@@ -204,68 +210,163 @@ test.describe('Faza 3 S-04 — kontrakt planu po uwierzytelnieniu', () => {
   }) => {
     const auth = await authHeaders(page);
     const userId = await userIdOf(page);
-    await seedAccount(request, auth, { maxPrepMinutes: 30, mealsPerDay: 4 });
 
-    const response = await request.post('/api/plan', { headers: auth, data: {} });
-    expect(response.status()).toBe(201);
-
-    // Zapytanie liczy dania ŁAMIĄCE limit. Zero jest jedyną dopuszczalną odpowiedzią —
-    // i to jest sprawdzenie na ŚCIEŻCE SUKCESU, nie w scenariuszu porażki.
-    const overLimit = countD1(`
-      select count(*) as n from plan_item pi
-        join dish d on d.id = pi.dish_id
-       where pi.user_id = '${userId}' and d.prep_minutes > 30`);
-    expect(overLimit, 'plan zawiera danie ponad zadeklarowanym limitem czasu').toBe(0);
-  });
-
-  test('plan nie zawiera dania z wykluczonym składnikiem (3.6)', async ({ page, request }) => {
-    const auth = await authHeaders(page);
-    const userId = await userIdOf(page);
-
-    const catalog = await request.get('/api/catalog', { headers: auth });
-    expect(catalog.status()).toBe(200);
-    const groups = (await catalog.json()).groups as { id: number; slug: string }[];
-
-    // Pięć grup wykluczeniowych naraz — scenariusz z `notes/plan-queue.md` §G3.
-    const excludedSlugs = ['grzyby', 'orzechy', 'ryby', 'owoce-morza', 'wieprzowina'];
-    const exclusions = groups
-      .filter((group) => excludedSlugs.includes(group.slug))
-      .map((group) => ({ kind: 'group', ingredientId: null, dishId: null, groupId: group.id }));
-    expect(exclusions.length, 'seed musi mieć te grupy wykluczeniowe').toBeGreaterThan(0);
-
-    await request.put('/api/profile', { headers: auth, data: ReferenceProfile });
-    const savedPreferences = await request.put('/api/preferences', {
-      headers: auth,
-      data: { preferences: { maxPrepMinutes: 45, mealsPerDay: 4 }, exclusions },
-    });
-    expect(savedPreferences.status()).toBe(200);
+    // LIMIT 15, nie 30 — i to jest sedno tego testu. Zmierzone na puli produkcyjnej: przy
+    // 15 minutach zostaje JEDEN obiad i cztery kolacje, przy 30 minutach dwanaście obiadów.
+    // Test przy 30 minutach używa dokładnie tych samych ustawień co cztery inne testy w tym
+    // pliku, więc dokładałby asercję, nie warunek skrajny. Przy 15 minutach przejście jest
+    // najwęższe, jakie da się ustawić formularzem — czyli tam, gdzie złamanie limitu jest
+    // w ogóle prawdopodobne.
+    const maxPrepMinutes = 15;
+    await seedAccount(request, auth, { maxPrepMinutes, mealsPerDay: 4 });
 
     const response = await request.post('/api/plan', {
       headers: auth,
       data: {},
       failOnStatusCode: false,
     });
-    // Plan może się nie udać przy pięciu wykluczeniach — ale jeśli się uda, NIE MA PRAWA
-    // zawierać wykluczonego dania. Obie odpowiedzi są dopuszczalne, złamanie wykluczenia nie.
+    // Oba wyniki są dopuszczalne: przy jednym obiedzie plan może nie powstać. Niedopuszczalny
+    // jest plan ŁAMIĄCY limit — i to jest asercja poniżej.
     expect([201, 422]).toContain(response.status());
 
     if (response.status() === 201) {
-      const violating = countD1(`
+      const overLimit = countD1(`
         select count(*) as n from plan_item pi
-          join dish_ingredient di on di.dish_id = pi.dish_id
-          join ingredient_group ig on ig.ingredient_id = di.ingredient_id
-          join exclusion e on e.user_id = pi.user_id and e.kind = 'group' and e.group_id = ig.group_id
-         where pi.user_id = '${userId}'`);
-      expect(violating, 'plan zawiera danie z wykluczonej grupy').toBe(0);
+          join dish d on d.id = pi.dish_id
+         where pi.user_id = '${userId}' and d.prep_minutes > ${maxPrepMinutes}`);
+      expect(overLimit, 'plan zawiera danie ponad zadeklarowanym limitem czasu').toBe(0);
     } else {
       const body = await response.json();
       expect(body.error).toBe('infeasible');
-      expect(body.failure.reason).toBeDefined();
-      // Zero planu częściowego — porażka nie zostawia pozycji TEGO konta.
-      expect(planItemCount(userId)).toBe(0);
+      // Porażka ma nazwać LIMIT CZASU, a nie wykluczenia — konto nie ma żadnych wykluczeń.
+      expect(body.failure.reason).toBe('prepTime');
+      expect(body.failure.limitMinutes).toBe(maxPrepMinutes);
+      expect(body.failure.withoutLimit).toBeGreaterThan(body.failure.remaining);
     }
 
-    // Sprzątamy wykluczenia, żeby kolejne testy w pliku startowały z czystym stanem.
+    // Przywracamy ustawienia odniesienia dla pozostałych testów.
+    await seedAccount(request, auth);
+  });
+
+  /**
+   * F2 przeglądu fazy 3: dwa z trzech ramion `NOT EXISTS` w `POOL_FOR_GENERATOR_SQL` nie miały
+   * ŻADNEGO pokrycia. Sprawdzony był wyłącznie `kind = 'group'`, a `kind = 'ingredient'` jest
+   * ścieżką, którą chodzi ekran preferencji („Wyklucz <składnik>") — czyli tą najczęstszą.
+   * Literówka w tym ramieniu wpuściłaby na talerz składnik wykluczony wprost przez użytkownika,
+   * po cichu, przy wszystkich bramkach na zielono. To pierwsze z trzech ograniczeń twardych
+   * `CLAUDE.md`.
+   *
+   * KAŻDE RAMIĘ MA WŁASNY TEST i to nie jest kosmetyka. Pierwsza wersja sprawdzała oba naraz
+   * i ramię `kind = 'dish'` było wtedy NIEWIDOCZNE: wykluczenie popularnego składnika odsiewało
+   * te same dania, więc test przechodził także ze zdjętym ramieniem daniowym. Zmierzone
+   * zepsuciem 14.09.
+   */
+  test('plan nie zawiera dania z wykluczonym SKŁADNIKIEM', async ({ page, request }) => {
+    const auth = await authHeaders(page);
+    const userId = await userIdOf(page);
+
+    // Składnik używany przez najwięcej dań — żeby wykluczenie realnie zawęziło pulę.
+    const popular = queryD1<{ ingredient_id: number }>(`
+      select di.ingredient_id from dish_ingredient di
+       group by di.ingredient_id order by count(*) desc limit 1`);
+    expect(popular).toHaveLength(1);
+    const ingredientId = popular[0].ingredient_id;
+
+    await request.put('/api/profile', { headers: auth, data: ReferenceProfile });
+    expect(
+      (
+        await request.put('/api/preferences', {
+          headers: auth,
+          data: {
+            preferences: { maxPrepMinutes: 120, mealsPerDay: 4 },
+            exclusions: [{ kind: 'ingredient', ingredientId, dishId: null, groupId: null }],
+          },
+        })
+      ).status()
+    ).toBe(200);
+
+    const itemsBefore = planItemCount(userId);
+    const response = await request.post('/api/plan', {
+      headers: auth,
+      data: {},
+      failOnStatusCode: false,
+    });
+    expect([201, 422]).toContain(response.status());
+
+    if (response.status() === 201) {
+      expect(
+        countD1(`
+          select count(*) as n from plan_item pi
+            join dish_ingredient di on di.dish_id = pi.dish_id
+           where pi.user_id = '${userId}' and di.ingredient_id = ${ingredientId}`),
+        'plan zawiera danie z wykluczonym SKŁADNIKIEM'
+      ).toBe(0);
+    } else {
+      expect(planItemCount(userId)).toBe(itemsBefore);
+    }
+
+    await request.put('/api/preferences', {
+      headers: auth,
+      data: { preferences: ReferencePreferences, exclusions: [] },
+    });
+  });
+
+  test('danie wykluczone WPROST nie wraca do planu po ponownym wygenerowaniu', async ({
+    page,
+    request,
+  }) => {
+    const auth = await authHeaders(page);
+    const userId = await userIdOf(page);
+
+    // Wykluczamy DOKŁADNIE te dania, które generator właśnie wybrał — a nie dowolne z puli.
+    // Wersja z jednym daniem o najniższym `id` NIE łapała zepsucia: przy 58 daniach i 28
+    // pozycjach szansa, że akurat to jedno zostanie wybrane, jest niska. Dania z bieżącego planu
+    // są dowodnie takie, które do tego profilu PASUJĄ — jeśli po wykluczeniu wrócą, filtr
+    // nie działa.
+    await seedAccount(request, auth, { maxPrepMinutes: 120, mealsPerDay: 4 });
+    expect((await request.post('/api/plan', { headers: auth, data: {} })).status()).toBe(201);
+
+    const chosen = queryD1<{ dish_id: number }>(
+      `select distinct dish_id from plan_item where user_id = '${userId}'`
+    ).map((row) => row.dish_id);
+    expect(chosen.length, 'plan musi mieć z czego wykluczać').toBeGreaterThan(5);
+
+    expect(
+      (
+        await request.put('/api/preferences', {
+          headers: auth,
+          data: {
+            preferences: { maxPrepMinutes: 120, mealsPerDay: 4 },
+            exclusions: chosen.map((id) => ({
+              kind: 'dish' as const,
+              ingredientId: null,
+              dishId: id,
+              groupId: null,
+            })),
+          },
+        })
+      ).status()
+    ).toBe(200);
+
+    const itemsBefore = planItemCount(userId);
+    const response = await request.post('/api/plan', {
+      headers: auth,
+      data: {},
+      failOnStatusCode: false,
+    });
+    expect([201, 422]).toContain(response.status());
+
+    if (response.status() === 201) {
+      expect(
+        countD1(`
+          select count(*) as n from plan_item pi
+           where pi.user_id = '${userId}' and pi.dish_id in (${chosen.join(',')})`),
+        'wykluczone wprost danie wróciło do planu'
+      ).toBe(0);
+    } else {
+      expect(planItemCount(userId)).toBe(itemsBefore);
+    }
+
     await request.put('/api/preferences', {
       headers: auth,
       data: { preferences: ReferencePreferences, exclusions: [] },
@@ -331,7 +432,9 @@ test.describe('Faza 3 S-04 — kontrakt planu po uwierzytelnieniu', () => {
     expect(planItemCount(userId)).toBe(itemsBefore);
     // A gdyby zapis przeszedł częściowo, pozycji byłoby tyle, ile ma DZISIEJSZE ustawienie
     // (7 × 3 = 21), a nie tyle, ile miał plan poprzedni.
-    expect(itemsBefore % 7).toBe(0);
+    expect(planItemCount(userId), 'plan został przepisany na trzy posiłki mimo porażki').not.toBe(
+      7 * 3
+    );
 
   });
 
