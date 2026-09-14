@@ -476,8 +476,15 @@ Cały plan F-01 ma teraz **zero oczekujących pozycji** w obu fazach.
 Co zacommitowane: `seed/ingredients.json`, `seed/usda-subset.json`, `seed/FEASIBILITY.md`,
 `seed/dishes/` (+36 plików), `CLAUDE.md`,
 `context/changes/dish-source-and-seed-pool/plan.md`, `notes/pool-queue.md`
-Werdykt przeglądu: <do uzupełnienia>
-PR: <do uzupełnienia>
+Werdykt przeglądu: WYMAGA UWAGI, 0 krytycznych, 1 ostrzeżenie + 2 obserwacje — wszystkie
+rozliczone. F1: brakowało `seed/REVIEW.md`, który plan wymienia dwa razy; przegląd rekomendował
+wykreślenie go z planu, ale **zrobiłem odwrotnie** — Dziennik jest plikiem operacyjnym jednej
+paczki prac, a `seed/` to katalog, do którego zajrzy każdy rozbudowujący pulę. F2: „oliwki
+czarne" nieużywane przez żadne danie; przy naprawie dopisałem sprawdzenie i **znalazło drugą taką
+pozycję — „boczniaki, świeże", leżące tak od pierwszego seeda i przeoczone także przez przegląd**.
+Oba dostały prawdziwe danie, pula ma 58 zamiast 56, a sprawdzenie zostało w skrypcie jako
+ostrzeżenie. F3 (statyczny przegląd w CI) przyjęte — to ograniczenie środowiska, nie tej zmiany.
+PR: #27
 Do decyzji: —
 
 **Dwie pozycje z P5 świadomie NIEZROBIONE, każda z powodem:**

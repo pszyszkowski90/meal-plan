@@ -252,6 +252,34 @@ function generate(dishes) {
   return `${lines.join('\n')}\n`;
 }
 
+/**
+ * Składniki, których nie używa ŻADNE danie.
+ *
+ * Ostrzeżenie, nie błąd: pozycja w katalogu bez dania jest legalna (użytkownik dalej może chcieć
+ * ją wykluczyć), ale zwykle znaczy, że danie, dla którego ją dodano, odpadło i nikt nie cofnął
+ * wpisu — albo że ktoś dopisał składnik „na zapas". Widać ją dopiero na ekranie preferencji,
+ * jako produkt, którego nie da się nigdzie ugotować.
+ *
+ * Sprawdzenie powstało 14.09.2026 po ustaleniu przeglądu o osieroconych „oliwkach czarnych".
+ * Przy okazji wykryło drugą taką pozycję — „boczniaki, świeże" — leżącą w katalogu od pierwszego
+ * seeda. Jedno znalezione ręcznie, drugie tylko dlatego, że sprawdzenie jest w kodzie.
+ */
+function reportUnusedIngredients(dishes, ingredients) {
+  const used = new Set();
+  for (const dish of dishes) {
+    for (const item of dish.ingredients) {
+      used.add(item.ingredientName);
+    }
+  }
+
+  const unused = ingredients.map((item) => item.name).filter((name) => !used.has(name));
+  if (unused.length > 0) {
+    console.error(
+      `  UWAGA: ${unused.length} składników nie używa żadne danie: ${unused.join(', ')}`,
+    );
+  }
+}
+
 function report(dishes) {
   const bySlot = {};
   for (const dish of dishes) {
@@ -291,12 +319,14 @@ function report(dishes) {
 
 function main() {
   const mode = parseMode(process.argv.slice(2));
-  const dishes = validateAll(loadDishes(), knownIngredients(), mode);
+  const ingredients = knownIngredients();
+  const dishes = validateAll(loadDishes(), ingredients, mode);
 
   fs.mkdirSync(path.dirname(OutputFile), { recursive: true });
   fs.writeFileSync(OutputFile, generate(dishes), 'utf8');
 
   report(dishes);
+  reportUnusedIngredients(dishes, ingredients);
   console.error(`  tryb: ${mode} → ${path.relative(RepoRoot, OutputFile)}`);
 }
 

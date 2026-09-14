@@ -32,8 +32,8 @@ z tabeli USDA. **Worker nigdy nie woła modelu** — w runtime czyta wyłącznie
 i odrzucone opcje: [options.md](context/changes/dish-source-and-seed-pool/options.md).
 
 ~~**Blokada nadal obowiązuje:** generatora planu (S-04) nie implementuj, zanim nie powstanie pula
-dań.~~ **ZDJĘTA 14.09.2026** — pula stoi na produkcji: **56 dań i 51 składników**, minima per pora
-posiłku spełnione (20 śniadań, 27 obiadów, 31 kolacji, 15 przekąsek). S-04 ma z czego wybierać
+dań.~~ **ZDJĘTA 14.09.2026** — pula stoi na produkcji: **58 dań i 51 składników**, minima per pora
+posiłku spełnione (20 śniadań, 29 obiadów, 33 kolacje, 15 przekąsek). S-04 ma z czego wybierać
 i czym liczyć kalorie. Plan puli:
 [dish-source-and-seed-pool](context/changes/dish-source-and-seed-pool/plan.md).
 
@@ -44,6 +44,7 @@ i czym liczyć kalorie. Plan puli:
 | --- | --- | --- |
 | `seed/ingredients.json` | człowiek | mapowanie polska nazwa → `fdcId` USDA, kategoria, grupy |
 | `seed/usda-subset.json` | `npm run distill:usda` | makra na 100 g, wersjonowane, 51 wierszy |
+| `seed/REVIEW.md` | człowiek | co stempel `reviewedBy` obejmuje, a czego **nie** |
 | `seed/dishes/<slug>.json` | człowiek | gramatury, kroki, pory posiłku, `reviewedBy` |
 | `seed/FEASIBILITY.md` | `npm run check:pool` + wnioski | czy da się ułożyć dzień w ±10% |
 

@@ -94,7 +94,14 @@ tak jak w poprzednich rundach tego przeglądu.
   - **Fix B**: Utworzyć `seed/REVIEW.md` post factum, streszczając 56 dań i decyzję o trzech
     odrzuconych (dane już są w `seed/FEASIBILITY.md` i `notes/pool-queue.md`, więc to głównie
     kopiowanie, nie nowa praca).
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 **opcją B**, wbrew rekomendacji przeglądu — `seed/REVIEW.md`
+  powstał. Opcja A (wykreślić plik z planu, bo Dziennik i tak niesie treść) była kusząca i tańsza,
+  ale myli MIEJSCE z TREŚCIĄ: `notes/pool-queue.md` jest plikiem operacyjnym jednej paczki prac
+  i zostanie z nią zamknięty, a `seed/` to katalog, do którego zajrzy każdy, kto będzie
+  rozbudowywał pulę. Stempel `reviewedBy` wymaga wyjaśnienia obok danych, które opisuje.
+  Plik nie jest przy tym kopią Dziennika: opisuje **metodę** — co sito łapie, a czego nie
+  (liczby wymyślonej konsekwentnie, przepisu bez sensu, porcji nierealnej dla człowieka) —
+  bo to jest informacja, której nigdzie indziej nie było.
 
 ### F2 — Nowy składnik „oliwki czarne, z puszki" nie jest używany w żadnym daniu
 
@@ -111,7 +118,15 @@ tak jak w poprzednich rundach tego przeglądu.
   powstanie `GET /api/catalog` (S-07) i pokaże pozycję, której nie da się nigdzie ugotować.
 - **Fix**: Usunąć wiersz `oliwki czarne, z puszki` z `seed/ingredients.json` i odpowiadający mu
   wpis w `seed/usda-subset.json`, chyba że jest już zaplanowane danie, które go użyje.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026, **szerzej niż ustalenie**. Ustalenie było trafne, ale
+  niepełne: przy okazji naprawy dopisałem sprawdzenie „które składniki nie są używane przez żadne
+  danie" i **znalazło drugą taką pozycję** — „boczniaki, świeże", leżące w katalogu od pierwszego
+  seeda z 13.09 i przeoczone także przez ten przegląd. Oba składniki dostały prawdziwe danie
+  (`makaron-z-oliwkami-i-feta`, `makaron-z-boczniakami`), więc pula ma 58 dań zamiast 56.
+  Sprawdzenie zostało w `seed-dishes.mjs` jako **ostrzeżenie, nie błąd**: pozycja w katalogu bez
+  dania jest legalna (użytkownik dalej może chcieć ją wykluczyć), ale prawie zawsze znaczy, że
+  ktoś czegoś nie cofnął. Sprawdzone w obie strony — ostrzega, gdy składnik osierocony, milczy,
+  gdy nie ma takich.
 
 ### F3 — Zestaw testów tej rundy przeglądu jest statyczny, nie wykonany
 
@@ -130,6 +145,13 @@ tak jak w poprzednich rundach tego przeglądu.
   luka w implementacji. Warto zaktualizować `--allowedTools` tej umiejętności o
   `Bash(npm run *)`, `Bash(npx *)`, `Bash(node *)`, żeby przyszłe przebiegi mogły wykonać
   kryteria automatyczne zamiast je tylko statycznie przybliżać.
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, bez zmian w kodzie. To jest ograniczenie
+  środowiska CI przeglądu, nie tej zmiany — ta sama uwaga wraca w każdym przebiegu i jest
+  opisana w raportach z PR #24 i #25. Bramka „Typy, lint, testy, konwencje, lockfile" uruchamia
+  te narzędzia niezależnie i przeszła; twierdzenia o `wrangler`/D1 (seed, idempotencja, bramka
+  `--remote`) są weryfikowane uruchomieniem po stronie prowadzącego zadanie i zapisane
+  w Dzienniku z liczbami. Rozszerzenie `--allowedTools` o `Bash(node:*)` zostało rozważone
+  i odrzucone przy PR #24: flaga **zastępuje** domyślny zestaw narzędzi, a skutku nie da się
+  sprawdzić na PR-ze, który tę zmianę wprowadza.
 
 <!-- End of report -->
