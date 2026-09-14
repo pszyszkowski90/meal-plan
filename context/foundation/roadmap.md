@@ -67,7 +67,7 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
 | S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | done        |
 | S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | done     |
-| S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | proposed |
+| S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | planning |
 | S-05  | `swap-and-reject-dish`       | wymienić danie w planie i oznaczyć je, żeby nie wracało              | S-04               | FR-010, FR-011                    | proposed |
 | S-06  | `step-by-step-cooking`       | przejść instrukcję dania krok po kroku w trakcie gotowania           | F-01, S-04         | FR-016, NFR                       | proposed |
 | S-07  | `shopping-list-from-days`    | zaznaczyć dni i dostać zagregowaną listę zakupów w kategoriach       | F-01, S-04         | US-02, FR-012, FR-013             | proposed |
@@ -235,7 +235,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   którego z nich nie da się spełnić. To jedyne miejsce w produkcie, gdzie „prawie dobrze" jest
   błędem, a nie kompromisem. Drugie ryzyko jest środowiskowe: dobór dań pod trzy ograniczenia
   to najcięższa obliczeniowo rzecz w tym produkcie, a mieszkać ma w Workerze z limitem CPU.
-- **Status:** proposed
+- **Status:** planning — plan w `context/changes/first-weekly-plan/plan.md` (14.09.2026), cztery fazy
 
 ### S-05: Użytkownik wymienia danie i trwale je odrzuca
 
