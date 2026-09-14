@@ -110,7 +110,14 @@ function* csvRows(file, expectedHeader) {
   const text = fs.readFileSync(file, 'utf8');
   const lines = text.split('\n');
 
-  const header = parseCsvLine((lines[0] ?? '').replace(/\r$/, ''));
+  // BOM zdejmujemy JAWNIE: `readFileSync(..., 'utf8')` go zostawia, więc legalny plik
+  // z sygnaturą odpadłby na „kolumna 1: oczekiwano «fdc_id», jest «﻿fdc_id»" — komunikat
+  // wskazujący na zepsuty układ kolumn tam, gdzie układ jest w porządku. Zmierzone 14.09.2026:
+  // SR Legacy 2018-04 BOM-u NIE ma (oba pliki zaczynają się od `"`), więc to jest zabezpieczenie
+  // na przyszłe wydania, nie naprawa obecnego objawu.
+  const header = parseCsvLine(
+    (lines[0] ?? '').replace(/^﻿/, '').replace(/\r$/, ''),
+  );
   const mismatch = expectedHeader.findIndex((name, index) => header[index] !== name);
   if (mismatch !== -1) {
     fail(`${path.basename(file)} ma inny układ kolumn, niż zakłada ten skrypt:`, [

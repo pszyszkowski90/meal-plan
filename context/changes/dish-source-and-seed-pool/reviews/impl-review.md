@@ -84,7 +84,15 @@ odłożeniem. Zweryfikowałem to czytaniem plików źródłowych (`scripts/disti
   - Blind spot: Nie widziałem prawdziwego pliku `food.csv` (gitignorowany, niepobrany w tym
     checkout) ani wyniku żadnego uruchomienia po fixie — to ustalenie jest wnioskowaniem z kodu,
     nie obserwacją uruchomienia.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026, obiema drogami naraz. **Pomiar:** `npm run distill:usda`
+  przeszedł na pełnym zbiorze SR Legacy PO dodaniu sprawdzenia nagłówka — trzy razy (po samej
+  naprawie, po przywróceniu zepsutego nagłówka i po tej zmianie), za każdym razem „35 składników",
+  a `seed/usda-subset.json` wychodzi bajt w bajt identyczny. Podejrzenie o BOM **nie potwierdziło
+  się**: oba pliki zaczynają się od `"` (`head -c 16 … | xxd` pokazuje `2266 6463 5f69 6422`,
+  czyli `"fdc_id"`), więc SR Legacy 2018-04 sygnatury nie ma. Mimo to BOM jest teraz zdejmowany
+  jawnie — to jedna linia, a chroni przed trybem awarii, który byłby MYLĄCY: legalny plik
+  z sygnaturą odpadłby z komunikatem o zepsutym układzie kolumn, czyli wskazującym w złe miejsce.
+  Ustalenie było trafne co do luki w dowodzie, choć nie co do objawu.
 
 ### F5 — Odtworzenie demonstracji sita opisu (3.0b) wymaga pełnego pliku USDA
 

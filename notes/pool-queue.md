@@ -391,5 +391,11 @@ To nieprawda — log tego przebiegu pokazuje `ALLOWED_TOOLS` z `Bash(git add:*)`
 i skryptem push. Agent raport **zacommitował**, a bramka go przeczytała i zablokowała scalenie na
 pięciu otwartych ustaleniach — dokładnie tak, jak miała. Na PR #20 raportu nie było z innego,
 nieustalonego powodu; blokowane są tam wyłącznie polecenia spoza tej listy (`npm test`, `gh`).
+Druga runda przeglądu (po naprawach) dorzuciła F6: brak pisemnego dowodu, że destylacja przeszła
+na PEŁNYM zbiorze **po** dodaniu sprawdzenia nagłówka, plus hipoteza o BOM. Dowód uzupełniony —
+trzy przebiegi, za każdym „35 składników", destylat bajt w bajt ten sam; BOM-u w SR Legacy 2018-04
+**nie ma** (`head -c 16 | xxd` → `"fdc_id"`). BOM i tak jest teraz zdejmowany jawnie, bo bez tego
+legalny plik z sygnaturą odpadłby z komunikatem o zepsutym układzie kolumn — czyli wskazującym
+w złe miejsce.
 PR: #24
 Do decyzji: —
