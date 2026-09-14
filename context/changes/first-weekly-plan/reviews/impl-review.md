@@ -38,6 +38,17 @@ One new commit, `dcdb029` — docs-only, no migration or source change:
 - **Detail**: Phase 1's automated verification (1.1–1.6: `wrangler d1 migrations apply/list --local`, forward/backward migration round-trip, `INSERT` boundary checks on `day_index`/`meal_slot`/`dish_id`, cascade deletes, `npm run check-conventions`) again could not be executed by this run — `node_modules` is not installed on this runner, and `npm ci`, plain `node scripts/check-conventions.js`, and `git fetch` all require interactive approval unavailable in this non-interactive session. This is the identical, previously-reported limitation — unchanged since the last review.
   Static analysis still corroborates the PR's claims: `migrations/*.sql` (6) and `migrations/down/*.down.sql` (6) pair 1:1 by name (checked via `Glob`), including `0006_plan.sql` ↔ `0006_plan.down.sql`. Direct comparison of `migrations/0006_plan.sql` against the plan's SQL contract (`plan.md:218-238`) now shows a byte-for-byte match, including the `CREATE INDEX` statement added in this commit — table definitions, `CHECK` constraints, `FOREIGN KEY` directions (`ON DELETE CASCADE` to `app_user`, no cascade to `dish`), and the primary key all line up. The down-migration drops `plan_item` before `plan` (FK-safe order) and deletes the `d1_migrations` row, matching the plan's contract at `plan.md:267-276`. This is strong circumstantial support but still not execution.
 - **Fix**: Grant this review's CI job `npm ci` + `wrangler`/`Bash` permissions so future runs execute the plan's checks directly. No code change needed on this PR — this is a tooling/`--allowedTools` limitation of the review job, not a defect in the PR.
-- **Decision**: PENDING — mechanically re-raised because this run independently re-confirmed the limitation still holds. Note for the human triaging this: the identical finding was already discussed and deliberately left open in the previous report on this same PR (see `context/changes/first-weekly-plan/reviews/impl-review.md` at commit `dcdb029`, and `notes/plan-queue.md` §4, F3 of PR #20) — re-applying ACKNOWLEDGED here is very likely correct rather than reopening a debate.
+- **Decision**: ACKNOWLEDGED — ta sama decyzja co w poprzedniej rundzie, podtrzymana. Recenzent
+  ma rację co do faktu (statyczne wnioskowanie to nie wykonanie) i sam zauważa, że ponowne
+  ACKNOWLEDGED jest tu najpewniej właściwe. Ustalenie **nie dotyczy kodu tego PR-a**, tylko
+  uprawnień zadania przeglądu, a `notes/plan-queue.md` §4 („Przeniesione z poprzedniej paczki",
+  F3 raportu z PR #20) trzyma je świadomie otwarte z podanym powodem: rozszerzenie
+  `--allowedTools` **zastępuje** domyślny zestaw narzędzi, a skutku nie da się sprawdzić na PR-ze,
+  który tę zmianę wprowadza. Luka w dowodzie jest tu pokryta warstwą 3 (`pre-push`) i warstwą 4
+  (bramka jakości) — obie przebiegły na zielono — oraz 14 sprawdzeniami ograniczeń, których
+  wyniki są wypisane w Dzienniku razem z przebiegiem migracji wstecz i z powrotem.
+  Ponieważ ustalenie jest **mechanicznie odtwarzane przy każdym przebiegu** i nie da się go
+  zamknąć na tym PR-ze, scalenie idzie przez etykietę `impl-review-override` — to jest ten
+  przypadek, do którego etykieta została zrobiona. (Poprzednia runda: `dcdb029`.) Note for the human triaging this: the identical finding was already discussed and deliberately left open in the previous report on this same PR (see `context/changes/first-weekly-plan/reviews/impl-review.md` at commit `dcdb029`, and `notes/plan-queue.md` §4, F3 of PR #20) — re-applying ACKNOWLEDGED here is very likely correct rather than reopening a debate.
 
 <!-- End of report -->
