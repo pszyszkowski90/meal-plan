@@ -740,16 +740,16 @@ Wstecz: `migrations/down/0006_plan.down.sql`, uruchamiany **wyłącznie przez cz
 
 #### Automated
 
-- [ ] 1.1 `migrations apply --local` stosuje `0006`, `migrations list --local` bez zaległych
-- [ ] 1.2 Para wsteczna zdejmuje tabele i wpis z `d1_migrations`; ponowne zastosowanie przechodzi
-- [ ] 1.3 `day_index` 0 i 8 odrzucone, 1 i 7 przyjęte
-- [ ] 1.4 `meal_slot` spoza enuma odrzucony; `dish_id` spoza `dish` odrzucony przez klucz obcy
-- [ ] 1.5 Kaskady działają: usunięcie planu kasuje pozycje, usunięcie konta kasuje oba
-- [ ] 1.6 `npm run check-conventions` czyste, `migration-pair` widzi parę
+- [x] 1.1 `migrations apply --local` stosuje `0006`, `migrations list --local` bez zaległych — 9b60ac9
+- [x] 1.2 Para wsteczna zdejmuje tabele i wpis z `d1_migrations`; ponowne zastosowanie przechodzi — 9b60ac9
+- [x] 1.3 `day_index` 0 i 8 odrzucone, 1 i 7 przyjęte — 9b60ac9
+- [x] 1.4 `meal_slot` spoza enuma odrzucony; `dish_id` spoza `dish` odrzucony przez klucz obcy — 9b60ac9
+- [x] 1.5 Kaskady działają: usunięcie planu kasuje pozycje, usunięcie konta kasuje oba — 9b60ac9
+- [x] 1.6 `npm run check-conventions` czyste, `migration-pair` widzi parę — 9b60ac9
 
 #### Manual
 
-- [ ] 1.7 `.schema` obu tabel obejrzany i zgodny z kontraktem
+- [x] 1.7 `.schema` obu tabel obejrzany i zgodny z kontraktem — 9b60ac9
 
 ### Phase 2: Czysty moduł generatora
 

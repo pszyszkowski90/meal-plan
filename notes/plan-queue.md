@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G3**.
+Kolejne zadanie do wzięcia: **G3, faza 2** (czysty moduł generatora).
 
 ---
 
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **następne do wzięcia**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 1 z 4**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -299,3 +299,55 @@ Co zacommitowane: `context/foundation/prd.md`, `context/foundation/roadmap.md`,
 Werdykt przeglądu: PR otwarty, werdykt czytany przed scaleniem.
 PR: #31
 Do decyzji: —
+
+### 17:05 UTC — G3 S-04, ścieżka 10x do planu + faza 1 (schemat)
+Wynik: ok
+Co zrobione: pełna ścieżka `/10x-new` → `/10x-research` → `/10x-plan` → `/10x-plan-review`,
+bez skracania, plus **faza 1 z czterech** (migracja `0006`).
+
+**Badanie znalazło trzy rzeczy, które wywróciły założenia tej kolejki** (`research.md` §E):
+1. Kolejka zakładała, że wąskim gardłem powtórzeń jest **12 obiadów** przy limicie 30 minut.
+   Zmierzone: wykluczenie **nabiału** przy tym samym limicie zostawia **2 śniadania**. Zakaz
+   powtórzeń zamieniłby zwyczajny profil w błąd — powtórzenia muszą być dozwolone.
+2. Pula ma **twardy sufit kaloryczny zależny od liczby posiłków**: przy 3 posiłkach maksimum dnia
+   to 2542 kcal, więc cel 3200 jest nieosiągalny (potrzeba ≥ 2880). To porażka, której **nie
+   powoduje** ani wykluczenie, ani limit czasu — komunikat mówiący „usuń wykluczenie" byłby
+   nieprawdą.
+3. `all<T>()` w `src/server/env.ts:29` **nie ma pola `meta`**. G4 zaczyna od tej linijki, a nie
+   od dopisania pomiaru.
+
+**Przegląd planu zwrócił DO PRZEMYŚLENIA — i słusznie.** Dziesięć ustaleń, sześć krytycznych,
+wszystkie przyjęte (`reviews/plan-review.md`). Trzy najważniejsze:
+- **Pierwsza reguła powtórzeń była arytmetycznie zła.** `ceil(7 / |pula|)` liczyło od liczby dni,
+  a pora „snack" jest wybierana `7 × (posiłki − 3)` razy. Przy sześciu posiłkach reguła nie
+  przepuszczała **żadnego** zmierzonego scenariusza, łącznie z pustym — czyli wywracała jedyną
+  konfigurację, w której 3200 kcal jest osiągalne. Poprawione na `ceil(picks / |pula|)`
+  **plus relaksacja**: rozmaitość ustępuje guardrailowi, a nie odwrotnie.
+- **Dwa z czterech twardych ograniczeń nie miały żadnego kryterium na ścieżce sukcesu.**
+  Wykluczenia i limit czasu występowały wyłącznie w scenariuszach porażki, więc literówka
+  w `NOT EXISTS` przeszłaby cały zestaw na zielono. Dodane 2.6, 3.6 i 3.7, dwa ostatnie
+  z wymogiem sprawdzenia **celowym zepsuciem**.
+- **Ziarno wykluczało się z przycinaniem.** DFS po liście posortowanej rosnąco jest
+  deterministyczny z konstrukcji; ziarno mogło coś zmienić tylko przez przestawienie kolejności,
+  co unieważnia `break` — jedyną odpowiedź planu na limit 10 ms CPU. Rozstrzygnięte: ziarno
+  wyznacza **punkt startowy z zawinięciem**, co daje dwa ciągi rosnące i zachowuje przycinanie.
+
+Faza 1: migracja `0006` z `plan` i `plan_item` plus para wsteczna. Wszystkie siedem kryteriów
+zaliczone **wykonaniem, nie odczytem kodu**: 14 sprawdzeń ograniczeń (`day_index` 0/1/7/8,
+`meals_per_day` 2/7, `slot_index` 0, enum pory, klucz obcy do `dish`, duplikat klucza głównego,
+obie kaskady), przebieg wstecz i z powrotem z potwierdzeniem, że wpis znika z `d1_migrations`
+i wraca. `.schema` obejrzany.
+
+**Migracja zastosowana na produkcji PRZED commitem** (`migrations list --remote` → „No migrations
+to apply!", trzy obiekty w `sqlite_master`) — twarda reguła `CLAUDE.md`.
+
+Co zacommitowane: `context/changes/first-weekly-plan/` (change.md, research.md, plan.md,
+reviews/plan-review.md), `migrations/0006_plan.sql`, `migrations/down/0006_plan.down.sql`,
+`context/foundation/roadmap.md` (S-04 → `planning`), `notes/plan-queue.md`.
+Stage po ścieżkach, zero `git add -A`. `package-lock.json` nietknięty.
+Werdykt przeglądu: przegląd **planu** przeczytany i rozliczony przed implementacją; werdykt
+przeglądu implementacji z CI — po otwarciu PR.
+PR: #32
+Do decyzji: —
+Uwaga: powtórzenia, determinizm, kształt schematu i treść komunikatu porażki rozstrzygnięte
+**przez agenta** na podstawie pomiarów, zgodnie z §4. Zero pytań do właściciela.
