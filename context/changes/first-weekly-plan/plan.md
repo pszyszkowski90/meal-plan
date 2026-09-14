@@ -814,19 +814,22 @@ Wstecz: `migrations/down/0006_plan.down.sql`, uruchamiany **wyłącznie przez cz
 
 ### Phase 4: Ekran planu
 
+> **Zakres skrócony na prośbę właściciela.** Odhaczone wyłącznie kryteria z dowodem; osiem
+> pozostałych ma kod, ale nie ma testu — wypisane w Dzienniku `notes/plan-queue.md`.
+
 #### Automated
 
 - [ ] 4.1 Konto bez planu widzi stan `missing` z przyciskiem, nie błąd
 - [ ] 4.2 Siedem dni na ekranie; suma dnia zgadza się z niezależnym przeliczeniem
-- [ ] 4.3 Każda z siedmiu sum na ekranie mieści się w oknie ±10% pokazanego celu
-- [ ] 4.4 Rozwinięcie dania pokazuje składnik z gramaturą, krok i komplet makr
+- [x] 4.3 Każda z siedmiu sum na ekranie mieści się w oknie ±10% pokazanego celu
+- [x] 4.4 Rozwinięcie dania pokazuje składnik z gramaturą, krok i komplet makr
 - [ ] 4.5 Profil skrajny → komunikat o ograniczeniu kalorycznym i zero dni na ekranie
 - [ ] 4.6 „Wygeneruj ponownie" zastępuje plan; siedem dni po operacji, nie czternaście
 - [ ] 4.7 Zerwana sieć → komunikat o połączeniu, użytkownik zostaje zalogowany
 - [ ] 4.8 Konto A nie widzi planu B — przez ekran i z pominięciem UI
 - [ ] 4.9 Przycisk generowania zablokowany przy nieznanym stanie, z podaną przyczyną
-- [ ] 4.10 Zakładka na obu platformach; `tab-parity` czyste
-- [ ] 4.11 Pełny zestaw E2E zielony przeciw `wrangler dev`; wszystkie bramki czyste
+- [x] 4.10 Zakładka na obu platformach; `tab-parity` czyste
+- [x] 4.11 Pełny zestaw E2E zielony przeciw `wrangler dev`; wszystkie bramki czyste
 
 #### Manual
 

@@ -129,15 +129,18 @@ function MealRow({ meal }: { meal: PlanMeal }) {
       {open ? (
         <ThemedView type="background" style={styles.recipe}>
           <ThemedText type="smallBold">Składniki</ThemedText>
-          {meal.dish.ingredients.map((item) => (
-            <ThemedText key={item.name} type="small">
+          {meal.dish.ingredients.map((item, index) => (
+            // Klucz z indeksem, nie z samej nazwy: ten sam składnik może wystąpić w daniu dwa
+            // razy (dwa komponenty dania), a przy krokach — wolnym tekście — duplikat jest
+            // jeszcze łatwiejszy („Podawać ciepłe.").
+            <ThemedText key={`${index}-${item.name}`} type="small">
               {item.name} — {item.grams} g
             </ThemedText>
           ))}
 
           <ThemedText type="smallBold">Przygotowanie</ThemedText>
           {meal.dish.steps.map((step, index) => (
-            <ThemedText key={step} type="small">
+            <ThemedText key={`${index}-${step}`} type="small">
               {index + 1}. {step}
             </ThemedText>
           ))}

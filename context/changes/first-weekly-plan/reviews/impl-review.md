@@ -9,7 +9,7 @@
   zaimplementowane i zrecenzowane (PR #32, #33, #34).
 - **Date**: 2026-09-14
 - **CI run**: uruchomiony jako odpowiedź na `@claude` w komentarzu PR (nie zadanie `impl-review.yml`)
-- **Verdict**: NEEDS ATTENTION
+- **Verdict**: NEEDS ATTENTION → po poprawkach APPROVED (3 naprawione, 1 świadomie odłożone)
 - **Findings**: 0 critical · 3 warnings · 1 observation
 
 ## Verdicts
@@ -71,7 +71,12 @@ porównane wprost z kontraktem Fazy 4 i z kryteriami 4.1–4.14 w `plan.md`.
     poza oknem, a ekran ją pokaże bez ostrzeżenia — jeśli takiego scenariusza nie ma (bo API
     już wymusza okno przed zapisem, kryteria 3.5/3.10), to ten test jest siecią bezpieczeństwa
     na wypadek regresji w renderze, nie na wypadek błędu generatora. Stąd Impact MEDIUM, nie HIGH.
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE, naprawione. Trafne — i trafna jest też uwaga, że 4.2/4.3 NIE były
+  na liście ujawnionych pominięć, więc wyglądały na pokryte. Test parsuje teraz liczbę z nagłówka
+  dnia i z tekstu celu, i porównuje z oknem ±10%. Parsowanie zamknięte w jednym helperze
+  `parseKcal`, bo `toLocaleString('pl-PL')` rozdziela tysiące **spacją nierozdzielającą** (U+00A0)
+  i naiwne czyszczenie zwykłej spacji dałoby 2 zamiast 2200. Rola tego testu jest siecią
+  bezpieczeństwa na regresję w RENDERZE — okno wymusza już API (3.5) — i tak jest opisana w kodzie.
 
 ### F2 — Osiem zaplanowanych kryteriów Fazy 4 bez testu (ujawnione, ale wciąż realny brak pokrycia)
 
@@ -101,7 +106,10 @@ porównane wprost z kontraktem Fazy 4 i z kryteriami 4.1–4.14 w `plan.md`.
   - Confidence: MEDIUM — nie mam wglądu w priorytety właściciela poza tym, co jest w PR.
   - Blind spot: Nie wiem, czy „osobna zmiana” już istnieje w `notes/plan-queue.md` poza wpisem
     decyzyjnym.
-- **Decision**: PENDING
+- **Decision**: ACKNOWLEDGED — świadomie, na wyraźną prośbę właściciela o zrobienie fazy
+  „na skróty i najszybciej". Brak pokrycia jest realny i jest wypisany co do kryterium w opisie PR
+  i w Dzienniku, więc nie jest ukryty. Uzupełnienie ośmiu pozycji to osobna zmiana — wpisana
+  w Dzienniku jako pozycja „do decyzji".
 
 ### F3 — Progress Fazy 4 w `plan.md` nie zaktualizowany
 
@@ -118,7 +126,11 @@ porównane wprost z kontraktem Fazy 4 i z kryteriami 4.1–4.14 w `plan.md`.
   (4.1, 4.2 częściowo, 4.10 — patrz F1 o zakresie 4.2/4.3), a przy pominiętych dopisać przyczynę
   odsyłającą do wpisu w dzienniku, tak jak zrobiono to już dla nieosiągalnych z harnessu kryteriów
   fazy 3 (3.3, 3.4).
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE, naprawione. Sekcja Progress fazy 4 odhaczona **wybiórczo i uczciwie**:
+  tylko te kryteria, które mają dowód (4.3 okno na ekranie, 4.4 przepis, 4.10 parzystość zakładek,
+  4.11 zielony zestaw i bramki). Pozostałe zostają **nieodhaczone** — to jest cały sens tej sekcji
+  i dokładnie ten dług, przed którym ostrzega `notes/plan-queue.md` §3 („nie stemplu j statusów
+  przed zamknięciem ustaleń").
 
 ### F4 — Klucze list z tekstu treści (`item.name`, `step`) mogą kolidować
 
@@ -133,6 +145,7 @@ porównane wprost z kontraktem Fazy 4 i z kryteriami 4.1–4.14 w `plan.md`.
   ryzyko duplikatu jest wyższe (np. dwa kroki „Podawać ciepłe.”).
 - **Fix**: `key={`${index}-${item.name}`}` i `key={`${index}-${step}`}` usuwa ryzyko bez zmiany
   zachowania.
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE, naprawione. `key={`${index}-${item.name}`}` i to samo dla kroków.
+  Ryzyko niskie, ale poprawka jednoliniowa i bez zmiany zachowania — nie ma powodu jej odkładać.
 
 <!-- End of report -->

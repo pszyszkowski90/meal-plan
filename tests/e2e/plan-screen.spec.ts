@@ -12,6 +12,19 @@ import { test, expect, type Page } from '@playwright/test';
  * dopasowanie tekstu wywraca się na trybie ścisłym Playwrighta.
  */
 
+/**
+ * Wyciąga liczbę kilokalorii z tekstu ekranu.
+ *
+ * `toLocaleString('pl-PL')` rozdziela tysiące **spacją nierozdzielającą** (U+00A0), a nie zwykłą —
+ * naiwne `parseInt` po `replace(/ /g, '')` zwróciłoby 2 zamiast 2200. Jeden helper, żeby ta
+ * pułapka nie powtarzała się w kolejnych testach.
+ */
+function parseKcal(text: string): number {
+  const match = text.match(/([\d\s ]+)\s*kcal/);
+  expect(match, `nie znaleziono liczby kcal w „${text}"`).not.toBeNull();
+  return Number(match![1].replace(/[\s ]/g, ''));
+}
+
 async function openPlan(page: Page) {
   const loaded = page.waitForResponse(
     (r) => r.url().includes('/api/plan') && r.request().method() === 'GET'
@@ -44,9 +57,23 @@ test('ekran planu generuje tydzień i pokazuje sumy dni', async ({ page }) => {
     return;
   }
 
-  // Siedem dni, każdy z sumą.
+  // Siedem dni, każdy z sumą — i KAŻDA suma w granicy ±10% celu POKAZANEGO NA EKRANIE.
+  //
+  // Bez tej drugiej części test sprawdzałby wyłącznie, że nagłówek dnia istnieje, a plan sam
+  // nazywa to kryterium krytycznym: „brak przepuściłby generator produkujący dni po 4000 kcal
+  // przy celu 2000". Okno jest już wymuszone przez API (3.5), więc to jest sieć bezpieczeństwa
+  // na regresję w RENDERZE — liczba pokazana użytkownikowi ma być tą, którą serwer zwalidował.
+  const targetText = await page.getByText(/^Cel [\d\s ]+ kcal/).first().innerText();
+  const targetKcal = parseKcal(targetText);
+  const lower = Math.ceil(targetKcal * 0.9);
+  const upper = Math.floor(targetKcal * 1.1);
+
   for (let day = 1; day <= 7; day += 1) {
-    await expect(page.getByText(new RegExp(`^Dzień ${day} —`))).toBeVisible();
+    const heading = page.getByText(new RegExp(`^Dzień ${day} —`));
+    await expect(heading).toBeVisible();
+    const total = parseKcal(await heading.innerText());
+    expect(total, `dzień ${day}: ${total} kcal poza oknem [${lower}, ${upper}]`).toBeGreaterThanOrEqual(lower);
+    expect(total).toBeLessThanOrEqual(upper);
   }
 
   // Przepis rozwija się i niesie treść — FR-009.
