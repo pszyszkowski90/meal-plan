@@ -63,10 +63,10 @@ generatora. Bez nich nie ma z czego ani pod co generować.
 
 | ID    | Change ID                    | Wynik (użytkownik może …)                                          | Wymagania wstępne  | Odnośniki PRD                     | Status   |
 | ----- | ---------------------------- | ------------------------------------------------------------------ | ------------------ | --------------------------------- | -------- |
-| F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | planning |
+| F-01  | `dish-source-and-seed-pool`  | (fundament) pula dań z makrami, ilościami i krokami istnieje w bazie | —                  | FR-008, FR-009, FR-016            | implementing |
 | S-01  | `account-and-login`          | założyć konto e-mail + hasło i zalogować się                         | —                  | FR-001, Access Control            | done     |
 | S-02  | `profile-and-calorie-target` | podać profil i zobaczyć wyliczone dzienne zapotrzebowanie            | S-01               | FR-002, FR-003                    | done        |
-| S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | planning |
+| S-03  | `dietary-preferences`        | podać wykluczenia, maksymalny czas gotowania i liczbę posiłków       | S-01               | FR-004, FR-006, FR-007            | done     |
 | S-04  | `first-weekly-plan`          | wygenerować tygodniowy jadłospis w ±10% i otworzyć przepis dania     | F-01, S-02, S-03   | US-01, FR-008, FR-009             | proposed |
 | S-05  | `swap-and-reject-dish`       | wymienić danie w planie i oznaczyć je, żeby nie wracało              | S-04               | FR-010, FR-011                    | proposed |
 | S-06  | `step-by-step-cooking`       | przejść instrukcję dania krok po kroku w trakcie gotowania           | F-01, S-04         | FR-016, NFR                       | proposed |
@@ -140,7 +140,8 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   źródła dają trzy zupełnie różne plany implementacyjne (zapytanie do własnej bazy kontra
   wywołanie modelu na żądanie), więc `/10x-plan` na S-04 przed tą decyzją byłby zmarnowany.
   Ryzyko wtórne: jeśli źródło nie daje kroków, FR-016 wymaga ręcznej obróbki każdego przepisu.
-- **Status:** planning
+- **Status:** implementing — fazy 1 i 2 wykonane (schemat i walidacja), fazy 3 i 4 (pula dań)
+  jeszcze nie. Status `planning` do 14.09.2026 był nieaktualny: opisywał stan sprzed fazy 1.
 
 ## Fragmenty
 
@@ -205,7 +206,8 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **Ryzyko:** to tutaj powstaje jedna lista wykluczeń, którą później zasila także S-05
   (oznaczanie dań z planu) — PRD jest jednoznaczne, że to jeden mechanizm, nie dwa. Zły model
   danych na tym fragmencie wraca jako przeróbka w S-04 i S-05.
-- **Status:** planning
+- **Status:** done — obie fazy wykonane, wszystkie kryteria planu zamknięte 14.09.2026,
+  łącznie z izolacją dwóch kont (1.6) i weryfikacją natywną (2.9).
 
 ### S-04: Użytkownik dostaje wygenerowany tygodniowy jadłospis z przepisami
 
@@ -321,7 +323,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 | F-01          | `dish-source-and-seed-pool`  | Wybór źródła przepisów i zseedowanie puli dań              | no                    | Czeka na Otwarte pytania 1 i 2 (decyzja użytkownika)      |
 | S-01          | `account-and-login`          | Konto e-mail + hasło i granica danych użytkownika          | yes                   | Uruchom `/10x-plan account-and-login`                      |
 | S-02          | `profile-and-calorie-target` | Profil użytkownika i wyliczone zapotrzebowanie             | no                    | Po ukończeniu S-01                                         |
-| S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | no                    | Zaplanowane; wymaga F-01 fazy 1 (tabela `ingredient`)      |
+| S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | —                     | **Zrobione** 14.09.2026; zmiana zarchiwizowana             |
 | S-04          | `first-weekly-plan`          | Generator tygodniowego jadłospisu z widokiem przepisu      | no                    | Po F-01, S-02 i S-03                                       |
 | S-05          | `swap-and-reject-dish`       | Wymiana dania i trwałe odrzucenie                          | no                    | Po S-04                                                    |
 | S-06          | `step-by-step-cooking`       | Tryb gotowania krok po kroku                               | no                    | Po F-01 i S-04; wykonalność zależy od Otwartego pytania 2  |

@@ -45,6 +45,38 @@ export function passwordField(page: Page) {
   return page.locator('input[autocomplete="current-password"]');
 }
 
+/** Poświadczenia jednego konta testowego. Czytane ze środowiska — nigdy z pliku w repo. */
+export type Credentials = { email: string; password: string; code: string };
+
+/**
+ * Konto **A** — domyślne dla całego harnessu. To nim jedzie zapisana sesja i wszystkie
+ * specyfikacje poza dowodem izolacji.
+ */
+export function primaryCredentials(): Credentials {
+  return {
+    email: requireEnv('MEALPLAN_E2E_EMAIL'),
+    password: requireEnv('MEALPLAN_E2E_PASSWORD'),
+    code: requireEnv('MEALPLAN_E2E_CODE'),
+  };
+}
+
+/**
+ * Konto **B** — istnieje wyłącznie po to, żeby dało się dowieść izolacji między tożsamościami
+ * (kryterium 1.6 S-03, 2.9 S-02). Jedno konto nie udowodni, że `WHERE user_id = ?` naprawdę
+ * filtruje: zapytanie bez filtra oddałoby dokładnie te same dane.
+ *
+ * Kod weryfikacyjny jest wspólny, bo oba konta używają adresu `+clerk_test`, który w instancji
+ * development Clerka przyjmuje **ten sam stały kod**. Osobna zmienna byłaby kopią tej samej
+ * wartości i jeszcze jednym miejscem do rozjazdu.
+ */
+export function secondaryCredentials(): Credentials {
+  return {
+    email: requireEnv('MEALPLAN_E2E_EMAIL_B'),
+    password: requireEnv('MEALPLAN_E2E_PASSWORD_B'),
+    code: requireEnv('MEALPLAN_E2E_CODE'),
+  };
+}
+
 /**
  * Loguje się kontem testowym i zostawia przeglądarkę w widoku produktowym.
  *
@@ -52,11 +84,11 @@ export function passwordField(page: Page) {
  * (`+clerk_test`) przyjmuje stały kod z `MEALPLAN_E2E_CODE`. Krok bywa pomijany, gdy Clerk uzna
  * urządzenie za znane, więc jest obsłużony warunkowo — bezwarunkowe czekanie na niego wywracałoby
  * test przy każdym przebiegu z zapisaną sesją.
+ *
+ * Domyślnie loguje konto A; dowód izolacji podaje poświadczenia konta B jawnie.
  */
-export async function signIn(page: Page): Promise<void> {
-  const email = requireEnv('MEALPLAN_E2E_EMAIL');
-  const password = requireEnv('MEALPLAN_E2E_PASSWORD');
-  const code = requireEnv('MEALPLAN_E2E_CODE');
+export async function signIn(page: Page, credentials?: Credentials): Promise<void> {
+  const { email, password, code } = credentials ?? primaryCredentials();
 
   await page.goto('/sign-in');
   await emailField(page).fill(email);
