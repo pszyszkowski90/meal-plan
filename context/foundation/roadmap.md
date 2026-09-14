@@ -82,7 +82,7 @@ kolejność jest w grafie zależności poniżej; ta tabela to proponowana kolejn
 | Strumień | Temat                      | Łańcuch                           | Uwaga                                                                                    |
 | -------- | -------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------- |
 | A        | Konto i wejścia generatora | `S-01` → `S-02` → `S-03`          | Jedyny strumień z gotowym startem; przy celu `speed` to on odblokowuje wszystko pozostałe. |
-| B        | Pula dań i generator planu | `F-01` → `S-04` → `S-05` → `S-06` | Łączy strumień A w `S-04`. Cały strumień stoi na Otwartym pytaniu 1.                       |
+| B        | Pula dań i generator planu | `F-01` → `S-04` → `S-05` → `S-06` | Łączy strumień A w `S-04`. Otwarte pytanie 1 rozstrzygnięte 13.09; strumień płynie od `S-04`. |
 | C        | Lista zakupów              | `S-07` → `S-08`                   | Łączy strumień B w `S-04` (potrzebuje planu) i `F-01` (ilości składników, kategorie).      |
 | D        | Dostępność bez sieci       | `S-09`                            | Domyka wymaganie offline po tym, jak plan (B) i lista (C) już istnieją.                    |
 
@@ -222,11 +222,14 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **Blokery:** —
 - **Niewiadome:**
   - Jak zachowuje się produkt, gdy wykluczeń jest tyle, że planu nie da się ułożyć w ±10%?
-    Kierunek jest w kryteriach akceptacji US-01 (jawny komunikat, żadnego planu częściowego),
-    do doprecyzowania zostaje próg i treść. Właściciel: użytkownik. Blok: nie.
-  - Czy przechodzimy na plan Cloudflare Workers Paid? Wdrożenie odnotowuje, że limit 10 ms CPU
-    planu darmowego nie mówi nic o obciążeniu generatora i że plan płatny należy zakładać od
-    pierwszego dnia pracy nad nim. Właściciel: użytkownik. Blok: nie.
+    Kierunek jest w kryteriach akceptacji US-01 i w `CLAUDE.md` (jawny komunikat nazywający
+    ograniczenie, żadnego planu częściowego), do doprecyzowania zostaje próg i treść.
+    **Właściciel: agent** (`notes/plan-queue.md` §4). Blok: nie — domyka się w tej zmianie.
+  - Czy przechodzimy na plan Cloudflare Workers Paid? Limit 10 ms CPU planu darmowego **zabija
+    wywołanie**, nie spowalnia je, a dobór dań pod trzy ograniczenia to najcięższa obliczeniowo
+    rzecz w tym produkcie. Pytanie stawiamy **dopiero po pomiarze na realnej puli** i tylko
+    z liczbą w ręku; jeśli pomiar zmieści się w 10 ms, decyzji nie ma.
+    Właściciel: użytkownik. Blok: nie dla planowania i implementacji, potencjalnie dla wdrożenia.
 - **Ryzyko:** trzy twarde ograniczenia naraz — ±10% kcal, zero wykluczeń, limit czasu
   przygotowania — muszą być spełnione jednocześnie, albo generator ma zwrócić błąd nazywający,
   którego z nich nie da się spełnić. To jedyne miejsce w produkcie, gdzie „prawie dobrze" jest
@@ -261,10 +264,11 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **Równolegle z:** S-05, S-07
 - **Blokery:** —
 - **Niewiadome:** —
-- **Ryzyko:** wykonalność tego fragmentu jest w całości pochodną decyzji z F-01 — jeśli wybrane
-  źródło zwraca instrukcję jednym blokiem tekstu, każdy przepis wymaga ręcznego rozbicia na
-  kroki i fragment przestaje być mały. To jedyny ekran używany przy mokrych rękach, więc
-  wymaganie o obsłudze jedną ręką obowiązuje tu ostrzej niż gdziekolwiek indziej.
+- **Ryzyko:** ~~wykonalność jest pochodną decyzji z F-01~~ — **zdjęte 13.09.2026**: przepisy
+  piszemy sami, a kroki leżą w bazie jako osobne rekordy z kolejnością (`dish_step`), więc
+  nic nie wymaga ręcznego rozbijania bloku tekstu. Zostaje ryzyko ergonomiczne: to jedyny ekran
+  używany przy mokrych rękach, więc wymaganie o obsłudze jedną ręką obowiązuje tu ostrzej niż
+  gdziekolwiek indziej.
 - **Status:** proposed
 
 ### S-07: Użytkownik generuje listę zakupów z zaznaczonych dni
@@ -326,30 +330,50 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 | S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | —                     | **Zrobione** 14.09.2026; zmiana zarchiwizowana             |
 | S-04          | `first-weekly-plan`          | Generator tygodniowego jadłospisu z widokiem przepisu      | yes                   | F-01, S-02 i S-03 zrobione — uruchom `/10x-plan first-weekly-plan` |
 | S-05          | `swap-and-reject-dish`       | Wymiana dania i trwałe odrzucenie                          | no                    | Po S-04                                                    |
-| S-06          | `step-by-step-cooking`       | Tryb gotowania krok po kroku                               | no                    | Po F-01 i S-04; wykonalność zależy od Otwartego pytania 2  |
+| S-06          | `step-by-step-cooking`       | Tryb gotowania krok po kroku                               | no                    | Po S-04; Otwarte pytanie 2 rozstrzygnięte — `dish_step` istnieje |
 | S-07          | `shopping-list-from-days`    | Lista zakupów z zaznaczonych dni, w kategoriach            | no                    | Po F-01 i S-04                                             |
 | S-08          | `check-off-purchases`        | Odhaczanie kupionych pozycji                               | no                    | Po S-07                                                    |
 | S-09          | `offline-plan-and-list`      | Dostępność planu i listy zakupów bez sieci                 | no                    | Po S-04 i S-07                                             |
 
 ## Otwarte pytania dotyczące mapy drogowej
 
-1. **Skąd biorą się przepisy i makra?** Rozważane opcje: generowanie przez model AI na żądanie,
-   własna ręcznie zseedowana pula dań, publiczna baza składników (USDA / Open Food Facts) plus
-   własne przepisy. Właściciel: użytkownik. Blokuje: F-01, a przez nie S-04, S-06 i S-07 —
-   czyli strumienie B, C i D w całości.
-2. **Czy wybrane źródło przepisów daje instrukcję rozbitą na kroki?** Warunek konieczny dla
-   FR-016. Do rozstrzygnięcia razem z pytaniem 1. Właściciel: użytkownik. Blokuje: F-01, S-06.
-3. **Jak rozdzielone są wykluczenia składnikowe od daniowych?** Bez tego rozdzielenia
-   ograniczenie o wykluczeniach będzie łamane. Właściciel: użytkownik. Blokuje: S-03, a przez
-   nie S-04 i S-05.
+Stan na 14.09.2026. **Pięć z sześciu jest zamkniętych.** Numeracja zachowana, bo pytanie
+rozstrzygnięte zostaje na swoim numerze z odpowiedzią.
+
+> **Uwaga o numeracji:** ta lista **nie jest zgodna numerami** z `prd.md` §Open Questions.
+> Tutejsze pytanie 3 (wykluczenia) to pytanie **4** w PRD, a tutejsze 4 (niewykonalny plan) to
+> pytanie **3** w PRD. Pytanie 6 istnieje tylko tutaj. Cytując numer, zawsze pisz, z którego
+> dokumentu.
+
+1. ~~**Skąd biorą się przepisy i makra?**~~ **Rozstrzygnięte 13.09.2026** (D14): hybryda — model
+   autoryzuje przepisy raz poza runtime, makra liczy skrypt z USDA FoodData Central, runtime
+   czyta wyłącznie D1. **Wdrożone**: 58 dań i 51 składników na produkcji. Nie blokuje niczego —
+   F-01 jest zrobione, a S-04, S-06 i S-07 są odblokowane.
+2. ~~**Czy wybrane źródło przepisów daje instrukcję rozbitą na kroki?**~~ **Rozstrzygnięte
+   13.09.2026** razem z pytaniem 1: tak, bo jesteśmy autorem — kroki to osobne rekordy
+   z kolejnością (`dish_step`). FR-016 ma warunek spełniony. Nie blokuje S-06.
+3. ~~**Jak rozdzielone są wykluczenia składnikowe od daniowych?**~~ **Rozstrzygnięte 13.09.2026**
+   (D14, doprecyzowane przez D21): jedna tabela `exclusion` z polem `kind`
+   (`ingredient` / `dish` / `group`) plus `exclusion_group`. **Wdrożone** w S-03, migracja `0005`.
+   Nie blokuje S-04 ani S-05.
 4. **Jak zachowuje się produkt, gdy wykluczeń jest tyle, że planu nie da się ułożyć w ±10%?**
-   Kierunek zapisany w kryteriach akceptacji US-01; próg i treść komunikatu do doprecyzowania.
-   Właściciel: użytkownik. Blokuje: nie blokuje planowania S-04.
-5. **Jak produkt uzasadnia wyliczone zapotrzebowanie i czy użytkownik może nadpisać cel ręcznie?**
-   Właściciel: użytkownik. Blokuje: nie blokuje planowania S-02.
-6. **Czy przechodzimy na plan Cloudflare Workers Paid przed pracą nad generatorem?** Wdrożenie
-   odnotowuje, że limit 10 ms CPU planu darmowego nie mówi nic o obciążeniu generatora.
-   Właściciel: użytkownik. Blokuje: nie blokuje planowania S-04, ale blokuje jego wdrożenie.
+   **Kierunek rozstrzygnięty** w `CLAUDE.md` jako ograniczenie twarde — błąd nazywa, którego
+   z trzech ograniczeń nie da się spełnić, i nie powstaje żaden plan częściowy. Otwarte zostaje
+   słownictwo i próg, a progu nie da się zgadnąć: wynika z rozmiaru puli po odsiewie i musi
+   zostać **zmierzony w S-04**. **Właściciel: agent** (`notes/plan-queue.md` §4). Nie blokuje
+   planowania ani wdrożenia S-04 — domyka się po drodze.
+5. ~~**Jak produkt uzasadnia wyliczone zapotrzebowanie i czy użytkownik może nadpisać cel
+   ręcznie?**~~ **Rozstrzygnięte i wdrożone 12.09.2026** w S-02: ekran profilu pokazuje wzór
+   z podstawionymi wartościami, nadpisanie ręczne przycinane do 1000–6000 kcal (D16).
+   Nie blokuje niczego.
+6. **Czy przechodzimy na plan Cloudflare Workers Paid przed pracą nad generatorem?**
+   **Jedyne naprawdę otwarte pytanie tej listy i jedyne, które należy do właściciela** — to jego
+   pieniądze (5 USD/mc). **Nie jest jednak blokerem „na zapas".** Limit 10 ms CPU planu darmowego
+   **zabija wywołanie**, nie spowalnia je, ale nikt jeszcze nie zmierzył, ile generator faktycznie
+   zużywa. Pytanie stawiamy **dopiero z liczbą w ręku**, po pomiarze na realnej puli 58 dań
+   w scenariuszu najwęższego przejścia (limit 30 minut + 5 wykluczeń + cel 3200 kcal).
+   Jeśli pomiar zmieści się w 10 ms — pytania nie ma. Właściciel: użytkownik.
+   Blokuje: nie blokuje planowania ani implementacji S-04; potencjalnie blokuje jego wdrożenie.
 
 ## Zaparkowane
 

@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G2**.
+Kolejne zadanie do wzięcia: **G3**.
 
 ---
 
@@ -107,7 +107,7 @@ leży w `context/changes/`. To ten sam dług, co przy S-03: status opisuje zamia
 - **Osobny PR**, przed G3 — archiwizacja przenosi raport przeglądu poza `context/changes/`,
   więc zrobiona razem z pracą wyłączyłaby bramkę werdyktu (to samo, co przy S-03)
 
-### G2 — PRD kłamie o czterech z pięciu Otwartych pytań · ~45 min · **następne do wzięcia**
+### G2 — PRD kłamie o czterech z pięciu Otwartych pytań · ~45 min · **zrobione 14.09**
 
 `prd.md` §Open Questions wymienia pięć pytań, z których **cztery są rozstrzygnięte od 13.09**,
 a PRD dalej opisuje je jako blokujące (`Blokuje: tak — cały generator planu`):
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **następne do wzięcia**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -274,3 +274,28 @@ Do decyzji: —
 Uwaga operacyjna: `git mv` padło na Windowsie `Permission denied` (dwa razy, także po ponowieniu).
 Obejściem było `Move-Item` w PowerShellu plus `git add` po obu ścieżkach — git i tak wykrył
 dziewięć zmian nazwy. Warto o tym pamiętać przy kolejnych archiwizacjach w tym repo.
+
+### 16:16 UTC — G2 PRD i mapa drogowa doprowadzone do stanu faktycznego
+Wynik: ok
+Co zrobione: `prd.md` §Open Questions przepisane — cztery z pięciu pytań oznaczone jako
+rozstrzygnięte, z datą, numerem decyzji i miejscem wdrożenia; numeracja 1–5 zachowana, bo
+odwołują się do niej `CLAUDE.md` i zarchiwizowane zmiany. Jedyne, co zostaje otwarte, to
+**treść i próg** komunikatu z pytania 3 — z jawnym „Właściciel: agent" i „Blokuje: nic",
+zamiast dotychczasowego „Blokuje: tak — cały generator planu".
+W `roadmap.md` ta sama operacja na §Otwarte pytania (pięć z sześciu zamkniętych) plus cztery
+miejsca, które powtarzały tę samą nieaktualność: wiersz strumienia B, wiersz S-06 w tabeli
+przekazania, blok „Niewiadome" S-04 i „Ryzyko" S-06.
+**Znalezione przy okazji, warte zapamiętania:** obie listy pytań mają **rozjechaną numerację** —
+pytanie 3 mapy to pytanie 4 PRD i odwrotnie, a pytanie 6 istnieje tylko w mapie. Dopisana
+ramka ostrzegawcza w `roadmap.md`, bo cytowanie „Otwartego pytania 3" bez nazwy dokumentu
+wskazuje dwie różne rzeczy.
+**Własność pytania 3 doprecyzowana**: mapa mówiła „Właściciel: użytkownik", a `plan-queue.md` §4
+przekazuje je agentowi. Zapisane po stronie agenta w obu dokumentach — inaczej G3 stanąłby
+czekając na decyzję, której nikt nie ma podjąć.
+**Pytanie 6 (Workers Paid) zostaje otwarte i u właściciela**, ale przeformułowane: pytamy
+dopiero po pomiarze z G4 i tylko z liczbą w ręku, bo bez niej to bloker „na zapas".
+Co zacommitowane: `context/foundation/prd.md`, `context/foundation/roadmap.md`,
+`notes/plan-queue.md`. Stage po ścieżkach, zero `git add -A`. Zero zmian w kodzie i danych.
+Werdykt przeglądu: PR otwarty, werdykt czytany przed scaleniem.
+PR: #31
+Do decyzji: —
