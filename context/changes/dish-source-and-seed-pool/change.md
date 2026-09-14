@@ -9,6 +9,17 @@ archived_at: null
 
 ## Notes
 
+- **Faza 4, druga runda przeglądu (CI) 14.09.2026** (PR #27, commit `4b56c3a`, `synchronize`) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 1 ostrzeżenie,
+  0 obserwacji. Poprzednia runda (F1: brakujący `seed/REVIEW.md`; F2: osierocony składnik) została
+  rozliczona tym commitem — `seed/REVIEW.md` powstał, dwa osierocone składniki dostały prawdziwe
+  dania, pula urosła z 56 do **58**. Jedno nowe, drobne ustalenie: ten sam commit, który to
+  naprawił, zostawił `seed/REVIEW.md` (linia 9) i notatkę 4.6 w `plan.md` z liczbami sprzed
+  dodania tych dwóch dań (56 zamiast 58; 27/31/10/14 zamiast 29/33/12/16) — czysto tekstowe,
+  artefakty, które faktycznie coś bramkują (`plan.md` §4.1/4.7, `CLAUDE.md`, `FEASIBILITY.md`) mają
+  już poprawne liczby. Zero wpływu na dane czy runtime. Ta runda miała dostęp do
+  `mcp__github_ci__get_ci_status` i potwierdziła przez niego zieloną bramkę jakości dla tego
+  commita, zamiast przybliżać ją statycznie od zera.
 - **Faza 4 (skalowanie puli, 20 → 56 dań) przejrzana (CI) 14.09.2026** (PR #27) —
   [reviews/impl-review.md](reviews/impl-review.md). Werdykt WYMAGA UWAGI: 0 krytycznych,
   1 ostrzeżenie, 2 obserwacje. Ustalenie: `seed/REVIEW.md` nigdy nie powstał, choć plan wymienia

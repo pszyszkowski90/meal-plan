@@ -2,13 +2,14 @@
 # Implementation Review: Wybór źródła przepisów z makrami i zseedowanie minimalnej puli dań — Faza 4 (skalowanie puli i pomiar końcowy)
 
 - **Plan**: `context/changes/dish-source-and-seed-pool/plan.md`
-- **Scope**: Full plan (CI review on PR #27) — Fazy 1–3 były już zamknięte i przejrzane
-  wcześniej (patrz `change.md`); ten PR dotyczy wyłącznie Fazy 4 (kryteria 4.1–4.8, wszystkie
-  `[x]`). Plan F-01 nie ma po tym PR-ze żadnych pozostałych faz.
+- **Scope**: Full plan (CI review on PR #27, re-run after `synchronize`) — Fazy 1–3 były już
+  zamknięte i przejrzane wcześniej (patrz `change.md`); ten PR dotyczy wyłącznie Fazy 4
+  (kryteria 4.1–4.8, wszystkie `[x]`). Ten przebieg zastępuje poprzedni raport z tego samego pliku
+  (commit `7f14e2c`), po tym jak PR-branch dostał commit `4b56c3a` rozliczający jego ustalenia F1/F2.
 - **Date**: 2026-09-14
-- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34857784898
-- **Verdict**: NEEDS ATTENTION
-- **Findings**: 0 critical, 1 warning, 2 observations
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34859737580
+- **Verdict**: APPROVED
+- **Findings**: 0 critical, 1 warning, 0 observations
 
 ## Verdicts
 
@@ -20,138 +21,91 @@
 | Architecture | PASS |
 | Pattern Consistency | PASS |
 | Test Coverage | PASS |
-| Success Criteria | WARNING |
+| Success Criteria | PASS |
 
 ## Zakres i metoda
 
-Ten PR nie dotyka żadnego pliku `.ts`/`.tsx` — jest to zmiana wyłącznie danych (36 nowych plików
-`seed/dishes/<slug>.json`, 16 nowych wierszy w `seed/ingredients.json` i `seed/usda-subset.json`)
-plus dokumentacja (`CLAUDE.md`, `plan.md`, `notes/pool-queue.md`, `seed/FEASIBILITY.md`).
-Z tego powodu przegląd skupił się na integralności danych względem kontraktu `dish-validation.ts`
-i `seed-dishes.mjs`, a nie na typowym przeglądzie kodu źródłowego.
+PR nie dotyka żadnego pliku `.ts`/`.tsx` — to zmiana danych (36 plików `seed/dishes/<slug>.json`
+z poprzedniej rundy plus 2 kolejne dodane w `4b56c3a`, łącznie pula 58 dań) i skryptu
+`scripts/seed-dishes.mjs` (+31/-1: nowa funkcja diagnostyczna `reportUnusedIngredients`), plus
+dokumentacja (`CLAUDE.md`, `plan.md`, `notes/pool-queue.md`, `seed/FEASIBILITY.md`, nowy
+`seed/REVIEW.md`).
 
-**Ograniczenie tego przebiegu** — takie samo jak w poprzednich rundach przeglądu tej zmiany
-(patrz `change.md`, wpisy dla PR #24 i #25): ta sesja CI nie miała zgody na wykonywanie
-`npm`/`npx`/`node -e` w Bashu (każde wywołanie, łącznie z `npm --version` i `node -e "1+1"`,
-wymagało zatwierdzenia, którego nikt nieinteraktywnie nie udzielił; działały tylko
-`node --version`, `python3 --version` i polecenia `git`). Nie dało się więc odtworzyć
-`npm test`, `npx tsc --noEmit`, `npx expo lint`, `npm run check-conventions` ani uruchomić
-`node ./scripts/seed-dishes.mjs --local` w tej sesji.
+**Ta runda miała częściowy dostęp do `git`/`gh`/MCP CI, ale nie do `npm`/`npx`/`node -e`** w Bashu
+(ten sam znany limit środowiska co poprzednie rundy tej zmiany — patrz `change.md`, PR #24/#25/#27
+pierwsza runda). Zamiast statycznie przybliżać kryteria automatyczne od zera, ten przebieg
+skorzystał z `mcp__github_ci__get_ci_status`: workflow **„Bramka jakości" (run `34859737522`) —
+job „Typy, lint, testy, konwencje, lockfile" — zakończył się `success`** dla dokładnie tego commita
+(`4b56c3a`, ten sam `created_at` co ten przegląd), co niezależnie potwierdza `tsc`, `npm test`,
+`expo lint`, `check-conventions` i `check-lock` bez potrzeby ich ponownego uruchamiania w tym
+sandboxie.
 
-Zamiast tego przegląd zweryfikował statycznie, co dało się sprawdzić bez wykonania kodu:
+Dodatkowo zweryfikowano statycznie i deleguje częściowo do subagenta ogólnego przeznaczenia:
 
-- `git diff --exit-code origin/main...HEAD -- package-lock.json` — pusty, potwierdza „zero
-  nowych zależności" z opisu PR-a.
-- Wszystkie **56** plików `seed/dishes/*.json` mają niepuste pole `reviewedBy` (sprawdzone
-  `grep`-em po całym katalogu, nie tylko po nowych plikach).
-- Każdy `ingredientName` użyty w `seed/dishes/*.json` (255 odwołań) istnieje w
-  `seed/ingredients.json` — zero nieznanych składników.
-- Wszystkie wartości `mealSlots` w nowych plikach należą do enuma
-  `{breakfast, lunch, dinner, snack}`; wszystkie `prepMinutes` mieszczą się w 5–45 minut
-  (wewnątrz granicy 5–120 z `DishBounds` w `src/lib/dish-validation.ts`).
-- Przeliczenie liczby dań per pora posiłku wprost z plików (nie z raportu) dało **20/27/31/15**
-  (breakfast/lunch/dinner/snack) — dokładnie tyle, ile deklaruje kryterium 4.1 i opis PR-a.
-- Ręczne przeliczenie niezmiennika Atwatera (`4·białko + 4·węgle + 9·tłuszcz`) dla wszystkich
-  **16 nowych składników** z `seed/usda-subset.json` — wszystkie mieszczą się w tolerancji
-  z `DishBounds` (10% względne albo 12 kcal bezwzględne). Trzy warzywa bogate w błonnik
-  (kapusta biała, cukinia, kukurydza z puszki) przechodzą wyłącznie dzięki progowi bezwzględnemu
-  12 kcal — spójne z uzasadnieniem decyzji D20 w `plan.md`.
+- `git diff --exit-code origin/main...HEAD -- package-lock.json` — pusty (0 nowych zależności).
+- Policzenie dań per pora posiłku wprost z plików `seed/dishes/*.json` (grep, nie raport): **20
+  śniadań / 29 obiadów / 33 kolacje / 15 przekąsek** — zgodne z kryterium 4.1 i z `CLAUDE.md`.
+  Minima z planu (12/18/18/12) spełnione ze sporym zapasem.
+- Wszystkie **58** plików mają niepuste `reviewedBy` i `reviewedAt`.
+- **Każdy** `ingredientName` użyty w 58 plikach dań (subagent naliczył ~267 odwołań) istnieje
+  dosłownie (ze znakami diakrytycznymi) w `seed/ingredients.json` — zero nieznanych składników,
+  zero nazw niedopasowanych literą (pułapka, którą sam walidator by przepuścił, bo sprawdza tylko
+  wobec `ingredients.json`, nie wobec bazy — nazwana wprost w `CLAUDE.md` po tym PR-ze).
+- **Zero osieroconych składników** w finalnym stanie: `oliwki czarne, z puszki` i
+  `boczniaki, świeże` (dwa ustalenia z poprzedniej rundy, F2) mają teraz każde swoje danie
+  (`makaron-z-oliwkami-i-feta`, `makaron-z-boczniakami`) — sprawdzone bezpośrednio przez `grep`
+  literału `"boczniaki, świeże"` w obu plikach, nie tylko przez odczyt narracji.
+- 16 nowych wierszy w `seed/ingredients.json` ma komplet `fdcId` + `category` z zamkniętego enuma;
+  niezmiennik Atwatera przeliczony ręcznie dla nich (plus cztery warzywa sprawdzone dodatkowo)
+  mieści się w tolerancji `DishBounds` z `src/lib/dish-validation.ts` (10% względne albo próg
+  bezwzględny 12 kcal dla warzyw bogatych w błonnik — zgodnie z decyzją D20).
+- Wszystkie 58 plików mają niepuste `mealSlots` i `steps`.
 
-To daje wysoką pewność, że dane przejdą `validateDish` i `seed-dishes.mjs --remote`, ale **nie
-jest to samo, co uruchomienie realnego walidatora** — rekomendacja: właściwy pipeline CI/CD tego
-repo (z pełnym dostępem do `npm`) powinien pozostać ostatecznym rozjemcą dla kryteriów 4.1–4.5,
-tak jak w poprzednich rundach tego przeglądu.
+To pokrywa merytorycznie te same kryteria co realne `validateDish`/`seed-dishes.mjs --remote`,
+tylko inną metodą (statyczną, nie wykonaniem) — spójne z ograniczeniem opisanym w poprzednich
+rundach tej zmiany.
 
 ## Findings
 
-### F1 — `seed/REVIEW.md` nigdy nie powstał, mimo że plan wymienia go jako artefakt Fazy 3 i 4
+### F1 — `seed/REVIEW.md` i notatka 4.6 w `plan.md` wciąż podają liczby sprzed naprawy F2 (56 zamiast 58 dań)
 
 - **Severity**: ⚠️ WARNING
-- **Impact**: 🏃 LOW — brak wpływu na runtime, uzupełnienie jest odwracalne i wąsko zakresowe
+- **Impact**: 🏃 LOW — czysto dokumentacyjne, zero wpływu na dane, guardrail ±10% czy runtime
 - **Dimension**: Plan Adherence
-- **Location**: `context/changes/dish-source-and-seed-pool/plan.md:338` (Faza 4, „Reszta puli")
-- **Detail**: Plan Fazy 3, punkt 4 zapowiada: „`seed/REVIEW.md` zostaje jako narracja, ale
-  przestaje być jedynym mechanizmem" — a Faza 4, „Wymagane zmiany" §1 wymienia
-  `seed/REVIEW.md` wprost na liście plików do zaktualizowania obok `seed/dishes/<slug>.json`
-  i `seed/ingredients.json`. Plik **nigdy nie istniał** w historii repozytorium
-  (`git log --all -- seed/REVIEW.md` nie zwraca nic) — ani w Fazie 3, ani w tym PR-ze.
-  Substancja, którą miał nieść (narracja przeglądu gramatur), jest w praktyce pokryta przez
-  Dziennik w `notes/pool-queue.md` (wpisy P4b i P5 opisują właśnie to, łącznie z trzema
-  odrzuconymi daniami i uzasadnieniem) oraz przez techniczną bramkę `reviewedBy` w
-  `seed-dishes.mjs`, którą plan sam nazywa właściwym mechanizmem. To zmniejsza wagę ustalenia,
-  ale nie zamyka go — plan nadal literalnie wymienia plik, którego nie ma.
-- **Fix**: Jedno z dwóch, do wyboru przez właściciela zmiany:
-  - **Opcja A ⭐ Rekomendowana**: Usunąć `seed/REVIEW.md` z listy plików Fazy 4 w `plan.md`
-    (edycja dokumentu, nie kodu) z dopiskiem, że rolę narracji przejął Dziennik w
-    `notes/pool-queue.md` — to już faktyczny stan rzeczy, tylko nienazwany wprost.
-    - Strength: Zero nowej pracy; nazywa to, co już się dzieje.
-    - Tradeoff: Traci się jeden, dedykowany plik z historią przeglądu dań (rozproszoną teraz
-      po Dzienniku kolejki, który ma szerszy zakres niż tylko pula dań).
-    - Confidence: HIGH — Dziennik faktycznie zawiera treść, którą REVIEW.md miał nieść.
-    - Blind spot: Nie sprawdzałem, czy inny dokument (np. `seed/README.md`) już odsyła do
-      Dziennika jako źródła prawdy o przeglądzie — jeśli nie, warto dodać taki odnośnik przy
-      okazji tej edycji.
-  - **Fix B**: Utworzyć `seed/REVIEW.md` post factum, streszczając 56 dań i decyzję o trzech
-    odrzuconych (dane już są w `seed/FEASIBILITY.md` i `notes/pool-queue.md`, więc to głównie
-    kopiowanie, nie nowa praca).
-- **Decision**: NAPRAWIONE 14.09.2026 **opcją B**, wbrew rekomendacji przeglądu — `seed/REVIEW.md`
-  powstał. Opcja A (wykreślić plik z planu, bo Dziennik i tak niesie treść) była kusząca i tańsza,
-  ale myli MIEJSCE z TREŚCIĄ: `notes/pool-queue.md` jest plikiem operacyjnym jednej paczki prac
-  i zostanie z nią zamknięty, a `seed/` to katalog, do którego zajrzy każdy, kto będzie
-  rozbudowywał pulę. Stempel `reviewedBy` wymaga wyjaśnienia obok danych, które opisuje.
-  Plik nie jest przy tym kopią Dziennika: opisuje **metodę** — co sito łapie, a czego nie
-  (liczby wymyślonej konsekwentnie, przepisu bez sensu, porcji nierealnej dla człowieka) —
-  bo to jest informacja, której nigdzie indziej nie było.
+- **Location**: `seed/REVIEW.md:9`
+- **Detail**: Commit `4b56c3a` naprawił dwa ustalenia poprzedniej rundy (F1: brakujący
+  `seed/REVIEW.md`; F2: osierocony składnik) w jednym przebiegu — i przy okazji dodał **dwa nowe
+  dania**, podnosząc pulę z 56 do 58 (commit message tego samego commita wprost to mówi: „pula ma
+  58 zamiast 56"). Artefakty, które ten sam commit **stworzył lub przeliczył od zera**, poprawnie
+  odzwierciedlają 58: `plan.md` §4.1/4.7 (20/29/33/15, „58 dań, 51 składników"), `CLAUDE.md`
+  („58 dań i 51 składników… 29 obiadów, 33 kolacje"), `seed/FEASIBILITY.md` (`Dań w puli: 58`,
+  „Filtr czasu ścina obiady z 29 do 12, a kolacje z 33 do 16").
 
-### F2 — Nowy składnik „oliwki czarne, z puszki" nie jest używany w żadnym daniu
+  Ale `seed/REVIEW.md`, stworzony w **tym samym commicie**, otwiera się zdaniem „Wszystkie 56 dań:
+  agent (upoważnienie właściciela 14.09.2026)" (linia 9) — liczba sprzed dodania tych dwóch dań.
+  To samo zdarza się w `plan.md` w notatce ręcznej przy kryterium 4.6: „Filtr 30 minut ścina
+  obiady z 27 do 10, a kolacje z 31 do 14" — te liczby (27/31/10/14) są sprzed naprawy F2;
+  `seed/FEASIBILITY.md` (ten sam raport, do którego 4.6 się odnosi) podaje już **29→12 i 33→16**.
+  Opis PR-a ma ten sam wzorzec (nagłówek „56 dań", tabela minimów 27 obiadów / 31 kolacji) —
+  najpewniej dlatego, że opis PR-a został napisany przed commitem `4b56c3a` i nie był odświeżony
+  po nim; to poza zasięgiem tego raportu (opis PR-a nie jest plikiem w repo), ale wzmacnia obraz:
+  trzy niezależne miejsca prozy zostały w tyle za tymi samymi dwoma dodanymi daniami.
 
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — martwy wiersz w katalogu, zero wpływu na guardrail ±10%
-- **Dimension**: Scope Discipline
-- **Location**: `seed/ingredients.json:392`
-- **Detail**: Ten PR dodaje 16 nowych składników; 15 z nich są użyte w co najmniej jednym z 36
-  nowych dań. `oliwki czarne, z puszki` (fdcId 169094) nie występuje w żadnym z 56 plików
-  `seed/dishes/*.json`. Najbardziej prawdopodobne wyjaśnienie: składnik miał obsłużyć danie
-  „kanapki z fetą i oliwkami", które `seed/FEASIBILITY.md` wymienia jako jedno z trzech
-  odrzuconych przez sito `modelKcalHint` (rozjazd 22%) — ingredient został dodany do mapowania,
-  zanim danie odpadło, i nie został cofnięty. Nieszkodliwe dziś; stanie się widoczne, gdy
-  powstanie `GET /api/catalog` (S-07) i pokaże pozycję, której nie da się nigdzie ugotować.
-- **Fix**: Usunąć wiersz `oliwki czarne, z puszki` z `seed/ingredients.json` i odpowiadający mu
-  wpis w `seed/usda-subset.json`, chyba że jest już zaplanowane danie, które go użyje.
-- **Decision**: NAPRAWIONE 14.09.2026, **szerzej niż ustalenie**. Ustalenie było trafne, ale
-  niepełne: przy okazji naprawy dopisałem sprawdzenie „które składniki nie są używane przez żadne
-  danie" i **znalazło drugą taką pozycję** — „boczniaki, świeże", leżące w katalogu od pierwszego
-  seeda z 13.09 i przeoczone także przez ten przegląd. Oba składniki dostały prawdziwe danie
-  (`makaron-z-oliwkami-i-feta`, `makaron-z-boczniakami`), więc pula ma 58 dań zamiast 56.
-  Sprawdzenie zostało w `seed-dishes.mjs` jako **ostrzeżenie, nie błąd**: pozycja w katalogu bez
-  dania jest legalna (użytkownik dalej może chcieć ją wykluczyć), ale prawie zawsze znaczy, że
-  ktoś czegoś nie cofnął. Sprawdzone w obie strony — ostrzega, gdy składnik osierocony, milczy,
-  gdy nie ma takich.
-
-### F3 — Zestaw testów tej rundy przeglądu jest statyczny, nie wykonany
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — nie jest to defekt w PR-ze, tylko ograniczenie środowiska przeglądu
-- **Dimension**: Success Criteria
-- **Location**: N/A (ograniczenie sesji CI, opisane w „Zakres i metoda" wyżej)
-- **Detail**: Kryteria automatyczne 4.1–4.5 (minima per pora posiłku, `reviewedBy` na
-  wszystkich daniach, `migrations list --remote` bez zaległych, raport wykonalności, `npm
-  test`/`tsc`/`expo lint`/`check-conventions`/`git diff` na lockfile) nie zostały odtworzone
-  wykonaniem w tej sesji — brak zgody na `npm`/`npx`/`node -e` w Bashu. Zastąpione statyczną
-  weryfikacją opisaną wyżej, która niezależnie potwierdziła liczby z 4.1 i brak zmian w
-  lockfile z 4.5, ale nie uruchomiła `tsc`/`test`/`lint`/`check-conventions` ani rzeczywistego
-  `validateDish` na wszystkich 56 daniach.
-- **Fix**: Brak działania po stronie autora PR-a — to ograniczenie narzędzia przeglądu, nie
-  luka w implementacji. Warto zaktualizować `--allowedTools` tej umiejętności o
-  `Bash(npm run *)`, `Bash(npx *)`, `Bash(node *)`, żeby przyszłe przebiegi mogły wykonać
-  kryteria automatyczne zamiast je tylko statycznie przybliżać.
-- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, bez zmian w kodzie. To jest ograniczenie
-  środowiska CI przeglądu, nie tej zmiany — ta sama uwaga wraca w każdym przebiegu i jest
-  opisana w raportach z PR #24 i #25. Bramka „Typy, lint, testy, konwencje, lockfile" uruchamia
-  te narzędzia niezależnie i przeszła; twierdzenia o `wrangler`/D1 (seed, idempotencja, bramka
-  `--remote`) są weryfikowane uruchomieniem po stronie prowadzącego zadanie i zapisane
-  w Dzienniku z liczbami. Rozszerzenie `--allowedTools` o `Bash(node:*)` zostało rozważone
-  i odrzucone przy PR #24: flaga **zastępuje** domyślny zestaw narzędzi, a skutku nie da się
-  sprawdzić na PR-ze, który tę zmianę wprowadza.
+  Znaczenie jest niskie — żadna z tych liczb nie steruje kodem ani danymi, a artefakty, które
+  faktycznie bramkują coś (walidator, `check-pool-feasibility.mjs`, `plan.md` §4.1/4.7) są
+  poprawne. Ale `seed/REVIEW.md` powstał specyficznie po to, by być wiarygodną narracją tego, co
+  stempel `reviewedBy` obejmuje — a jego własny pierwszy fakt jest nieaktualny w chwili, gdy plik
+  trafia do repo, co osłabia dokładnie ten cel.
+- **Fix**: Zaktualizować `seed/REVIEW.md:9` na „Wszystkie 58 dań" i `plan.md`'s notatkę 4.6 na
+  „z 29 do 12, a kolacje z 33 do 16" (dopasowując do liczb już policzonych w `FEASIBILITY.md`).
+  Drobna, tekstowa poprawka — nie wymaga ponownego seeda ani przeliczeń.
+  - Strength: Zero ryzyka regresji, jedna linijka w każdym z dwóch plików, przywraca spójność
+    między artefaktami, które już mają poprawne liczby.
+  - Tradeoff: Brak — to czysta korekta tekstu.
+  - Confidence: HIGH — liczby 58/29/33/12/16 są niezależnie potwierdzone przez `FEASIBILITY.md`,
+    `plan.md` §4.1/4.7 i bezpośrednie przeliczenie plików w tym przeglądzie.
+  - Blind spot: Nie sprawdzałem każdego wystąpienia „56" w repo poza wymienionymi plikami — jeśli
+    jest ich więcej (np. w innych notatkach), ten fix ich nie obejmuje.
+- **Decision**: PENDING
 
 <!-- End of report -->
