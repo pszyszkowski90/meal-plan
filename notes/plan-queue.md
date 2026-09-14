@@ -263,7 +263,12 @@ Co zacommitowane: `context/changes/dish-source-and-seed-pool/` → `context/arch
 (change.md, options.md, plan.md, plan-brief.md, research.md, follow-ups/review-fixes.md,
 reviews/impl-review.md, reviews/impl-review-phase-1.md, reviews/plan-review.md),
 `context/foundation/roadmap.md`, `notes/plan-queue.md`. Stage po ścieżkach, zero `git add -A`.
-Werdykt przeglądu: PR otwarty, werdykt czytany przed scaleniem — patrz wpis o scaleniu niżej.
+Werdykt przeglądu: przeczytany, bez blokerów. Jedno ustalenie — cztery martwe odnośniki
+do starej ścieżki `context/changes/dish-source-and-seed-pool/` (`CLAUDE.md` 32 i 38,
+`roadmap.md` 131 i 203). Zasadne, bo psuje je dokładnie ten PR. Naprawione na gałęzi przed
+scaleniem, plus piąty odnośnik, którego recenzent nie widział (`notes/night-decisions.md:267` —
+też żywy wskaźnik do `options.md`). Odnośniki w Dziennikach `notes/*-queue.md` **zostawione**:
+zapisują, co zacommitowano w danym dniu, więc są faktem historycznym, nie martwym linkiem.
 PR: #30
 Do decyzji: —
 Uwaga operacyjna: `git mv` padło na Windowsie `Permission denied` (dwa razy, także po ponowieniu).

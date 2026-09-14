@@ -29,13 +29,13 @@ Poza zakresem MVP: dziennik jedzenia, śledzenie wagi, plan miesięczny, prefere
 **Źródło przepisów rozstrzygnięte 13.09.2026** (Open Question 1 i 2 w PRD): model językowy
 autoryzuje przepisy **raz, poza runtime**, człowiek przegląda gramatury, a makra liczy skrypt
 z tabeli USDA. **Worker nigdy nie woła modelu** — w runtime czyta wyłącznie D1. Konsekwencje
-i odrzucone opcje: [options.md](context/changes/dish-source-and-seed-pool/options.md).
+i odrzucone opcje: [options.md](context/archive/2026-09-08-dish-source-and-seed-pool/options.md).
 
 ~~**Blokada nadal obowiązuje:** generatora planu (S-04) nie implementuj, zanim nie powstanie pula
 dań.~~ **ZDJĘTA 14.09.2026** — pula stoi na produkcji: **58 dań i 51 składników**, minima per pora
 posiłku spełnione (20 śniadań, 29 obiadów, 33 kolacje, 15 przekąsek). S-04 ma z czego wybierać
 i czym liczyć kalorie. Plan puli:
-[dish-source-and-seed-pool](context/changes/dish-source-and-seed-pool/plan.md).
+[dish-source-and-seed-pool](context/archive/2026-09-08-dish-source-and-seed-pool/plan.md).
 
 **Pula dań jest DANYMI w `seed/`, nie kodem** — i ma własny potok, opisany w
 [seed/README.md](seed/README.md) oraz regułami autorskimi w [seed/PROMPT.md](seed/PROMPT.md):

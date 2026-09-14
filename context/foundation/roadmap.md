@@ -128,7 +128,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 - **Równolegle z:** S-01, S-02, S-03
 - **Blokery:** —
 - **Niewiadome:** — rozstrzygnięte 13.09.2026 (decyzja D14 w `notes/night-decisions.md`,
-  konsekwencje w `context/changes/dish-source-and-seed-pool/options.md`).
+  konsekwencje w `context/archive/2026-09-08-dish-source-and-seed-pool/options.md`).
   - ~~Skąd biorą się przepisy i makra?~~ **Hybryda:** model autoryzuje przepisy raz poza runtime,
     człowiek przegląda gramatury, makra liczy skrypt z USDA FoodData Central (CC0). Odrzucone:
     model na żądanie (makra niewiarygodne), zewnętrzne API przepisów (licencja zabrania
@@ -200,7 +200,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   - ~~Jak rozdzielone są wykluczenia składnikowe od daniowych?~~ **Jedna tabela `exclusion`
     z polem `kind`** (`ingredient` / `dish`); wykluczenie składnikowe wskazuje `ingredient_id`,
     nigdy tekst — dopasowanie po nazwie łamie guardrail przy „risotto z borowikami".
-    Rozpisane w `context/changes/dish-source-and-seed-pool/options.md` §4.
+    Rozpisane w `context/archive/2026-09-08-dish-source-and-seed-pool/options.md` §4.
 - **Korekta zależności (13.09.2026):** wykluczenia składnikowe wskazują na tabelę `ingredient`
   z F-01, więc S-03 **nie jest już równoległe do F-01** — wymaga jego fazy 1 (schemat).
 - **Ryzyko:** to tutaj powstaje jedna lista wykluczeń, którą później zasila także S-05

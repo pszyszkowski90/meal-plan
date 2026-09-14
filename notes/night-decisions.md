@@ -264,7 +264,7 @@ poza runtime (polskie nazwy, gramatury, kroki, czas), człowiek przegląda iloś
 skrypt deterministycznie z **USDA FoodData Central** (CC0), a runtime czyta wyłącznie D1.
 Wykluczenia dostają **jedną tabelę z polem `kind`** (`ingredient` / `dish`) i wymagają tabeli
 `dish_ingredient` z identyfikatorami składników. Pełne rozpisanie:
-[`options.md`](../context/changes/dish-source-and-seed-pool/options.md).
+[`options.md`](../context/archive/2026-09-08-dish-source-and-seed-pool/options.md).
 
 **Powód:** To jedyna opcja, która **jednocześnie** czyni guardrail ±10% egzekwowalnym, spełnia
 FR-016, pozwala sumować jednostki w liście zakupów, działa offline i jest deterministyczna.
