@@ -58,7 +58,13 @@ twierdzenie jest wewnętrznie spójne z kodem, ale nieweryfikowalne niezależnie
   opisuje jako wzorzec do naśladowania w dalszych fazach.
 - **Fix**: Zastąp nowe linie spacją przed wstawieniem do komentarza:
   `` `-- ${dish.name.replace(/\n/g, ' ')} — ${dish.macros.kcal} kcal` ``.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 — nazwa w komentarzu przechodzi przez
+  `replace(/\s+/g, ' ')`. Ustalenie jest trafne co do zasady, choć nie co do dzisiejszego ryzyka:
+  dane wejściowe to przejrzane pliki z repozytorium, nie wejście użytkownika w runtime. Poprawka
+  wchodzi dlatego, że ten skrypt jest **wzorcem dla faz 4 i dalszych** i nie ma uczyć skrótu.
+  Rozważona i odrzucona alternatywa: zakaz białych znaków sterujących w `validateDish`. Byłaby
+  naprawą u źródła, ale zmienia moduł z `src/lib/` objęty testami jednostkowymi, więc jest osobną
+  zmianą, a nie poprawką obserwacji.
 
 ### F2 — `check:pool` w `package.json` nie jest literalnie wymienione w kontrakcie planu
 
@@ -73,6 +79,10 @@ twierdzenie jest wewnętrznie spójne z kodem, ale nieweryfikowalne niezależnie
   wpis operacjonalizuje coś, co plan już zamawiał, nie dokłada nowego zakresu. Klasyfikacja: EXTRA,
   łagodne — nie sprzeczne z listą wykluczeń ("Czego NIE robimy").
 - **Fix**: Brak działania wymagane — udokumentowanie w raporcie wystarcza.
-- **Decision**: PENDING
+- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, bez zmian. `check:pool` operacjonalizuje
+  `scripts/check-pool-feasibility.mjs` — artefakt jawnie zamówiony w punkcie 5 tej samej fazy
+  („Pomiar pilotowy i decyzja"). Wpis w `package.json`, którego plan nie wymienia z nazwy, ale
+  który uruchamia zaplanowany skrypt, jest wykonaniem planu, nie rozszerzeniem zakresu. Usunięcie
+  go zostawiłoby zaplanowany skrypt bez sposobu uruchomienia opisanego w repozytorium.
 
 <!-- End of report -->

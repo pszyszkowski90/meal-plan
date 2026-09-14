@@ -431,6 +431,9 @@ znaki nietknięte. Wiersze 3.1-3.11 planu F-01 rozliczone.
 Co zacommitowane: `seed/PROMPT.md`, `seed/FEASIBILITY.md`, `seed/dishes/` (20 plików),
 `scripts/seed-dishes.mjs`, `scripts/check-pool-feasibility.mjs`, `package.json`,
 `context/changes/dish-source-and-seed-pool/plan.md`, `notes/pool-queue.md`
-Werdykt przeglądu: <do uzupełnienia>
-PR: <do uzupełnienia>
+Werdykt przeglądu: ZATWIERDZONY, 0 krytycznych, 2 obserwacje. F1 (znak nowej linii w nazwie mógłby
+urwać komentarz SQL) naprawione — trafne co do zasady, nie co do dzisiejszego ryzyka, ale ten skrypt
+jest wzorcem dla fazy 4. F2 (`check:pool` nie wymienione w planie z nazwy) przyjęte bez zmian:
+uruchamia skrypt, który plan zamawia w punkcie 5 tej samej fazy.
+PR: #25
 Do decyzji: —

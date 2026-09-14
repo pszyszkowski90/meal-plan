@@ -198,7 +198,11 @@ function generate(dishes) {
 
   for (const dish of dishes) {
     lines.push(
-      `-- ${dish.name} — ${dish.macros.kcal} kcal`,
+      // Znak nowej linii w nazwie urwałby komentarz `-- …` i wypuścił resztę jako wiersz SQL
+      // bez przedrostka. Dane wejściowe to przejrzane pliki z repozytorium, nie wejście
+      // użytkownika w runtime, więc to higiena, nie luka — ale ten skrypt jest wzorcem dla
+      // kolejnych faz i ma nie uczyć skrótu.
+      `-- ${dish.name.replace(/\s+/g, ' ')} — ${dish.macros.kcal} kcal`,
       'INSERT INTO dish (slug, name, prep_minutes, created_at)',
       `VALUES (${quote(dish.slug)}, ${quote(dish.name)}, ${dish.prepMinutes}, ` +
         `strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`,
