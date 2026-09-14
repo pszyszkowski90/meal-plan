@@ -48,7 +48,19 @@ function quote(text) {
   return `'${String(text).replace(/'/g, "''")}'`;
 }
 
-function fail(message, details) {
+/**
+ * Odczyt pliku wejściowego przez tę samą konwencję co reszta skryptu — bez tego brak albo
+ * uszkodzenie pliku daje surowy `ENOENT`/`SyntaxError` zamiast zdania, które mówi, co zrobić.
+ */
+function readJson(file, hint) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    fail(`nie dało się przeczytać ${path.relative(RepoRoot, file)}:`, [error.message, hint]);
+  }
+}
+
+function fail(message, details = []) {
   console.error(`import-usda: ${message}`);
   for (const detail of details) {
     console.error(`  - ${detail}`);
@@ -173,8 +185,11 @@ function generate(mapping, macrosByFdcId, descriptionByFdcId) {
 }
 
 function main() {
-  const mapping = JSON.parse(fs.readFileSync(MappingFile, 'utf8'));
-  const subset = JSON.parse(fs.readFileSync(SubsetFile, 'utf8'));
+  const mapping = readJson(
+    MappingFile,
+    'To plik wersjonowany w repozytorium — jego brak zwykle znaczy zły katalog roboczy.',
+  );
+  const subset = readJson(SubsetFile, 'Destylat powstaje z `npm run distill:usda`.');
 
   const macrosByFdcId = new Map(subset.items.map((item) => [item.fdcId, item.per100g]));
   const descriptionByFdcId = new Map(subset.items.map((item) => [item.fdcId, item.description]));

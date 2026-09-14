@@ -381,6 +381,15 @@ Produkcja zaktualizowana (`--remote`): 35/35 z `usda_fdc_id`, zero osieroconych 
 Co zacommitowane: `seed/ingredients.json`, `seed/usda-subset.json`, `seed/README.md`,
 `scripts/distill-usda.mjs`, `scripts/import-usda.mjs`, usunięty `scripts/seed-ingredients.mjs`,
 `package.json`, `.gitignore`, `CLAUDE.md`, `notes/pool-queue.md`
-Werdykt przeglądu: <do uzupełnienia>
-PR: <do uzupełnienia>
+Werdykt przeglądu: ZATWIERDZONY, 0 krytycznych, 1 ostrzeżenie + 4 obserwacje. Cztery naprawione
+(osłona odczytów, doprecyzowany kontrakt parsera, **sprawdzenie nagłówka kolumn CSV**, domyślne
+`details`), piąta — fixture do testu sita — odłożona z powodem do P5. Najostrzejsza była F3:
+przestawienie kolumn w `food_nutrient.csv` nie było łapane przez NIC i dałoby wiarygodnie
+wyglądające, błędne makra. Guard sprawdzony celowym zepsuciem nagłówka.
+**Sprostowanie do wpisu P3a:** twierdziłem tam, że agent przeglądu „nie ma zgody na `git commit`".
+To nieprawda — log tego przebiegu pokazuje `ALLOWED_TOOLS` z `Bash(git add:*)`, `Bash(git commit:*)`
+i skryptem push. Agent raport **zacommitował**, a bramka go przeczytała i zablokowała scalenie na
+pięciu otwartych ustaleniach — dokładnie tak, jak miała. Na PR #20 raportu nie było z innego,
+nieustalonego powodu; blokowane są tam wyłącznie polecenia spoza tej listy (`npm test`, `gh`).
+PR: #24
 Do decyzji: —

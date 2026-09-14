@@ -23,8 +23,11 @@
  * inny produkt — po cichu, bo makra dalej byłyby „jakieś" i przeszłyby sito Atwatera. To jest
  * główny nośnik ryzyka rezydualnego tej zmiany (plan F-01, faza 3 §2).
  *
- * Bez zależności: parser CSV jest tutaj, świadomie, i obsługuje wyłącznie to, czego używa USDA —
- * pola w cudzysłowach z podwojonym cudzysłowem w środku.
+ * Bez zależności: parser CSV jest tutaj, świadomie, i obsługuje **dokładnie tyle, ile trzeba dla
+ * tego zbioru** — pola w cudzysłowach z podwojonym cudzysłowem w środku, w wierszach BEZ znaku
+ * nowej linii. Podział na wiersze idzie przed parsowaniem cudzysłowów, więc pole wielowierszowe
+ * zostałoby rozbite; SR Legacy takich nie ma, a gdyby miał, zauważy to sprawdzenie liczby pól
+ * w `csvRows`.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -81,19 +84,67 @@ function parseCsvLine(line) {
   return fields;
 }
 
-function* csvRows(file) {
-  const text = fs.readFileSync(file, 'utf8');
-  let first = true;
+/**
+ * Początki nagłówków obu tabel. Sprawdzamy PREFIKS, nie całość: USDA dokłada kolumny na końcu
+ * między wydaniami, a to jest zmiana nieszkodliwa dla odczytu pozycyjnego.
+ */
+const Headers = {
+  food: ['fdc_id', 'data_type', 'description'],
+  foodNutrient: ['id', 'fdc_id', 'nutrient_id', 'amount'],
+};
 
-  for (const line of text.split('\n')) {
-    if (first) {
-      first = false;
+/**
+ * Wiersze pliku CSV, po SPRAWDZENIU NAGŁÓWKA.
+ *
+ * Kolumny czytamy pozycyjnie (`const [, fdcId, nutrientId, amount] = row`), więc ich kolejność
+ * jest założeniem — a ciche założenie o układzie kolumn jest tutaj groźniejsze niż gdzie indziej.
+ * Przestawienie kolumn w `food.csv` złapałoby jeszcze sito opisu, ale przestawienie ich
+ * w `food_nutrient.csv` **nie zostałoby złapane przez nic**: skrypt policzyłby wiarygodnie
+ * wyglądające, błędne makra. To dokładnie ten tryb awarii, przed którym cała ta zmiana ma chronić,
+ * więc założenie jest SPRAWDZANE, a nie komentowane.
+ *
+ * Liczba pól w wierszu też jest sprawdzana — to przy okazji jedyne miejsce, które zauważyłoby
+ * pole ze znakiem nowej linii w środku, rozbite przez podział wierszy przed parsowaniem.
+ */
+function* csvRows(file, expectedHeader) {
+  const text = fs.readFileSync(file, 'utf8');
+  const lines = text.split('\n');
+
+  const header = parseCsvLine((lines[0] ?? '').replace(/\r$/, ''));
+  const mismatch = expectedHeader.findIndex((name, index) => header[index] !== name);
+  if (mismatch !== -1) {
+    fail(`${path.basename(file)} ma inny układ kolumn, niż zakłada ten skrypt:`, [
+      `kolumna ${mismatch + 1}: oczekiwano „${expectedHeader[mismatch]}", jest ` +
+        `„${header[mismatch] ?? '(brak)'}"`,
+      'Destylat NIE powstał — pozycyjny odczyt kolumn dałby błędne makra.',
+    ]);
+  }
+
+  for (const [index, line] of lines.entries()) {
+    if (index === 0 || line.trim() === '') {
       continue;
     }
-    if (line.trim() === '') {
-      continue;
+    const row = parseCsvLine(line.endsWith('\r') ? line.slice(0, -1) : line);
+    if (row.length < expectedHeader.length) {
+      fail(
+        `${path.basename(file)}: wiersz ${index + 1} ma ${row.length} pól zamiast co najmniej ` +
+          `${expectedHeader.length}.`,
+        ['Destylat NIE powstał.'],
+      );
     }
-    yield parseCsvLine(line.endsWith('\r') ? line.slice(0, -1) : line);
+    yield row;
+  }
+}
+
+/**
+ * Odczyt pliku wejściowego przez tę samą konwencję co reszta skryptu. Bez tego brak albo
+ * uszkodzenie pliku daje surowy `ENOENT`/`SyntaxError` zamiast zdania, które mówi, co zrobić.
+ */
+function readJson(file, hint) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (error) {
+    fail(`nie dało się przeczytać ${path.relative(RepoRoot, file)}:`, [error.message, hint]);
   }
 }
 
@@ -113,13 +164,16 @@ function main() {
     );
   }
 
-  const mapping = JSON.parse(fs.readFileSync(MappingFile, 'utf8'));
+  const mapping = readJson(
+    MappingFile,
+    'To plik wersjonowany w repozytorium — jego brak zwykle znaczy zły katalog roboczy.',
+  );
   const wanted = new Map(mapping.ingredients.map((item) => [String(item.fdcId), item]));
 
   // --- opisy, czyli sprawdzenie tożsamości ---
 
   const descriptions = new Map();
-  for (const row of csvRows(path.join(DatasetDir, 'food.csv'))) {
+  for (const row of csvRows(path.join(DatasetDir, 'food.csv'), Headers.food)) {
     const [fdcId, , description] = row;
     if (wanted.has(fdcId)) {
       descriptions.set(fdcId, description);
@@ -145,7 +199,7 @@ function main() {
   // --- makra ---
 
   const macros = new Map([...wanted.keys()].map((fdcId) => [fdcId, {}]));
-  for (const row of csvRows(path.join(DatasetDir, 'food_nutrient.csv'))) {
+  for (const row of csvRows(path.join(DatasetDir, 'food_nutrient.csv'), Headers.foodNutrient)) {
     const [, fdcId, nutrientId, amount] = row;
     if (!macros.has(fdcId)) {
       continue;
