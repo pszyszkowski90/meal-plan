@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G3, faza 2** (czysty moduł generatora).
+Kolejne zadanie do wzięcia: **G3, faza 3** (repozytorium i trasa `/api/plan`).
 
 ---
 
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 1 z 4**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 2 z 4**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -351,3 +351,37 @@ PR: #32
 Do decyzji: —
 Uwaga: powtórzenia, determinizm, kształt schematu i treść komunikatu porażki rozstrzygnięte
 **przez agenta** na podstawie pomiarów, zgodnie z §4. Zero pytań do właściciela.
+
+### 17:33 UTC — G3 faza 2: czysty moduł generatora
+Wynik: ok
+Co zrobione: `src/lib/plan-generator.ts` (655 linii) i `src/lib/plan-generator.test.ts` —
+30 nowych testów, `npm test` **130/130**. Wszystkie 17 kryteriów fazy 2 zaliczone.
+Moduł importuje **wyłącznie** `./dish-validation.ts` (typ `MealSlot`), zgodnie z 2.16.
+Stała `CalorieTolerance = 0.1` ma wreszcie jedno miejsce w repo — dotąd żyła jako liczba
+w skrypcie `.mjs` i jako proza w `CLAUDE.md`.
+
+**Zestaw sprawdzony CELOWYM ZEPSUCIEM — i pierwsze dwie próby niczego nie złapały.**
+To jest najważniejsza rzecz z tej fazy:
+1. Zdjęcie sprawdzenia okna w punkcie końcowym: **130/130 dalej zielone**. Powód: przy ostatniej
+   pozycji `minRest` i `maxRest` są zerowe, więc przycinanie samo wpuszcza wyłącznie sumy z okna.
+2. Zdjęcie przycinania górną granicą: **też 130/130 zielone** — łapie je sprawdzenie końcowe.
+   Guardrail ma więc DWIE niezależne bramki i żadna nie przepuści dnia poza oknem w pojedynkę.
+   Zapisane w komentarzu przy pętli, żeby nikt nie usunął jednej jako „martwego kodu".
+3. Rozluźnienie `CalorieTolerance` do 0,5: **7 testów na czerwono**. To jest realny tryb awarii
+   i zestaw go łapie.
+4. Zdjęcie odsiewu wykluczeń: 3 czerwone. Zdjęcie limitu czasu: 4 czerwone.
+
+**Kryterium 2.6 wymagało poprawki, bo w pierwszej wersji NIE łapało zepsutego odsiewu.**
+Pula miała dania odrzucone o innych kaloriach niż dopuszczone, więc generator omijał je sam —
+nie mieściły się w oknie — i zepsuty filtr przechodził na zielono. To jest dokładnie ten tryb
+z `lessons.md`: kryterium przechodzące niezależnie od tego, czy rzecz działa. Poprawione: dania
+odrzucone mają **te same kalorie** co dopuszczone i **niższe `id`**, więc po sortowaniu stoją
+w liście pierwsze i zepsuty odsiew sięga po nie natychmiast. Po poprawce oba zepsucia łapane.
+
+Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`.
+Stage po ścieżkach. `package-lock.json` nietknięty (sprawdzone `git diff --exit-code`).
+Bramki: `npm test` 130/130, `tsc --noEmit` czysto, `expo lint` czysto,
+`check-conventions` czysto (51 plików), `check-lock` czysto.
+Werdykt przeglądu: PR wspólny z fazą 3 albo osobny — patrz wpis o PR.
+PR: #33
+Do decyzji: —

@@ -761,26 +761,26 @@ Wstecz: `migrations/down/0006_plan.down.sql`, uruchamiany **wyłącznie przez cz
 
 #### Automated
 
-- [ ] 2.1 Siedem dni po `mealsPerDay` pozycji, każdy dzień w ±10% — sprawdzone niezależną funkcją
-- [ ] 2.2 Granice okna domknięte obustronnie; o 1 kcal poza — odrzucone
-- [ ] 2.3 `reason: 'exclusions'` z dowodem `withoutExclusions > remaining`
-- [ ] 2.4 `reason: 'prepTime'` z `withoutLimit > remaining`; ten sam zestaw z wyższym limitem → `ok: true`
-- [ ] 2.5 Realna pula: 3 posiłki i 3200 kcal → `calories`; ten sam zestaw przy 6 posiłkach → `ok: true`
-- [ ] 2.6 Żaden posiłek planu, który powstał, nie jest wykluczony ani ponad limitem czasu
-- [ ] 2.7 Zero planu częściowego — `ok: false` bez `days`, `ok: true` bez niepełnego dnia
-- [ ] 2.8 To samo danie nie występuje dwa razy w dniu — także przy `mealsPerDay = 6`
-- [ ] 2.9 `maxUses` liczone od liczby wyborów: 15 przekąsek i 6 posiłków → `ceil(21/15) = 2`, plan powstaje
-- [ ] 2.10 Relaksacja działa: trafienie wymagające powtórzenia ponad `maxUses` daje `ok: true`
-- [ ] 2.11 Determinizm względem ziarna, bez klauzuli ucieczki
-- [ ] 2.12 Wyczerpana przestrzeń przy nietkniętym budżecie → `combination`, nie `calories`
-- [ ] 2.13 Przekroczony budżet → `searchBudget`, nie zawieszenie
-- [ ] 2.14 `achievableMaxKcal` liczone z różnych dań, nie z krotności największego
-- [ ] 2.15 `npm test`, `tsc --noEmit`, `expo lint`, `check-conventions` czyste
-- [ ] 2.16 Moduł importuje wyłącznie `./dish-validation.ts`
+- [x] 2.1 Siedem dni po `mealsPerDay` pozycji, każdy dzień w ±10% — sprawdzone niezależną funkcją — f6ff446
+- [x] 2.2 Granice okna domknięte obustronnie; o 1 kcal poza — odrzucone — f6ff446
+- [x] 2.3 `reason: 'exclusions'` z dowodem `withoutExclusions > remaining` — f6ff446
+- [x] 2.4 `reason: 'prepTime'` z `withoutLimit > remaining`; ten sam zestaw z wyższym limitem → `ok: true` — f6ff446
+- [x] 2.5 Realna pula: 3 posiłki i 3200 kcal → `calories`; ten sam zestaw przy 6 posiłkach → `ok: true` — f6ff446
+- [x] 2.6 Żaden posiłek planu, który powstał, nie jest wykluczony ani ponad limitem czasu — f6ff446
+- [x] 2.7 Zero planu częściowego — `ok: false` bez `days`, `ok: true` bez niepełnego dnia — f6ff446
+- [x] 2.8 To samo danie nie występuje dwa razy w dniu — także przy `mealsPerDay = 6` — f6ff446
+- [x] 2.9 `maxUses` liczone od liczby wyborów: 15 przekąsek i 6 posiłków → `ceil(21/15) = 2`, plan powstaje — f6ff446
+- [x] 2.10 Relaksacja działa: trafienie wymagające powtórzenia ponad `maxUses` daje `ok: true` — f6ff446
+- [x] 2.11 Determinizm względem ziarna, bez klauzuli ucieczki — f6ff446
+- [x] 2.12 Wyczerpana przestrzeń przy nietkniętym budżecie → `combination`, nie `calories` — f6ff446
+- [x] 2.13 Przekroczony budżet → `searchBudget`, nie zawieszenie — f6ff446
+- [x] 2.14 `achievableMaxKcal` liczone z różnych dań, nie z krotności największego — f6ff446
+- [x] 2.15 `npm test`, `tsc --noEmit`, `expo lint`, `check-conventions` czyste — f6ff446
+- [x] 2.16 Moduł importuje wyłącznie `./dish-validation.ts` — f6ff446
 
 #### Manual
 
-- [ ] 2.17 Wyrocznie przeczytane jako rachunek; zakres niezależności potwierdzony
+- [x] 2.17 Wyrocznie przeczytane jako rachunek; zakres niezależności potwierdzony — f6ff446
 
 ### Phase 3: Repozytorium i trasa API
 
