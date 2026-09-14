@@ -62,9 +62,23 @@ Ustalenie **dopisane przy rozliczaniu**, nie pochodzi od agenta — agent opisa�
   go, wypisuje notkę „Brak raportu — prawdopodobnie PR nie dotyczy żadnego planu" i kończy się
   sukcesem. Ta notka jest **prawdziwa tylko dla PR-ów bez planu**; tutaj plan był, przegląd się
   odbył i wystawił dwa ustalenia PENDING — a bramka i tak przepuściła.
-- **Decyzja**: NAPRAWIANE OSOBNYM PR-em 14.09.2026, nie tutaj. Zmiana `impl-review.yml` wyłącza
-  recenzenta na swoim własnym PR-ze (walidacja wobec gałęzi domyślnej), więc wciągnięcie jej do
-  #20 kosztowałoby przegląd całej reszty tej pracy.
+- **Decyzja**: NAPRAWIONY **OBJAW**, nie przyczyna — osobnym PR-em, bo zmiana `impl-review.yml`
+  wyłącza recenzenta na swoim własnym PR-ze (walidacja wobec gałęzi domyślnej), więc wciągnięcie
+  jej do #20 kosztowałoby przegląd całej reszty tej pracy.
+
+  **Co dokładnie zostało zrobione, a co nie.** Bramka rozróżnia teraz „raportu nie było, bo PR nie
+  dotyczy planu" od „raport był należny i go nie ma": PR zmieniający `context/changes/*/plan.md`
+  bez pliku `reviews/impl-review*.md` jest **błędem**. Logika sprawdzona lokalnie na sześciu
+  przypadkach (dwa prawdziwe raporty, oba warianty `PENDING`, raport z ustaleniami bez decyzji,
+  raport bez ustaleń) — kody wyjścia zgodne z oczekiwanymi.
+
+  **Przyczyna zostaje otwarta świadomie:** agent dalej nie ma zgody na `git commit`. Naprawa
+  wymagałaby `claude_args: --allowedTools …`, a ta flaga **zastępuje** domyślny zestaw narzędzi,
+  nie dodaje do niego — więc może odebrać agentowi narzędzia MCP, którymi wystawia komentarz
+  i etykiety. Nie da się tego sprawdzić na PR-ze, który tę zmianę wprowadza, bo recenzent jest
+  na nim wyłączony. Zgadywanie konfiguracji kroku CI z prawem zapisu do repozytorium, bez
+  możliwości zweryfikowania skutku, kosztuje więcej niż daje. **Praktyczny skutek do czasu
+  naprawy:** raport do PR-a zmieniającego plan commituje prowadzący zadanie — tak jak ten.
 
 ## F4 — bramka nie widzi ustalenia zapisanego w prawdopodobnym wariancie formatu
 

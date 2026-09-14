@@ -132,8 +132,26 @@ jobs:
           # Raport TEGO PR-a: plik raportu, który ta gałąź dodała albo zmieniła względem `main`.
           RAPORT=$(gh pr view "$NR_PR" --json files --jq '.files[].path' | grep -E '^context/changes/.+/reviews/impl-review.*\.md$' | tail -1)
 
+          # BRAK RAPORTU NIE JEST SAM W SOBIE ZGODĄ — decyduje to, czy raport był NALEŻNY.
+          #
+          # Czwarty defekt tej samej klasy, 14.09.2026 (trzy poprzednie: #15, #17). Krok agenta nie
+          # daje mu zgody na `git commit`, więc agent wypisał raport WYŁĄCZNIE jako komentarz do
+          # PR-a. Bramka nie znalazła pliku, wypisała poniższą notkę i skończyła się sukcesem —
+          # mając przed sobą przegląd z dwoma ustaleniami PENDING. Notka „PR nie dotyczy żadnego
+          # planu" była wtedy po prostu nieprawdziwa.
+          #
+          # Rozróżnienie, którego brakowało: PR dotykający `context/changes/<id>/plan.md` JEST
+          # PR-em o planie, więc raport mu się należy. PR, który planu nie tyka (naprawa CI, zmiana
+          # dokumentacji), raportu mieć nie musi i dalej przechodzi notką.
+          PLAN_W_PR=$(gh pr view "$NR_PR" --json files --jq '.files[].path' | grep -cE '^context/changes/.+/plan\.md$' || true)
+
+          if [ -z "$RAPORT" ] && [ "$PLAN_W_PR" -gt 0 ]; then
+            echo "::error title=Należny raport nie został zapisany::PR zmienia plan (context/changes/**/plan.md), ale nie ma w nim pliku reviews/impl-review*.md. Przegląd mógł się odbyć i skończyć komentarzem — bramka czyta PLIK, nie komentarz. Zacommituj raport z decyzjami do ustaleń."
+            exit 1
+          fi
+
           if [ -z "$RAPORT" ]; then
-            echo "::notice title=Brak raportu::Agent nie zapisał raportu — prawdopodobnie PR nie dotyczy żadnego planu."
+            echo "::notice title=Brak raportu::PR nie zmienia żadnego planu i nie ma raportu — nie ma czego sprawdzać."
             exit 0
           fi
 
@@ -160,11 +178,31 @@ jobs:
           #
           # Sygnałem niedokończonej roboty jest POLE `Decision`/`Decyzja` o wartości PENDING —
           # tak agent oznacza ustalenie, o którym nikt jeszcze nie zdecydował.
-          OTWARTE=$(grep -ciE '^- [*][*](Decision|Decyzja)[*][*]: *(PENDING|OCZEKUJE)' "$RAPORT_TRESC" || true)
-          ROZLICZONE=$(grep -ciE '^- [*][*](Decision|Decyzja)[*][*]:' "$RAPORT_TRESC" || true)
+          #
+          # Dwukropek MOŻE stać po obu stronach pogrubienia. `- **Decyzja**: …` i `- **Decyzja:** …`
+          # renderują się w Markdownie identycznie, a format nie jest udokumentowany nigdzie poza
+          # tym wyrażeniem — więc autor raportu nie ma jak zgadnąć, o który chodzi. Wersja wymagająca
+          # tylko pierwszego wariantu policzyła 14.09.2026 ZERO ustaleń na raporcie, który miał ich
+          # cztery. Tu akurat werdykt był zatwierdzający, ale przy odrzucającym każde `PENDING`
+          # zapisane w drugim wariancie byłoby dla bramki niewidzialne.
+          POLE='^- [*][*](Decision|Decyzja):?[*][*]:?'
+          OTWARTE=$(grep -ciE "${POLE} *(PENDING|OCZEKUJE)" "$RAPORT_TRESC" || true)
+          ROZLICZONE=$(grep -ciE "${POLE}" "$RAPORT_TRESC" || true)
           ODRZUCONY=$(grep -ciE 'Werdykt.*ODRZUCONY|Verdict.*REJECTED' "$RAPORT_TRESC" || true)
+          # Nagłówek ustalenia — `### F1 …`, `## F1 …`, `#### F1 …`; tego kształtu trzymają się
+          # wszystkie raporty w repo. Służy do odróżnienia „raport bez ustaleń" (legalne, agent
+          # niczego nie znalazł) od „raport z ustaleniami, których bramka nie umie policzyć".
+          USTALENIA=$(grep -ciE '^#+ F[0-9]+' "$RAPORT_TRESC" || true)
 
-          echo "Werdykt odrzucający: $ODRZUCONY | ustaleń z decyzją: $ROZLICZONE | otwartych: $OTWARTE"
+          echo "Werdykt odrzucający: $ODRZUCONY | ustaleń: $USTALENIA | z decyzją: $ROZLICZONE | otwartych: $OTWARTE"
+
+          # Raport, który ma ustalenia, ale ani jednego pola decyzji, znaczy dziś dokładnie tyle samo,
+          # co raport ze wszystkim rozliczonym — i to jest ta sama cicha zgoda, którą ten krok ma
+          # likwidować. Najczęstsza przyczyna to rozjechany format pola, a nie brak decyzji.
+          if [ "$USTALENIA" -gt 0 ] && [ "$ROZLICZONE" -eq 0 ]; then
+            echo "::error title=Ustalenia bez ani jednej decyzji::$RAPORT ma $USTALENIA ustaleń i zero pól Decyzja/Decision. Albo nikt ich nie rozliczył, albo format pola się rozjechał — bramka czyta wiersz zaczynający się od '- **Decyzja**: ' (dwukropek po którejkolwiek stronie pogrubienia)."
+            exit 1
+          fi
 
           # Świeży raport odrzucający ma wszystkie decyzje PENDING, więc łapie go pierwszy warunek.
           # Drugi jest siatką bezpieczeństwa na raport odrzucający BEZ ani jednego pola `Decision`:
