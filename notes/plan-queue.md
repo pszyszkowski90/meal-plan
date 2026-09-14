@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G3, faza 3** (repozytorium i trasa `/api/plan`).
+Kolejne zadanie do wzięcia: **G3, faza 4** (ekran `/plan`, zakładka i E2E przeglądarkowe).
 
 ---
 
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 2 z 4**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 3 z 4**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -438,4 +438,123 @@ Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`,
 Bramki: `npm test` **136/136** (było 130), `tsc --noEmit`, `expo lint`, `check-conventions` czysto.
 Werdykt przeglądu: przeczytany, wszystkie jedenaście ustaleń ma decyzję.
 PR: #33
+Do decyzji: —
+
+### 19:08 UTC — G3 faza 3: repozytorium i trasa /api/plan
+Wynik: ok
+Co zrobione: `src/server/repository/plans.ts` (cztery funkcje) i `src/app/api/plan+api.ts`
+(`GET`/`POST`), plus `tests/e2e/plan-api.spec.ts`, `tests/e2e/support/d1.ts` i dopisanie
+`/api/plan` do `DataRoutes` oraz testu izolacji planu do `account-isolation.spec.ts`.
+**Pełny zestaw E2E: 56/56** (było 44 przed tą paczką, 45 po fazie 1).
+
+**Trzy rzeczy złapane własnym sprawdzaniem, zanim dotknął ich przegląd:**
+
+1. **Ziarno było losowane DWA RAZY** — raz dla generatora, raz przy zapisie. Kolumna `plan.seed`
+   wyglądałaby na użyteczną i kłamała przy pierwszej próbie odtworzenia zgłoszonego błędu.
+   Teraz jedno `randomUUID()` idzie w oba miejsca.
+2. **Pierwsza wersja kryterium 3.10 była BŁĘDNA.** Żądała `plan_item = 0` po nieudanym
+   generowaniu, czyli zakładała, że konto wchodzi w test bez planu. Nieudane generowanie **nie ma
+   prawa skasować działającego planu** — użytkownik straciłby tydzień pracy produktu za to, że
+   zmienił cel na nieosiągalny. Właściwą własnością jest NIEZMIENNOŚĆ: tyle samo wierszy przed i po.
+3. **Testy liczyły wiersze GLOBALNIE**, a baza jest współdzielona z kontem B z testu izolacji.
+   Czerwieniły się dopiero, gdy do zestawu doszedł test z drugim kontem — czyli z powodu, którego
+   nie ma w kodzie produktu. Wszystkie zapytania zawężone do `user_id` odczytanego z roszczenia
+   `sub` tokenu, czyli DOKŁADNIE tej wartości, której używa `requireUserId`.
+
+**Dwa celowe zepsucia, oba złapane** — każde przez pełny cykl: zepsucie → ubicie `workerd`
+→ `expo export` → potwierdzenie zepsucia W ARTEFAKCIE (`grep` po `dist/server/`) → `wrangler dev`
+→ przebieg testów:
+- zdjęty warunek `NOT EXISTS` wykluczeń grupowych → **3.6 na czerwono**;
+- zdjęty filtr `user_id` z obu `DELETE` w `savePlan` → **3.8 na czerwono**.
+Drugie jest ważniejsze, niż wygląda: `POST` **zastępuje** plan, więc bez tego filtra konto B
+skasowałoby plan konta A **wygenerowaniem własnego**, a A zobaczyłby po prostu „brak planu".
+
+**Napotkane EBUSY przy `expo export`** — dokładnie lekcja z `lessons.md`. `taskkill` na `workerd`
+nie wystarczył, bo `dist/client` trzymał proces `wrangler dev`; ubicie po `CommandLine` przez
+PowerShell załatwiło sprawę. Bez tego build cicho serwowałby STARY artefakt, a zepsucie „przeszłoby
+na zielono" nie dotarłszy do serwera.
+
+**Kryterium 3.4 jest pokryte częściowo i tak zapisane w planie.** Gałąź `profile_missing` (409)
+jest **nieosiągalna z harnessu**: konto testowe ma profil, a repo nie ma trasy kasującej profil
+ani preferencje. Dopisanie takiej trasy wyłącznie po to, żeby test miał co wywołać, powiększałoby
+powierzchnię produktu pod test. Zamiast tego kryterium dowodzi własności osiągalnej — że udany
+`POST` zapisuje dokładnie `7 × mealsPerDay` pozycji — plus niezmiennika całej tabeli: każdy
+nagłówek planu ma tyle pozycji, ile wynika z jego `meals_per_day`.
+
+Co zacommitowane: `src/server/repository/plans.ts`, `src/app/api/plan+api.ts`,
+`tests/e2e/plan-api.spec.ts`, `tests/e2e/support/d1.ts`, `tests/e2e/data-boundary.spec.ts`,
+`tests/e2e/account-isolation.spec.ts`, `context/changes/first-weekly-plan/plan.md`,
+`notes/plan-queue.md`. Stage po ścieżkach. `package-lock.json` nietknięty.
+Bramki: `npm test` 136/136, `tsc --noEmit`, `expo lint`, `check-conventions` (53 pliki),
+`check-lock` — wszystkie czysto. E2E 56/56 przeciw `wrangler dev` na zbudowanym `dist/`.
+Werdykt przeglądu: patrz wpis o przeglądzie niżej.
+PR: #34
+Do decyzji: —
+
+### 20:16 UTC — G3 faza 3, przegląd implementacji i poprawki
+Wynik: ok
+Co zrobione: **zadanie przeglądu w CI padło po raz drugi** (PR #34, przebieg 4 min 46 s, bez
+zapisania raportu) — tak samo jak na PR #33 i z tego samego powodu: diff ma 1190 linii. To już
+wzorzec, nie incydent: **przy diffach tej wielkości zadanie CI nie domyka przeglądu**, a bramka
+czyta PLIK, nie komentarz, więc przepuściłaby PR bez żadnego przeglądu. Przegląd wykonał agent
+adwersaryjny **lokalnie**, z prawem do `npm test`, `tsc`, `check-conventions` i **odczytu z żywej
+D1**. Raport z decyzjami: `reviews/impl-review.md` (raport fazy 2 zastąpiony, jest w git history).
+
+Werdykt: **WYMAGA UWAGI** → po poprawkach **APPROVED**. Czternaście ustaleń: dziewięć przyjętych
+i naprawionych, pięć odłożonych świadomie z powodem.
+
+**F1 — odhaczyłem kryterium, którego nie zbudowałem.** Plan mówi „konto z `max_prep_minutes = 15`",
+bo przy 15 minutach zostaje **jeden obiad**. Zbudowany test używał 30 — czyli ustawień identycznych
+z czterema innymi testami pliku, więc dokładał asercję, a nie warunek skrajny. Odstępstwo **nie
+było odnotowane** w Dzienniku, choć odstępstwa przy 3.4 i 3.10 były. To trzecie w tym repo
+wystąpienie klasy „kryterium, które przechodzi niezależnie od tego, czy rzecz działa".
+
+**F2 — dwa z trzech ramion odsiewu wykluczeń nie miały ŻADNEGO pokrycia**, w całym repo.
+Sprawdzone było wyłącznie `kind = 'group'`, a wykluczenie **składnikowe** jest główną ścieżką
+ekranu preferencji. Naprawa wymagała **dwóch podejść**, bo pierwsze nie działało:
+1. Jeden test na oba ramiona **nie łapał** zepsucia ramienia daniowego — wykluczenie popularnego
+   składnika odsiewało te same dania. Rozdzielone na dwa testy.
+2. Wykluczenie **jednego** dania o najniższym `id` też nie łapało: przy 58 daniach i 28 pozycjach
+   szansa, że akurat to jedno zostanie wybrane, jest niska. Test wyklucza więc **dokładnie te
+   dania, które generator właśnie wybrał** — są dowodnie dopasowane do tego profilu, więc ich
+   powrót jest dowodem awarii.
+Po poprawce: zdjęte ramię składnikowe → **17 naruszeń**, zdjęte ramię daniowe → **10 naruszeń**.
+
+**F3 — helper `countD1`, który sam wprowadziłem, zamieniał „nie zmierzyłem" na „zero naruszeń".**
+`rows[0]?.n ?? 0` przy trzech najmocniejszych asercjach tej fazy, wszystkich w postaci `toBe(0)`.
+To dosłownie lekcja „Odróżnij «narzędzie znalazło problem» od «narzędzie się nie uruchomiło»",
+zastosowana do kodu napisanego w tym samym PR-ze. Teraz oba helpery **rzucają**.
+
+**F5 — realna dziura w kontrakcie, którą warto znać przed fazą 4.** Plan jest zapisany jako
+WSKAZANIA na dania, a treść dań żyje dalej: `seed-dishes.mjs` przy korekcie gramatury kasuje
+i wstawia `dish_ingredient` na nowo. Zapisany plan może więc wyjechać poza ±10% **bez żadnej
+zmiany w `plan` i `plan_item`**, a `GET` oddawał go jako całkiem zwyczajny. Bez tego faza 4
+zobaczyłaby czerwone kryterium 4.3 i wyglądałoby na błąd generatora, którym nie jest.
+Dodane pole `plan.daysOutOfWindow`, liczone **tą samą stałą** `CalorieTolerance`.
+
+**F6 — `startDate` to data UTC**, więc dla użytkownika w Polsce `POST` po lokalnej północy
+zapisuje wczorajszą. Rozstrzygnięte jako KONTRAKT, nie poprawka: pole mówi, KIEDY plan powstał,
+a ekran etykietuje dni numerem (`Dzień 1`…`Dzień 7`) — co jest i tak właściwsze, bo plan jest
+na „siedem kolejnych dni", nie na konkretne daty.
+
+Pięć ustaleń odłożonych świadomie, każde z powodem w raporcie: kryterium 3.12 jako dosłowny
+`grep` (właściwe miejsce to reguła w `check-conventions.js`, czyli osobna zmiana), podzapytania
+liczone 267× zamiast 58× (czas **po stronie D1**, nie CPU Workera; różnica w szumie — a §3 zakazuje
+optymalizowania przed pomiarem, właściwy moment to G4), przesłanianie aliasu `di` (sprawdzone
+pomiarem jako poprawne), trzy drobiazgi w kodzie i aktualizacja tabeli pokrycia w
+`tests/e2e/README.md` (jedna aktualizacja po fazie 4, nie dwie częściowe).
+
+**Odnotowana niestabilność:** dwa razy pojawił się nieodtwarzalny błąd — raz `socket hang up`
+przy `PUT`, raz porażka testu 3.9 w pełnym przebiegu, nieobecna w izolacji i w kolejnym pełnym
+przebiegu. Zapisane w raporcie, bo zestaw jedzie `workers: 1` właśnie po to, żeby nie ukrywać
+wyścigów, a `retries` świadomie nie ma.
+
+Co zacommitowane: `src/app/api/plan+api.ts`, `tests/e2e/plan-api.spec.ts`,
+`tests/e2e/support/d1.ts`, `tests/e2e/data-boundary.spec.ts`,
+`tests/e2e/account-isolation.spec.ts`, `context/changes/first-weekly-plan/reviews/impl-review.md`,
+`context/changes/first-weekly-plan/plan.md`, `notes/plan-queue.md`. Stage po ścieżkach.
+Bramki: `npm test` 136/136, `tsc`, `expo lint`, `check-conventions` (53 pliki), `check-lock` —
+czysto. **E2E 58/58** przeciw `wrangler dev` na zbudowanym `dist/`.
+Werdykt przeglądu: przeczytany, wszystkie czternaście ustaleń ma decyzję.
+PR: #34
 Do decyzji: —

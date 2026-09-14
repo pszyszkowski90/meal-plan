@@ -166,4 +166,101 @@ test.describe('Ryzyko #1 — izolacja dwóch kont', () => {
     expect(idsB).toContain(ingredientB);
     expect(idsB).not.toContain(ingredientA);
   });
+
+  /**
+   * S-04 kryterium 3.8 — plan jest danymi użytkownika i podlega tej samej granicy co preferencje.
+   *
+   * Plan ma cechę, której nie mają profil ani preferencje: `POST` **zastępuje** poprzedni plan,
+   * kasując wiersze. Gdyby `savePlan` zgubiło `where user_id = ?1` w którymkolwiek z dwóch
+   * `DELETE`, konto B skasowałoby plan konta A **wygenerowaniem własnego** — i nikt by się o tym
+   * nie dowiedział, bo A zobaczyłby po prostu „brak planu". Dlatego kolejność tego testu jest
+   * istotna: A generuje, B generuje, a potem sprawdzamy, czy A **wciąż ma swój**.
+   */
+  test('3.8 plan konta A przeżywa wygenerowanie planu przez konto B i nie miesza się z nim', async ({
+    browser,
+    page,
+    request,
+  }) => {
+    const tokenA = await sessionToken(page);
+    const authA = { Authorization: `Bearer ${tokenA}` };
+
+    // Konto A: komplet wejść i własny plan.
+    await request.put('/api/profile', {
+      headers: authA,
+      data: {
+        age: 35,
+        weightKg: 75,
+        heightCm: 178,
+        sex: 'male',
+        activityLevel: 2,
+        targetKcalOverride: 2200,
+      },
+    });
+    await request.put('/api/preferences', {
+      headers: authA,
+      data: { preferences: { maxPrepMinutes: 30, mealsPerDay: 4 }, exclusions: [] },
+    });
+    expect((await request.post('/api/plan', { headers: authA, data: {} })).status()).toBe(201);
+
+    const planA = await request.get('/api/plan', { headers: authA }).then((r) => r.json());
+    expect(planA.plan).not.toBeNull();
+    const dishesA: number[] = planA.plan.days.flatMap(
+      (day: { meals: { dish: { id: number } }[] }) => day.meals.map((meal) => meal.dish.id)
+    );
+    expect(dishesA).toHaveLength(28);
+
+    // Konto B: własny profil, inna liczba posiłków — żeby plany dało się od siebie odróżnić
+    // po kształcie, a nie tylko po treści.
+    const pageB = await openAccountB(browser);
+    let tokenB: string;
+    try {
+      tokenB = await sessionToken(pageB);
+    } finally {
+      await pageB.context().close();
+    }
+    expect(tokenA).not.toBe(tokenB);
+    const authB = { Authorization: `Bearer ${tokenB}` };
+
+    await request.put('/api/profile', {
+      headers: authB,
+      data: {
+        age: 30,
+        weightKg: 60,
+        heightCm: 165,
+        sex: 'female',
+        activityLevel: 2,
+        targetKcalOverride: 1800,
+      },
+    });
+    await request.put('/api/preferences', {
+      headers: authB,
+      data: { preferences: { maxPrepMinutes: 45, mealsPerDay: 3 }, exclusions: [] },
+    });
+    expect((await request.post('/api/plan', { headers: authB, data: {} })).status()).toBe(201);
+
+    const [afterA, planB] = await Promise.all([
+      request.get('/api/plan', { headers: authA }).then((r) => r.json()),
+      request.get('/api/plan', { headers: authB }).then((r) => r.json()),
+    ]);
+
+    // A WCIĄŻ ma plan — to jest ta asercja, którą zgubiony `where user_id` w `DELETE` czerwieni.
+    expect(afterA.plan, 'plan konta A zniknął po wygenerowaniu planu przez konto B').not.toBeNull();
+    expect(afterA.plan.mealsPerDay).toBe(4);
+    expect(afterA.plan.targetKcal).toBe(2200);
+    expect(afterA.plan.days).toHaveLength(7);
+    // Porównanie CO DO DANIA, nie tylko co do nagłówka — inaczej `dishesA` byłoby zebrane
+    // i wyrzucone, a test obiecujący „nie miesza się z nim" sprawdzałby trzy pola.
+    const afterDishesA: number[] = afterA.plan.days.flatMap(
+      (day: { meals: { dish: { id: number } }[] }) => day.meals.map((meal) => meal.dish.id)
+    );
+    expect(afterDishesA, 'plan konta A zmienił treść po wygenerowaniu planu przez B').toEqual(
+      dishesA
+    );
+
+    // B ma SWÓJ plan, o swoim kształcie — nie kopię planu A.
+    expect(planB.plan).not.toBeNull();
+    expect(planB.plan.mealsPerDay).toBe(3);
+    expect(planB.plan.targetKcal).toBe(1800);
+    expect(planB.plan.seed).not.toBe(afterA.plan.seed);
+  });
 });
