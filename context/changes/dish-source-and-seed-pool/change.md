@@ -9,6 +9,13 @@ archived_at: null
 
 ## Notes
 
+- **Faza 4, trzecia runda przeglądu (CI) 14.09.2026** (PR #27, commit `3eaf674`, `synchronize`) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
+  0 obserwacji. Jedyne ustalenie poprzedniej rundy (F1 — liczby w prozie sprzed naprawy F2)
+  rozliczone tym commitem w czterech miejscach zamiast dwóch wskazanych: `seed/REVIEW.md:9`,
+  notatka 4.6 w `plan.md`, `change.md` i opis PR-a. Zero plików źródłowych ani danych dań/składników
+  zmienionych względem poprzedniej rundy — bramka jakości potwierdzona zielona dla dokładnie tego
+  commita przez `mcp__github_ci__get_ci_status`.
 - **Faza 4, druga runda przeglądu (CI) 14.09.2026** (PR #27, commit `4b56c3a`, `synchronize`) —
   [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 1 ostrzeżenie,
   0 obserwacji. Poprzednia runda (F1: brakujący `seed/REVIEW.md`; F2: osierocony składnik) została

@@ -5,17 +5,18 @@
 - **Scope**: Full plan (CI review on PR #27, re-run after `synchronize`) — Fazy 1–3 były już
   zamknięte i przejrzane wcześniej (patrz `change.md`); ten PR dotyczy wyłącznie Fazy 4
   (kryteria 4.1–4.8, wszystkie `[x]`). Ten przebieg zastępuje poprzedni raport z tego samego pliku
-  (commit `7f14e2c`), po tym jak PR-branch dostał commit `4b56c3a` rozliczający jego ustalenia F1/F2.
+  (commit `b716ea5`), po tym jak PR-branch dostał commit `3eaf674` rozliczający jego jedyne
+  ustalenie (F1).
 - **Date**: 2026-09-14
-- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34859737580
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34861113235
 - **Verdict**: APPROVED
-- **Findings**: 0 critical, 1 warning, 0 observations
+- **Findings**: 0 critical, 0 warnings, 0 observations
 
 ## Verdicts
 
 | Dimension | Verdict |
 |-----------|---------|
-| Plan Adherence | WARNING |
+| Plan Adherence | PASS |
 | Scope Discipline | PASS |
 | Safety & Quality | PASS |
 | Architecture | PASS |
@@ -25,95 +26,44 @@
 
 ## Zakres i metoda
 
-PR nie dotyka żadnego pliku `.ts`/`.tsx` — to zmiana danych (36 plików `seed/dishes/<slug>.json`
-z poprzedniej rundy plus 2 kolejne dodane w `4b56c3a`, łącznie pula 58 dań) i skryptu
-`scripts/seed-dishes.mjs` (+31/-1: nowa funkcja diagnostyczna `reportUnusedIngredients`), plus
-dokumentacja (`CLAUDE.md`, `plan.md`, `notes/pool-queue.md`, `seed/FEASIBILITY.md`, nowy
-`seed/REVIEW.md`).
+Commit `3eaf674` — jedyny nowy commit tej rundy — dotyka wyłącznie cztery pliki prozy:
+`context/changes/dish-source-and-seed-pool/change.md`, `context/changes/dish-source-and-seed-pool/plan.md`
+(notatka ręczna przy kryterium 4.6), `context/changes/dish-source-and-seed-pool/reviews/impl-review.md`
+(pole `Decision` na wcześniejszym wniosku F1) i `seed/REVIEW.md`. Zero plików źródłowych, zero
+danych dań/składników zmienionych względem poprzedniej (APPROVED) rundy — więc dimensions 2 i 3
+(bezpieczeństwo/jakość, pokrycie testami) dziedziczą ocenę z tamtej rundy bez zmian w danych do
+ponownej weryfikacji.
 
-**Ta runda miała częściowy dostęp do `git`/`gh`/MCP CI, ale nie do `npm`/`npx`/`node -e`** w Bashu
-(ten sam znany limit środowiska co poprzednie rundy tej zmiany — patrz `change.md`, PR #24/#25/#27
-pierwsza runda). Zamiast statycznie przybliżać kryteria automatyczne od zera, ten przebieg
-skorzystał z `mcp__github_ci__get_ci_status`: workflow **„Bramka jakości" (run `34859737522`) —
-job „Typy, lint, testy, konwencje, lockfile" — zakończył się `success`** dla dokładnie tego commita
-(`4b56c3a`, ten sam `created_at` co ten przegląd), co niezależnie potwierdza `tsc`, `npm test`,
-`expo lint`, `check-conventions` i `check-lock` bez potrzeby ich ponownego uruchamiania w tym
-sandboxie.
+**Zweryfikowano bezpośrednio w tej rundzie:**
 
-Dodatkowo zweryfikowano statycznie i deleguje częściowo do subagenta ogólnego przeznaczenia:
+- `git show 3eaf674` — diff obejmuje dokładnie cztery linie w czterech plikach, wszystkie to
+  literały liczbowe (56→58, 27/31/10/14→29/33/12/16) plus jeden akapit `Decision` w raporcie.
+- `seed/REVIEW.md:9` teraz brzmi „Wszystkie 58 dań" (było „56").
+- `plan.md`, notatka 4.6: „obiady i kolacje w limicie 30 minut (29 → 12 i 33 → 16)" — zgodne
+  z `seed/FEASIBILITY.md` i z policzeniem plików niżej.
+- `change.md` (wpis dopisany przez poprzednią rundę) teraz mówi „20 → 58 dań".
+- Ponowne przeliczenie plików `seed/dishes/*.json`: **58 plików**, wszystkie z niepustym
+  `reviewedBy`/`reviewedAt`; dwa wcześniej osierocone składniki (`oliwki czarne, z puszki`,
+  `boczniaki, świeże` — ustalenie F2 poprzedniej rundy) mają teraz swoje dania
+  (`makaron-z-oliwkami-i-feta.json`, `makaron-z-boczniakami.json`, oba zawierają dosłowny literał
+  składnika).
+- `git diff --exit-code origin/main...HEAD -- package-lock.json` — pusty, zero nowych zależności.
+- `mcp__github_ci__get_ci_status` — workflow „Bramka jakości" zakończył się `success` dla
+  dokładnie commita `3eaf674` (ten sam run co ten przegląd), co niezależnie potwierdza `tsc`,
+  `npm test`, `expo lint`, `check-conventions` i `check-lock` bez potrzeby ich ponownego
+  uruchamiania w tym sandboxie.
 
-- `git diff --exit-code origin/main...HEAD -- package-lock.json` — pusty (0 nowych zależności).
-- Policzenie dań per pora posiłku wprost z plików `seed/dishes/*.json` (grep, nie raport): **20
-  śniadań / 29 obiadów / 33 kolacje / 15 przekąsek** — zgodne z kryterium 4.1 i z `CLAUDE.md`.
-  Minima z planu (12/18/18/12) spełnione ze sporym zapasem.
-- Wszystkie **58** plików mają niepuste `reviewedBy` i `reviewedAt`.
-- **Każdy** `ingredientName` użyty w 58 plikach dań (subagent naliczył ~267 odwołań) istnieje
-  dosłownie (ze znakami diakrytycznymi) w `seed/ingredients.json` — zero nieznanych składników,
-  zero nazw niedopasowanych literą (pułapka, którą sam walidator by przepuścił, bo sprawdza tylko
-  wobec `ingredients.json`, nie wobec bazy — nazwana wprost w `CLAUDE.md` po tym PR-ze).
-- **Zero osieroconych składników** w finalnym stanie: `oliwki czarne, z puszki` i
-  `boczniaki, świeże` (dwa ustalenia z poprzedniej rundy, F2) mają teraz każde swoje danie
-  (`makaron-z-oliwkami-i-feta`, `makaron-z-boczniakami`) — sprawdzone bezpośrednio przez `grep`
-  literału `"boczniaki, świeże"` w obu plikach, nie tylko przez odczyt narracji.
-- 16 nowych wierszy w `seed/ingredients.json` ma komplet `fdcId` + `category` z zamkniętego enuma;
-  niezmiennik Atwatera przeliczony ręcznie dla nich (plus cztery warzywa sprawdzone dodatkowo)
-  mieści się w tolerancji `DishBounds` z `src/lib/dish-validation.ts` (10% względne albo próg
-  bezwzględny 12 kcal dla warzyw bogatych w błonnik — zgodnie z decyzją D20).
-- Wszystkie 58 plików mają niepuste `mealSlots` i `steps`.
-
-To pokrywa merytorycznie te same kryteria co realne `validateDish`/`seed-dishes.mjs --remote`,
-tylko inną metodą (statyczną, nie wykonaniem) — spójne z ograniczeniem opisanym w poprzednich
-rundach tej zmiany.
+**Rezydualne z poprzednich rund (bez zmian w tej):** 20 śniadań / 29 obiadów / 33 kolacje /
+15 przekąsek (min. 12/18/18/12 z planu, z zapasem); wszystkie `ingredientName` w plikach dań
+istnieją dosłownie w `seed/ingredients.json`; 16 nowych wierszy USDA mają komplet `fdcId` +
+`category` i przechodzą niezmiennik Atwatera (próg względny 10% lub bezwzględny 12 kcal per
+decyzja D20).
 
 ## Findings
 
-### F1 — `seed/REVIEW.md` i notatka 4.6 w `plan.md` wciąż podają liczby sprzed naprawy F2 (56 zamiast 58 dań)
-
-- **Severity**: ⚠️ WARNING
-- **Impact**: 🏃 LOW — czysto dokumentacyjne, zero wpływu na dane, guardrail ±10% czy runtime
-- **Dimension**: Plan Adherence
-- **Location**: `seed/REVIEW.md:9`
-- **Detail**: Commit `4b56c3a` naprawił dwa ustalenia poprzedniej rundy (F1: brakujący
-  `seed/REVIEW.md`; F2: osierocony składnik) w jednym przebiegu — i przy okazji dodał **dwa nowe
-  dania**, podnosząc pulę z 56 do 58 (commit message tego samego commita wprost to mówi: „pula ma
-  58 zamiast 56"). Artefakty, które ten sam commit **stworzył lub przeliczył od zera**, poprawnie
-  odzwierciedlają 58: `plan.md` §4.1/4.7 (20/29/33/15, „58 dań, 51 składników"), `CLAUDE.md`
-  („58 dań i 51 składników… 29 obiadów, 33 kolacje"), `seed/FEASIBILITY.md` (`Dań w puli: 58`,
-  „Filtr czasu ścina obiady z 29 do 12, a kolacje z 33 do 16").
-
-  Ale `seed/REVIEW.md`, stworzony w **tym samym commicie**, otwiera się zdaniem „Wszystkie 56 dań:
-  agent (upoważnienie właściciela 14.09.2026)" (linia 9) — liczba sprzed dodania tych dwóch dań.
-  To samo zdarza się w `plan.md` w notatce ręcznej przy kryterium 4.6: „Filtr 30 minut ścina
-  obiady z 27 do 10, a kolacje z 31 do 14" — te liczby (27/31/10/14) są sprzed naprawy F2;
-  `seed/FEASIBILITY.md` (ten sam raport, do którego 4.6 się odnosi) podaje już **29→12 i 33→16**.
-  Opis PR-a ma ten sam wzorzec (nagłówek „56 dań", tabela minimów 27 obiadów / 31 kolacji) —
-  najpewniej dlatego, że opis PR-a został napisany przed commitem `4b56c3a` i nie był odświeżony
-  po nim; to poza zasięgiem tego raportu (opis PR-a nie jest plikiem w repo), ale wzmacnia obraz:
-  trzy niezależne miejsca prozy zostały w tyle za tymi samymi dwoma dodanymi daniami.
-
-  Znaczenie jest niskie — żadna z tych liczb nie steruje kodem ani danymi, a artefakty, które
-  faktycznie bramkują coś (walidator, `check-pool-feasibility.mjs`, `plan.md` §4.1/4.7) są
-  poprawne. Ale `seed/REVIEW.md` powstał specyficznie po to, by być wiarygodną narracją tego, co
-  stempel `reviewedBy` obejmuje — a jego własny pierwszy fakt jest nieaktualny w chwili, gdy plik
-  trafia do repo, co osłabia dokładnie ten cel.
-- **Fix**: Zaktualizować `seed/REVIEW.md:9` na „Wszystkie 58 dań" i `plan.md`'s notatkę 4.6 na
-  „z 29 do 12, a kolacje z 33 do 16" (dopasowując do liczb już policzonych w `FEASIBILITY.md`).
-  Drobna, tekstowa poprawka — nie wymaga ponownego seeda ani przeliczeń.
-  - Strength: Zero ryzyka regresji, jedna linijka w każdym z dwóch plików, przywraca spójność
-    między artefaktami, które już mają poprawne liczby.
-  - Tradeoff: Brak — to czysta korekta tekstu.
-  - Confidence: HIGH — liczby 58/29/33/12/16 są niezależnie potwierdzone przez `FEASIBILITY.md`,
-    `plan.md` §4.1/4.7 i bezpośrednie przeliczenie plików w tym przeglądzie.
-  - Blind spot: Nie sprawdzałem każdego wystąpienia „56" w repo poza wymienionymi plikami — jeśli
-    jest ich więcej (np. w innych notatkach), ten fix ich nie obejmuje.
-- **Decision**: NAPRAWIONE 14.09.2026 — trafne i precyzyjne ustalenie. Poprawione **cztery**
-  miejsca, nie dwa wskazane: `seed/REVIEW.md:9` („58 dań"), notatka 4.6 w `plan.md` (29 → 12
-  i 33 → 16), `change.md` („20 → 58 dań", wpis dopisany przez poprzednią rundę przeglądu)
-  oraz opis PR-a. Ostatnie dwa znalazłem dopiero przeczesaniem `grep`-em po „56 dań", „27 obiadów"
-  i „31 kolacji" — bez tego poprawiłbym dokładnie to, co wskazano, i zostawił resztę.
-  Mechanizm był jeden: liczby przeliczane przez skrypt (`FEASIBILITY.md`, `plan.md` §4.1/4.7,
-  `CLAUDE.md`) zaktualizowały się razem z pulą, a te wpisane ręcznie w prozie — nie. Ustalenie
-  słusznie zwraca uwagę, że akurat `seed/REVIEW.md` powstał po to, by być wiarygodny, więc
-  nieaktualna liczba w jego pierwszym zdaniu kosztuje więcej niż gdzie indziej.
+Brak. Jedyne ustalenie poprzedniej rundy (F1 — liczby w prozie sprzed naprawy F2) zostało
+rozliczone tym commitem w czterech miejscach, nie tylko w dwóch wskazanych — zobacz `Decision`
+w git history tego pliku (commit `3eaf674`) dla pełnego uzasadnienia. Weryfikacja w sekcji
+powyżej potwierdza, że żadna z poprawionych liczb nie pozostała w tyle.
 
 <!-- End of report -->
