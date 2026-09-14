@@ -106,21 +106,51 @@ jobs:
 
       # Werdykt czytamy z PLIKU zacommitowanego przez agenta, nie z jego wyjścia.
       # Plik jest w gałęzi PR i da się go przeczytać po fakcie — wyjście akcji znika z logiem.
+      #
+      # POPRAWIONE 14.09.2026 — ten krok miał DWA defekty i przez oba meldował sukces, sprawdzając
+      # nie ten plik. PR #10 przeszedł na zielono z werdyktem ODRZUCONY w raporcie.
+      #
+      #   1. `git ls-files … | tail -1` brało alfabetycznie OSTATNI raport w całym repozytorium,
+      #      a nie raport tego PR-a. Przy dwóch zmianach z raportami zawsze wygrywał
+      #      `dish-source-and-seed-pool` (werdykt „WYMAGA UWAGI"), a `dietary-preferences`
+      #      z werdyktem ODRZUCONY nie był czytany NIGDY.
+      #   2. `git pull --ff-only` kończył się `Invalid username or token`, więc nawet przy dobrym
+      #      selektorze czytana byłaby kopia sprzed przebiegu, a nie raport właśnie zapisany.
+      #
+      # Oba znikają, gdy raport bierzemy przez `gh` z GAŁĘZI PR-a zamiast z lokalnego drzewa:
+      # `gh pr view --json files` mówi, który raport ten PR zmienił, a `gh api …/contents` czyta
+      # go w stanie AKTUALNYM, już po commicie agenta. `gh` uwierzytelnia się `github.token`,
+      # więc problem z poświadczeniami gita w ogóle nie występuje.
       - name: Sprawdź werdykt przeglądu
         if: steps.auth.outputs.gotowe == 'true'
         env:
           ETYKIETY: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          GH_TOKEN: ${{ github.token }}
+          NR_PR: ${{ github.event.pull_request.number }}
+          GALAZ: ${{ github.event.pull_request.head.ref }}
         run: |
-          git pull --ff-only || true
-          RAPORT=$(git ls-files 'context/changes/*/reviews/impl-review*.md' | tail -1)
+          # Raport TEGO PR-a: plik raportu, który ta gałąź dodała albo zmieniła względem `main`.
+          RAPORT=$(gh pr view "$NR_PR" --json files --jq '.files[].path' | grep -E '^context/changes/.+/reviews/impl-review.*\.md$' | tail -1)
 
           if [ -z "$RAPORT" ]; then
             echo "::notice title=Brak raportu::Agent nie zapisał raportu — prawdopodobnie PR nie dotyczy żadnego planu."
             exit 0
           fi
 
-          echo "Raport: $RAPORT"
-          if grep -qi 'Werdykt.*ODRZUCONY\|Verdict.*REJECTED' "$RAPORT"; then
+          # Treść z gałęzi PR-a, nie z drzewa roboczego sprzed przebiegu agenta.
+          RAPORT_TRESC=/tmp/raport-przegladu.md
+          gh api "repos/${GITHUB_REPOSITORY}/contents/${RAPORT}?ref=${GALAZ}" --jq '.content' | base64 -d > "$RAPORT_TRESC" || true
+
+          # Sprawdzamy ROZMIAR, nie kod wyjścia potoku: kod potoku jest kodem `base64`, a `base64`
+          # na pustym wejściu kończy się sukcesem. Bez tego nieudany odczyt dałby pusty plik,
+          # pusty `grep` i „werdykt nie jest odrzucający" — czyli dokładnie tę cichą zgodę,
+          # którą ten krok ma likwidować.
+          if [ ! -s "$RAPORT_TRESC" ]; then
+            echo "::error title=Nie dało się przeczytać raportu::$RAPORT z gałęzi $GALAZ jest pusty albo niedostępny."
+            exit 1
+          fi
+          echo "Raport: $RAPORT (z gałęzi $GALAZ)"
+          if grep -qi 'Werdykt.*ODRZUCONY\|Verdict.*REJECTED' "$RAPORT_TRESC"; then
             if printf '%s' "$ETYKIETY" | grep -q 'impl-review-override'; then
               echo "::warning title=Werdykt ODRZUCONY, pominięty etykietą::Etykieta impl-review-override jest ustawiona."
               exit 0
