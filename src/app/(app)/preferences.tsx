@@ -89,14 +89,26 @@ export default function PreferencesScreen() {
 
   const requested = useRef(false);
   /**
-   * Strażnik `touched` — od pierwszej linii, nie po pierwszej regresji.
+   * Strażnik przed wyścigiem z S-02 — **osobny dla pól liczbowych i osobny dla listy wykluczeń**.
    *
-   * Ekran robi jedno `GET /api/preferences` przy wejściu i wypełnia pola tym, co wróci. Na wolnym
-   * łączu odpowiedź potrafi dojść PO tym, jak użytkownik zaczął wpisywać — i wtedy kasuje to, co
-   * wpisał. W S-02 ten wyścig realnie gubił dane; tutaj wchodzi od razu, bo kształt ekranu jest
-   * ten sam. Ref, nie flaga z domknięcia efektu: `touched` ma żyć tak długo, co komponent.
+   * Ekran robi jedno `GET /api/preferences` przy wejściu i wypełnia sobą to, co wróci. Na wolnym
+   * łączu odpowiedź potrafi dojść PO tym, jak użytkownik zaczął wpisywać — i wtedy skasowałaby to,
+   * co wpisał. W S-02 ten wyścig realnie gubił dane.
+   *
+   * **Dlaczego DWA refy, a nie jeden.** Jeden wspólny strażnik wyglądał na poprawny i był
+   * defektem utraty danych: wpisanie czasu przygotowania blokowało zastosowanie odpowiedzi
+   * W CAŁOŚCI, więc lista wykluczeń zostawała pusta — mimo że użytkownik jej nie dotknął.
+   * Zapis wysyłał wtedy `exclusions: []`, a `replaceExclusions` kasuje i wstawia całą listę,
+   * więc wszystkie wykluczenia znikały bez śladu, pod komunikatem „Zapisano".
+   *
+   * Strażnik ma chronić TO, CO UŻYTKOWNIK ZMIENIŁ, a nie wszystko, czego dotyczy ten sam ekran.
+   * Kto wpisał czas, nie wyraził żadnego zdania o liście wykluczeń — jego lista ma przyjść
+   * z serwera normalnie.
+   *
+   * Refy, nie flagi z domknięcia efektu: mają żyć tak długo, co komponent.
    */
-  const touched = useRef(false);
+  const touchedPreferences = useRef(false);
+  const touchedExclusions = useRef(false);
 
   // Jedno żądanie przy wejściu — o „raz" decyduje ref, nie tożsamość `authedFetch`. Stan
   // ustawiany wyłącznie w callbackach obietnicy (`react-hooks/set-state-in-effect`).
@@ -119,12 +131,12 @@ export default function PreferencesScreen() {
         setGroups(catalog.groups);
 
         const body = (await preferencesResponse.json()) as PreferencesResponse;
-        // Nie nadpisuj tego, co użytkownik zdążył wpisać albo zapisać.
-        if (!touched.current) {
-          if (body.preferences) {
-            setMaxPrepText(String(body.preferences.maxPrepMinutes));
-            setMealsPerDay(body.preferences.mealsPerDay);
-          }
+        // Nie nadpisuj tego, co użytkownik zdążył zmienić — ale osobno dla pól i osobno dla listy.
+        if (!touchedPreferences.current && body.preferences) {
+          setMaxPrepText(String(body.preferences.maxPrepMinutes));
+          setMealsPerDay(body.preferences.mealsPerDay);
+        }
+        if (!touchedExclusions.current) {
           setEntries(
             body.exclusions.map((entry) => ({
               kind: entry.kind,
@@ -173,17 +185,28 @@ export default function PreferencesScreen() {
     return validation.errors[field] ?? null;
   }
 
-  /** Każda zmiana unieważnia werdykt serwera i blokuje nadpisanie z zaległego `GET`. */
-  function markEdited() {
-    touched.current = true;
+  /** Każda zmiana unieważnia werdykt serwera i komunikat o zapisie — inaczej wiszą nad nowym stanem. */
+  function clearNotices() {
     setServerFieldErrors(null);
     setSaveNotice(null);
+  }
+
+  /** Zmiana POLA LICZBOWEGO: blokuje nadpisanie pól z zaległego `GET`, ale nie listy. */
+  function markEdited() {
+    touchedPreferences.current = true;
+    clearNotices();
+  }
+
+  /** Zmiana LISTY: blokuje nadpisanie listy z zaległego `GET`, ale nie pól. */
+  function markListEdited() {
+    touchedExclusions.current = true;
+    clearNotices();
   }
 
   const chosen = new Set(entries.map(exclusionKey));
 
   function addEntry(entry: ExclusionInput) {
-    markEdited();
+    markListEdited();
     setQuery('');
     // Duplikat nie jest błędem — po prostu nie ma czego dodawać drugi raz.
     if (chosen.has(exclusionKey(entry))) {
@@ -193,7 +216,7 @@ export default function PreferencesScreen() {
   }
 
   function removeEntry(entry: ExclusionInput) {
-    markEdited();
+    markListEdited();
     const key = exclusionKey(entry);
     setEntries((current) => current.filter((item) => exclusionKey(item) !== key));
   }
@@ -245,8 +268,37 @@ export default function PreferencesScreen() {
     return { label: `danie #${entry.dishId}`, kind: 'danie' };
   }
 
+  /**
+   * Dlaczego zapis jest zablokowany, dopóki początkowe pobranie się nie dokona — `null` znaczy
+   * „wolno zapisywać".
+   *
+   * To NIE jest kosmetyka. Lista wykluczeń zaczyna jako pusta i wypełnia ją dopiero odpowiedź
+   * `GET`, a strażnik `touched` (słusznie) blokuje to wypełnienie, gdy użytkownik zdążył już coś
+   * zmienić. Zapis w tym oknie wysyła `exclusions: []`, a `replaceExclusions` kasuje całą listę
+   * i wstawia nic — użytkownik traci wszystkie wykluczenia i widzi „Zapisano".
+   *
+   * Stany `offline` i `error` blokują tak samo i z tego samego powodu: nie wiadomo, co jest
+   * w bazie, więc nie ma czego bezpiecznie nadpisać.
+   */
+  const saveBlockedReason =
+    load.kind === 'loading'
+      ? 'Poczekaj, aż preferencje się wczytają — inaczej zapis nadpisałby listę, której jeszcze nie znamy.'
+      : load.kind === 'offline'
+        ? 'Brak połączenia — nie wiadomo, co jest zapisane, więc zapis jest wstrzymany.'
+        : load.kind === 'error'
+          ? 'Preferencje nie zostały pobrane, więc zapis jest wstrzymany. Odśwież ekran.'
+          : null;
+
   async function handleSave() {
-    touched.current = true;
+    // Strażnik PRZED czymkolwiek innym. Przycisk jest już zablokowany, więc w normalnej ścieżce
+    // tu nie wejdziemy — to druga warstwa, bo cena pomyłki to cicha utrata danych użytkownika.
+    if (saveBlockedReason) {
+      setSaveNotice({ tone: 'danger', text: saveBlockedReason });
+      return;
+    }
+
+    touchedPreferences.current = true;
+    touchedExclusions.current = true;
     setSubmitted(true);
     setServerFieldErrors(null);
     setSaveNotice(null);
@@ -486,7 +538,16 @@ export default function PreferencesScreen() {
           {PreferenceBounds.maxPrepMinutes.min}–{PreferenceBounds.maxPrepMinutes.max} minut.
         </ThemedText>
 
-        <ActionButton label="Zapisz" busy={saving} busyLabel="Zapisuję…" onPress={handleSave} />
+        {/*
+          Przycisk jest WIDOCZNIE zablokowany, dopóki nie wiadomo, co jest w bazie. Sam cichy
+          `return` w `handleSave` zamieniłby utratę danych na przycisk, który nic nie robi.
+        */}
+        <ActionButton
+          label="Zapisz"
+          busy={saving || saveBlockedReason !== null}
+          busyLabel={saving ? 'Zapisuję…' : 'Zapis wstrzymany'}
+          onPress={handleSave}
+        />
 
         {saveNotice ? (
           <ThemedText
