@@ -147,6 +147,56 @@ test.describe('Faza 2 S-03 — ekran preferencji w przeglądarce', () => {
     await expect(prepField(page)).toHaveValue('17');
   });
 
+  test('F1 zapis przed wczytaniem NIE kasuje zapisanych wykluczeń', async ({ page }) => {
+    // Ustalenie KRYTYCZNE z przeglądu fazy 2. Mechanizm utraty danych:
+    //   1. ekran wchodzi z pustą listą i robi jedno `GET /api/preferences`,
+    //   2. użytkownik wpisuje czas i klika liczbę posiłków, ZANIM odpowiedź wróci — pierwsza
+    //      zmiana ustawia strażnik `touched`,
+    //   3. odpowiedź dochodzi i SŁUSZNIE nie nadpisuje pól, więc lista zostaje pusta,
+    //   4. zapis wysyła `exclusions: []`, a `replaceExclusions` kasuje wszystko i wstawia nic.
+    // Użytkownik widzi „Zapisano" i traci całą listę bez śladu.
+    //
+    // Test sprawdza WŁASNOŚĆ (wykluczenie przeżywa), nie mechanizm naprawy — zostanie zielony
+    // niezależnie od tego, czy zapis jest blokowany przyciskiem, czy strażnikiem w `handleSave`.
+
+    // Stan wejściowy ustawia sam test: konto MA zapisane wykluczenie składnikowe.
+    await openPreferences(page);
+    if ((await page.getByRole('button', { name: `Usuń ${Ingredient}` }).count()) === 0) {
+      await searchField(page).fill('pieczar');
+      await page.getByRole('button', { name: `Wyklucz ${Ingredient}` }).click();
+      await prepField(page).fill('45');
+      await page.getByRole('radio', { name: '4', exact: true }).click();
+      await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
+      await expect(page.getByText('Zapisano')).toBeVisible();
+    }
+
+    // Wejście z wolnym łączem i szybki użytkownik.
+    const wysłaneZapisy: string[] = [];
+    await page.route('**/api/preferences', async (route) => {
+      if (route.request().method() === 'GET') {
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      }
+      if (route.request().method() === 'PUT') {
+        wysłaneZapisy.push(route.request().postData() ?? '');
+      }
+      await route.continue();
+    });
+
+    await page.goto('/preferences');
+    await prepField(page).fill('35');
+    await page.getByRole('radio', { name: '5', exact: true }).click();
+    await page.getByRole('button', { name: 'Zapisz', exact: true }).click();
+
+    // Sedno: żądanie zapisu z PUSTĄ listą nie ma prawa wyjść, dopóki nie wiadomo, co jest w bazie.
+    expect(wysłaneZapisy.filter((body) => body.includes('"exclusions":[]'))).toEqual([]);
+
+    await page.unroute('**/api/preferences');
+
+    // I własność widoczna dla użytkownika: wykluczenie dalej jest.
+    await openPreferences(page);
+    await expect(page.getByRole('button', { name: `Usuń ${Ingredient}` })).toBeVisible();
+  });
+
   test('2.7 offline przy zapisie — komunikat, sesja zachowana, wartości zostają', async ({
     page,
   }) => {
