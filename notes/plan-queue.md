@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G3, faza 4** (ekran `/plan`, zakładka i E2E przeglądarkowe).
+Kolejne zadanie do wzięcia: **G4** (pomiar CPU i pole `meta` w `all<T>()`).
 
 ---
 
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 3 z 4**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **zrobione 14.09 — cztery fazy**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -558,3 +558,43 @@ czysto. **E2E 58/58** przeciw `wrangler dev` na zbudowanym `dist/`.
 Werdykt przeglądu: przeczytany, wszystkie czternaście ustaleń ma decyzję.
 PR: #34
 Do decyzji: —
+
+### 21:33 UTC — G3 faza 4: ekran planu (ZAKRES SKRÓCONY na prośbę właściciela)
+Wynik: ok, ale **świadomie niepełny** — patrz „Czego NIE zrobiono".
+Co zrobione: `src/app/(app)/plan.tsx`, zakładka „Jadłospis" w obu plikach `app-tabs`, trójka ikon
+PNG i minimalny `tests/e2e/plan-screen.spec.ts` (3 testy). **Pełny zestaw E2E: 60/60.**
+Użytkownik widzi wreszcie plan: siedem dni z sumą kalorii, przepis po rozwinięciu dania
+(składniki z gramaturami, kroki, komplet makr), przycisk „Wygeneruj plan" / „Wygeneruj ponownie".
+
+**Właściciel poprosił o zrobienie tego na skróty i najszybciej, jak się da.** Skróciłem to, co
+skrócić było wolno, i zapisuję tu, czego NIE zrobiono — żeby status nie opisywał zamiaru
+zamiast stanu, bo to jest dług, na który ta kolejka już raz trafiła.
+
+**Czego NIE zrobiono z zaplanowanych czternastu kryteriów fazy 4:**
+- 4.4 (offline → komunikat, sesja zachowana) — kod jest, testu nie ma
+- 4.5 (profil skrajny → komunikat kaloryczny i zero dni na ekranie) — kod jest, testu nie ma
+- 4.6 („Wygeneruj ponownie" zastępuje, nie dokłada) — kod jest, testu nie ma
+- 4.8 (izolacja kont **przez ekran**) — droga z pominięciem UI jest pokryta z fazy 3
+- 4.9 (przycisk zablokowany przy nieznanym stanie, z przyczyną) — kod jest, testu nie ma
+- 4.12, 4.13 (przeczytanie planu jak jadłospisu, oględziny przy ~400 px) — ręczne, niezrobione
+- **przeglądu adwersaryjnego nie było** — w fazach 2 i 3 znalazł po trzy blokujące defekty,
+  więc jego brak jest realnym ryzykiem, nie formalnością
+
+Co jest sprawdzone: generowanie i render siedmiu dni, rozwinięcie przepisu, osiągalność zakładki
+z paska — wszystko przeciw `wrangler dev` na **zbudowanym `dist/`**, nie przez `expo start --web`.
+Bramek nie skracałem: `npm test` 136/136, `tsc`, `expo lint`, `check-conventions` (54 pliki) czysto.
+
+Dwie rzeczy z realizacji warte zapamiętania:
+- **Ikona zakładki to kopia `preferences.png`** — trójka PNG musi istnieć, bo inaczej `require()`
+  wywraca bundlowanie. Do podmiany, gdy będzie własna grafika.
+- **Zakładki na webie renderują się jako `link`, nie `button`.** Pierwszy test lokalizował je
+  przez `getByRole('button')` i był czerwony; wzorzec jest w `profile-screen.spec.ts`.
+  Przy okazji dopisana „Jadłospis" do istniejącego testu zakładek, żeby nie opisywał trzech z czterech.
+
+Co zacommitowane: `src/app/(app)/plan.tsx`, `src/components/app-tabs.tsx`,
+`src/components/app-tabs.web.tsx`, `assets/images/tabIcons/plan{,@2x,@3x}.png`,
+`tests/e2e/plan-screen.spec.ts`, `tests/e2e/profile-screen.spec.ts`, `notes/plan-queue.md`.
+Stage po ścieżkach. `package-lock.json` nietknięty.
+Werdykt przeglądu: **brak przeglądu adwersaryjnego** — świadomie pominięty na prośbę właściciela.
+PR: #35
+Do decyzji: czy uzupełnić pominięte kryteria fazy 4 (osiem pozycji) osobną zmianą.

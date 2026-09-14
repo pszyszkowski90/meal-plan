@@ -33,6 +33,14 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="plan">
+        <NativeTabs.Trigger.Label>Jadłospis</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/tabIcons/plan.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="preferences">
         <NativeTabs.Trigger.Label>Preferencje</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
