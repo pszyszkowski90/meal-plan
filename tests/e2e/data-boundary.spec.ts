@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
  */
 test.use({ storageState: { cookies: [], origins: [] } });
 
-const DataRoutes = ['/api/account', '/api/profile', '/api/preferences'] as const;
+const DataRoutes = ['/api/account', '/api/profile', '/api/preferences', '/api/plan'] as const;
 
 test.describe('Ryzyko #1 — granica danych', () => {
   for (const route of DataRoutes) {
@@ -29,6 +29,9 @@ test.describe('Ryzyko #1 — granica danych', () => {
       // Wykluczenia żywieniowe potrafią ujawnić wyznanie albo stan zdrowia — 401 nie ma prawa
       // przepuścić ani listy, ani ustawień.
       expect(body).not.toMatch(/"(exclusions|maxPrepMinutes|mealsPerDay)"/);
+      // Plan ujawnia cel kaloryczny i to, co użytkownik je przez tydzień — 401 nie ma prawa
+      // przepuścić ani dni, ani celu.
+      expect(body).not.toMatch(/"(days|targetKcal|currentTargetKcal)"/);
     });
 
     test(`${route} z podrobionym tokenem odmawia`, async ({ request }) => {
@@ -59,6 +62,14 @@ test.describe('Ryzyko #1 — granica danych', () => {
     const response = await request.put('/api/preferences', {
       data: { preferences: { maxPrepMinutes: 30, mealsPerDay: 4 }, exclusions: [] },
     });
+
+    expect(response.status()).toBe(401);
+  });
+
+  test('POST /api/plan bez tożsamości nie generuje', async ({ request }) => {
+    // `POST /api/plan` nie czyta ciała — wejścia bierze z profilu i preferencji konta. Tym
+    // bardziej nie wolno mu ruszyć bez tożsamości: nie byłoby wiadomo, czyj plan zastępuje.
+    const response = await request.post('/api/plan', { data: {} });
 
     expect(response.status()).toBe(401);
   });
