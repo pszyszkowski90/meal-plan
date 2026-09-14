@@ -254,6 +254,63 @@ describe('generatePlan — porażka nazywa właściwe ograniczenie z dowodem', (
     assert.equal(days.length, PlanDays);
   });
 
+  test('limit czasu wygrywa nad wykluczeniami, gdy odpowiada za większy ubytek', () => {
+    // Lustro testu poniżej. Bez niego warunek rozstrzygający remis był sprawdzany tylko w jedną
+    // stronę — sprawdzone zepsuciem 14.09: zdjęcie `&& withoutExclusions >= withoutLimit`
+    // nie czerwieniło ani jednego testu.
+    const pool = [
+      ...many(1, 500, ['breakfast'], { passesExclusions: false, prepMinutes: 20 }),
+      ...many(5, 500, ['breakfast'], { prepMinutes: 90 }),
+      ...many(3, 700, ['lunch']),
+      ...many(3, 800, ['dinner']),
+    ];
+    const failure = expectFailure(generatePlan(input({ pool, targetKcal: 2000, maxPrepMinutes: 30 })));
+    assert.equal(failure.reason, 'prepTime');
+    assert.ok(failure.reason === 'prepTime');
+    assert.equal(failure.withoutLimit, 5);
+  });
+
+  test('pora NIEDOSTATECZNIE obsadzona liczy się od liczby posiłków, nie od zera', () => {
+    // Przy sześciu posiłkach dzień potrzebuje TRZECH różnych przekąsek. Dwie to za mało, mimo że
+    // pora nie jest pusta. Sprawdzone zepsuciem: warunek `remaining >= 1` zamiast
+    // `remaining >= needed` przechodził cały poprzedni zestaw, bo każdy test opróżniał porę
+    // do zera i oba progi się pokrywały.
+    const pool = [
+      ...many(6, 400, ['breakfast']),
+      ...many(6, 700, ['lunch']),
+      ...many(6, 600, ['dinner']),
+      ...many(2, 300, ['snack']),
+      ...many(4, 300, ['snack'], { passesExclusions: false }),
+    ];
+    const failure = expectFailure(generatePlan(input({ pool, mealsPerDay: 6, targetKcal: 2600 })));
+    assert.equal(failure.reason, 'exclusions');
+    assert.ok(failure.reason === 'exclusions');
+    assert.equal(failure.slot, 'snack');
+    assert.equal(failure.remaining, 2, 'pora nie jest pusta, tylko za uboga na trzy pozycje');
+    assert.equal(failure.withoutExclusions, 6);
+  });
+
+  test('pora za uboga BEZ winy filtrów kończy się natychmiast, a nie przeszukiwaniem', () => {
+    // To był realny defekt złapany przez przegląd fazy 2. Gdy żaden filtr nie jest winny,
+    // poprzednia wersja spadała do przeszukiwania: 39 561 węzłów, 19 ms i werdykt
+    // `combination` — zły powód (radzi poluzować filtry, choć żaden nie odsiewa), sprzeczny
+    // ładunek (przy porze całkiem pustej `visitedNodes: 0`) i koszt powyżej limitu 10 ms CPU,
+    // czyli 500 zamiast obiecanego 422.
+    const pool = [
+      ...many(8, 400, ['breakfast']),
+      ...many(8, 700, ['lunch']),
+      ...many(8, 600, ['dinner']),
+      ...many(2, 300, ['snack']),
+    ];
+    const failure = expectFailure(generatePlan(input({ pool, mealsPerDay: 6, targetKcal: 2500 })));
+    assert.equal(failure.reason, 'calories', 'dźwignią jest liczba posiłków, nie filtry');
+    assert.ok(failure.reason === 'calories');
+    assert.equal(failure.mealsPerDay, 6);
+    // Zbiór osiągalnych sum jest PUSTY — pełnego dnia nie da się złożyć w ogóle.
+    assert.equal(failure.achievableMaxKcal, 0);
+    assert.ok(failure.achievableMaxKcal < failure.lowerKcal);
+  });
+
   test('wykluczenia wygrywają nad limitem, gdy odpowiadają za większy ubytek', () => {
     // Pora pusta z obu powodów naraz. Diagnoza ma wskazać ten filtr, którego zdjęcie przywraca
     // WIĘCEJ dań — inaczej użytkownik dostaje radę, która nic nie da.
@@ -322,6 +379,28 @@ describe('generatePlan — plan, który POWSTAŁ, nie łamie wykluczeń ani limi
 // ---------------------------------------------------------------------------------------------
 // 2.7 — zero planu częściowego
 // ---------------------------------------------------------------------------------------------
+
+describe('generatePlan — przycinanie nie gubi poprawnych gałęzi', () => {
+  test('dolne przycięcie pomija danie, ale NIE ucina reszty zakresu', () => {
+    // Śniadania {100, 900}, obiad i kolacja po 500. Cel 1900 → okno [1710, 2090].
+    // Jedyne trafienie to 900 + 500 + 500 = 1900. Danie 100 kcal nie dociągnie do dolnej
+    // granicy nawet z maksimum reszty (100 + 1000 = 1100 < 1710), więc musi zostać POMINIĘTE —
+    // ale zakres jest posortowany rosnąco, więc cięższe 900 leży ZA nim i jest poprawne.
+    // Sprawdzone zepsuciem 14.09: zamiana `continue` na `break` w dolnym przycięciu daje
+    // `combination` na puli, która ma rozwiązanie — i nie czerwieniła żadnego innego testu.
+    const pool = [
+      dish(100, ['breakfast']),
+      dish(900, ['breakfast']),
+      ...many(9, 500, ['lunch']),
+      ...many(9, 500, ['dinner']),
+    ];
+    const days = expectOk(generatePlan(input({ pool, targetKcal: 1900 })));
+    assert.equal(days.length, PlanDays);
+    for (const day of days) {
+      assert.equal(sumDay(day, pool), 1900, `dzień ${day.dayIndex}`);
+    }
+  });
+});
 
 describe('generatePlan — nigdy nie oddaje planu częściowego', () => {
   test('porażka nie niesie pola days', () => {
@@ -424,7 +503,66 @@ describe('generatePlan — powtórzenia', () => {
     }
   });
 
-  test('relaksacja działa: rozmaitość ustępuje guardrailowi, a nie odwrotnie', () => {
+  test('relaksacja działa: trafienie wymagające przekroczenia maxUses daje plan', () => {
+    // Pula śniadań {400, 50} → `baseMaxUses = ceil(7/2) = 4`. Ale przy celu 1700 i oknie
+    // [1530, 1870] danie 50 kcal NIE MIEŚCI SIĘ w żadnym złożeniu, więc plan wymaga
+    // SIEDMIU użyć dania 400 kcal — o trzy ponad limit bazowy. Bez relaksacji generator
+    // odpowiedziałby `combination`, czyli „nie da się" na puli, na której się da.
+    //
+    // Poprzednia wersja tego testu miała jedno śniadanie, przy którym `baseMaxUses = 7`
+    // mieścił się bez relaksacji — przechodziła więc także z `maxRelaxation = 0`. Sprawdzone
+    // zepsuciem 14.09: ten test czerwieni się, tamten nie.
+    const pool = [
+      dish(400, ['breakfast']),
+      dish(50, ['breakfast']),
+      ...many(12, 700, ['lunch']),
+      ...many(12, 600, ['dinner']),
+    ];
+    const days = expectOk(generatePlan(input({ pool, mealsPerDay: 3, targetKcal: 1700 })));
+    assert.equal(days.length, PlanDays);
+
+    const uses = new Map<number, number>();
+    for (const day of days) {
+      for (const meal of day.meals.filter((entry) => entry.mealSlot === 'breakfast')) {
+        uses.set(meal.dishId, (uses.get(meal.dishId) ?? 0) + 1);
+      }
+    }
+    const maxUsed = Math.max(...uses.values());
+    assert.equal(maxUsed, 7, 'jedno śniadanie musi obsłużyć wszystkie siedem dni');
+    assert.ok(maxUsed > 4, 'użycie MUSI przekroczyć limit bazowy ceil(7/2) = 4');
+  });
+
+  test('limit użyć liczy się OSOBNO dla każdej pory dania dwuporowego', () => {
+    // 39 z 58 dań realnej puli należy do więcej niż jednej pory. Gdyby limit był kluczowany
+    // samym daniem, danie z ciasnej pory przenosiłoby swój hojny limit do pory obfitej.
+    //
+    // UCZCIWA ADNOTACJA: tego akurat zepsucia ten test NIE ŁAPIE i sprawdziłem to zepsuciem
+    // 14.09 — `usageKey` zwracające samo `id` daje 136/136 na zielono. Powód jest w projekcie,
+    // nie w teście: limit jest MIĘKKI (relaksowany przy wyczerpaniu przestrzeni), więc tam,
+    // gdzie podaż jest ciasna, relaksacja i tak podnosi go do tej samej wartości; a tam, gdzie
+    // podaż jest obfita, limit nie wiąże, bo punkt startowy z ziarna rozprasza wybory po całej
+    // puli. Różnica obu kluczy jest więc statystyczna, nie deterministyczna, i test, który by ją
+    // „łapał", musiałby zaglądać do wnętrza mapy zamiast patrzeć na plan.
+    // Ten test pilnuje zatem WŁASNOŚCI, która ma zachodzić — nie jest dowodem, że zachodzi
+    // z konieczności.
+    const shared = dish(700, ['lunch', 'snack']);
+    const pool = [
+      shared,
+      ...many(11, 700, ['lunch']),
+      ...many(12, 400, ['breakfast']),
+      ...many(12, 600, ['dinner']),
+      ...many(12, 300, ['snack']),
+    ];
+    const days = expectOk(generatePlan(input({ pool, mealsPerDay: 4, targetKcal: 2000 })));
+    const lunchUses = days
+      .flatMap((day) => day.meals)
+      .filter((meal) => meal.mealSlot === 'lunch' && meal.dishId === shared.id).length;
+    // Pula obiadów to 12 na 7 wyborów → limit obiadowy wynosi 1, niezależnie od tego,
+    // jak hojny jest limit tego samego dania w porze przekąsek.
+    assert.ok(lunchUses <= 1, `danie dwuporowe użyte ${lunchUses} razy jako obiad, limit to 1`);
+  });
+
+  test('relaksacja nie jest potrzebna, gdy limit bazowy wystarcza', () => {
     // Jedno śniadanie w puli, siedem dni. Bazowy limit to ceil(7/1) = 7, więc mieści się bez
     // relaksacji — ale test pilnuje sedna: plan POWSTAJE, zamiast paść na limicie powtórzeń.
     const pool = [

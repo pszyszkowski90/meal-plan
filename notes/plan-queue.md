@@ -382,6 +382,60 @@ Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`.
 Stage po ścieżkach. `package-lock.json` nietknięty (sprawdzone `git diff --exit-code`).
 Bramki: `npm test` 130/130, `tsc --noEmit` czysto, `expo lint` czysto,
 `check-conventions` czysto (51 plików), `check-lock` czysto.
-Werdykt przeglądu: PR wspólny z fazą 3 albo osobny — patrz wpis o PR.
+Werdykt przeglądu: patrz wpis o przeglądzie niżej.
+PR: #33
+Do decyzji: —
+
+### 18:10 UTC — G3 faza 2, przegląd implementacji i poprawki
+Wynik: ok
+Co zrobione: **zadanie przeglądu w CI padło dwa razy** na PR #33 (2 min 31 s i 4 min 21 s),
+za każdym razem w tym samym miejscu — po wykryciu planu, na etapie zbierania dowodów, bez
+zapisania raportu. Diff ma 1207 linii nowego kodu plus plan powyżej tysiąca. Bramka czyta PLIK,
+nie komentarz, więc bez raportu przepuściłaby PR **bez żadnego przeglądu**.
+Zamiast obejść bramkę etykietą, przegląd wykonał agent adwersaryjny **lokalnie** — z prawem do
+`npm test`, `tsc`, `check-conventions` i mutowania kopii modułu, czyli z większymi możliwościami
+weryfikacji niż ma zadanie CI. Raport z decyzjami: `reviews/impl-review.md`.
+
+Werdykt: **WYMAGA UWAGI** → po poprawkach **APPROVED**. Jedenaście ustaleń, dziewięć przyjętych
+i naprawionych, dwa odłożone świadomie z powodem.
+
+**F1 było realnym defektem i najdroższą rzeczą tej fazy.** Pora uboższa niż potrzeby dnia
+(dwie przekąski przy sześciu posiłkach, gdzie dzień potrzebuje trzech różnych) **omijała krok 1
+diagnozy**, bo żaden filtr nie był winny, a krok 2 jej nie łapał — `sumTop` po cichu sumowało
+tyle dań, ile było, licząc brakujące posiłki jako 0 kcal. Sprawa spadała do przeszukiwania:
+**39 561 węzłów, 19 ms** i werdykt `combination`. Trzy rzeczy złe naraz: zły powód (rada
+„poluzuj filtry", choć żaden nie odsiewa), sprzeczny ładunek (przy porze całkiem pustej
+`visitedNodes: 0`, czyli „przestrzeń wyczerpana" bez ani jednego węzła — kryterium 2.12 asertuje
+`visitedNodes > 0`, więc kod potrafił wyemitować werdykt, który jego własne kryterium odrzuca)
+i **koszt powyżej limitu 10 ms CPU**, czyli 500 zamiast obiecanego 422. Po poprawce ta sama
+sonda: **1 ms** i `reason: 'calories'`.
+
+**F2**: `DefaultNodeBudget = 200 000` kupowało **~12 ms**, czyli więcej niż 10 ms, których miało
+bronić. Obniżone do 100 000 (~5,7 ms w tym samym pomiarze). Właściwa kalibracja na `workerd`
+nadal należy do G4 — to było poprawienie wartości startowej na stronę bezpieczną, nie pomiar.
+
+**Cztery ustalenia to luki w POKRYCIU, nie defekty** — i każda była mutacją, którą zestaw
+przepuszczał: relaksacja (kryterium 2.10 było odhaczone, a jego test jej nie uruchamiał), kierunek
+dolnego przycięcia (`continue` → `break` dawało fałszywe „nie da się" i zostawiało 30/30 zielone),
+rozstrzygacz remisu w diagnozie i próg `needed`. Wszystkie cztery mają teraz testy, a każdy
+sprawdzony **uruchomieniem swojej mutacji**.
+
+**F5** to realna poprawka: limit użyć był kluczowany samym daniem, więc danie z pory obfitej
+przenosiło tamten hojny limit do pory ciasnej — **39 z 58 dań realnej puli ma więcej niż jedną
+porę**. Klucz to teraz para (danie, pora). Pierwsza próba zmieniła tylko odczyt, nie zasiew
+i dekrementację — i **zestaw to złapał**, dwa testy powtórzeń zaczerwieniły się natychmiast.
+Uczciwa adnotacja zapisana w komentarzu testu: samej mutacji klucza zestaw **nie łapie**, bo
+limit jest miękki i różnica obu kluczy jest statystyczna, nie deterministyczna.
+
+Przy okazji: `expo lint` wywrócił się pięcioma błędami `react-hooks/rules-of-hooks`, bo funkcja
+pomocnicza nazywała się `useKey` — preset czyta każdą nazwę zaczynającą się od `use` jako hook
+Reacta, niezależnie od tego, że plik nie ma z Reactem nic wspólnego. Przemianowana na `usageKey`,
+powód zapisany w kodzie.
+
+Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`,
+`context/changes/first-weekly-plan/reviews/impl-review.md`,
+`context/changes/first-weekly-plan/plan.md`, `notes/plan-queue.md`. Stage po ścieżkach.
+Bramki: `npm test` **136/136** (było 130), `tsc --noEmit`, `expo lint`, `check-conventions` czysto.
+Werdykt przeglądu: przeczytany, wszystkie jedenaście ustaleń ma decyzję.
 PR: #33
 Do decyzji: —

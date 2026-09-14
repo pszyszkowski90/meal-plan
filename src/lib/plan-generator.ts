@@ -36,11 +36,17 @@ export const PlanDays = 7;
 /**
  * Sufit odwiedzonych węzłów przeszukiwania. Istnieje, bo limit 10 ms CPU w Workerze ZABIJA
  * wywołanie, a nie spowalnia je — przekroczenie to 500 bez żadnej wskazówki dla użytkownika.
- * Wartość jest ZACHOWAWCZA i świadomie niezmierzona: kalibruje ją G4 (`notes/plan-queue.md`),
- * bo przed istnieniem generatora nie ma czego mierzyć, a `plan-queue.md` §3 zakazuje wprost
- * optymalizowania przed pomiarem.
+ *
+ * Wartość jest ZGRUBNIE ZMIERZONA, nie zgadnięta. Pierwsza wersja miała 200 000 i przegląd
+ * pokazał, że to jest po ZŁEJ stronie limitu: przy ~0,06 µs na węzeł pełny budżet kosztuje
+ * ~12 ms rozgrzanego V8 na maszynie deweloperskiej, czyli więcej niż 10 ms, których ma bronić —
+ * a zimny isolate `workerd` jest wolniejszy. 100 000 węzłów to ~5,7 ms w tym samym pomiarze.
+ * Ścieżka udana jest o rzędy wielkości tańsza (0,05–0,14 ms na realnej puli 58 dań), więc ten
+ * sufit dotyka wyłącznie przypadków patologicznych.
+ *
+ * Właściwa kalibracja — na `workerd`, nie na Node — należy do G4 (`notes/plan-queue.md`).
  */
-export const DefaultNodeBudget = 200_000;
+export const DefaultNodeBudget = 100_000;
 
 /** Dopuszczalne liczby posiłków — enumeracja z `CHECK` na `user_preferences` w migracji `0005`. */
 export type MealsPerDay = 3 | 4 | 5 | 6;
@@ -261,6 +267,12 @@ function bySlot(dishes: readonly GeneratorDish[]): SlotPools {
   return grouped;
 }
 
+/** Klucz limitu użyć: para (danie, pora). Nazwa celowo NIE zaczyna się od `use` — `eslint-config-expo`
+ * czyta taką jako hook Reacta i wywraca lint regułą `react-hooks/rules-of-hooks`. */
+function usageKey(dishId: number, slot: MealSlot): string {
+  return `${dishId}:${slot}`;
+}
+
 type DayOutcome =
   | { kind: 'found'; meals: PlanMeal[]; totalKcal: number }
   | { kind: 'exhausted' }
@@ -283,7 +295,7 @@ function findDay(
   pools: SlotPools,
   lower: number,
   upper: number,
-  usesLeft: Map<number, number>,
+  usesLeft: Map<string, number>,
   offsets: readonly number[],
   budget: { visited: number; limit: number },
 ): DayOutcome {
@@ -301,6 +313,7 @@ function findDay(
   const chosen: PlanMeal[] = [];
   const usedToday = new Set<number>();
   let outOfBudget = false;
+  let foundSum = 0;
 
   const walk = (position: number, sum: number): boolean => {
     if (position === slots.length) {
@@ -310,14 +323,18 @@ function findDay(
       // wpuszcza wyłącznie sumy z okna. Zdjęcie przycinania też nie czerwieni niczego, bo łapie
       // je ta linia. Guardrail ma więc DWIE niezależne bramki i żadna z nich nie jest w stanie
       // przepuścić dnia poza oknem w pojedynkę — dlatego obie zostają.
-      return sum >= lower && sum <= upper;
+      const fits = sum >= lower && sum <= upper;
+      if (fits) {
+        foundSum = sum;
+      }
+      return fits;
     }
     const slot = slots[position];
     const list = pools[slot];
     if (list.length === 0) {
       return false;
     }
-    const start = list.length > 0 ? offsets[position] % list.length : 0;
+    const start = offsets[position] % list.length;
     // Dwa zakresy, każdy rosnący po kaloriach — dlatego `break` wewnątrz zakresu jest poprawny.
     const ranges: readonly (readonly [number, number])[] = [
       [start, list.length],
@@ -348,8 +365,13 @@ function findDay(
         if (usedToday.has(dish.id)) {
           continue;
         }
-        // Preferencja rozmaitości: limit użyć w tygodniu. Relaksowana przez `generatePlan`.
-        const left = usesLeft.get(dish.id);
+        // Preferencja rozmaitości: limit użyć w tygodniu, liczony OSOBNO dla każdej pory.
+        // Klucz musi być parą (danie, pora), a nie samym daniem: 39 z 58 dań realnej puli należy
+        // do więcej niż jednej pory, a limit jest pochodną rozmiaru puli TEJ pory. Wspólny klucz
+        // pozwalał daniu przenieść hojny limit z pory obfitej do pory ciasnej — zmierzone:
+        // danie z puli przekąsek liczącej 1 pozycję lądowało 7 razy na 7 dni jako obiad, w puli
+        // dwunastu obiadów, która żadnego powtórzenia nie wymuszała.
+        const left = usesLeft.get(usageKey(dish.id, slot));
         if (left !== undefined && left <= 0) {
           continue;
         }
@@ -376,12 +398,11 @@ function findDay(
   if (!found) {
     return { kind: 'exhausted' };
   }
-  let total = 0;
-  for (const meal of chosen) {
-    const dish = pools[meal.mealSlot].find((entry) => entry.id === meal.dishId);
-    total += dish !== undefined ? dish.kcal : 0;
-  }
-  return { kind: 'found', meals: chosen.slice(), totalKcal: total };
+  // Suma jest NIESIONA z przeszukiwania, nie liczona ponownie. Wersja szukająca dań po `id`
+  // miała awaryjne `: 0` przy nietrafieniu — czyli w module, którego całym zadaniem jest nie
+  // kłamać o kaloriach, cicho zaniżała dzień. Tu wartość pochodzi z tej samej sumy, na której
+  // sprawdzono okno, więc rozjazd jest niemożliwy z konstrukcji.
+  return { kind: 'found', meals: chosen.slice(), totalKcal: foundSum };
 }
 
 /**
@@ -405,23 +426,36 @@ export function generatePlan(input: GeneratorInput): GeneratorResult {
 
   const allowed = pool.filter((dish) => dish.passesExclusions && dish.prepMinutes <= maxPrepMinutes);
   const pools = bySlot(allowed);
-  // Zbiory przeciwfaktyczne — liczone z tej samej puli, bez drugiego zapytania do bazy.
-  const poolsWithoutExclusions = bySlot(pool.filter((dish) => dish.prepMinutes <= maxPrepMinutes));
-  const poolsWithoutLimit = bySlot(pool.filter((dish) => dish.passesExclusions));
 
   // KROK 1 diagnozy: pora, której nie da się obsadzić. Dzień potrzebuje tylu RÓŻNYCH dań,
   // ile razy pora w nim występuje — niezmiennik zakazuje powtórzenia w jednym dniu.
+  //
+  // Ten krok KOŃCZY działanie za każdym razem, gdy pora jest za uboga. Wcześniejsza wersja
+  // przepuszczała dalej przypadek „za mało dań, ale żaden filtr nie jest winny" i to był realny
+  // defekt, nie teoretyczny: zmierzone na puli z dwiema przekąskami przy sześciu posiłkach —
+  // krok 2 przepuszczał (bo `sumTop` po cichu sumował tyle dań, ile było, licząc brakujące
+  // posiłki jako 0 kcal), przeszukiwanie odwiedzało 39 561 węzłów przez 19 ms i kończyło
+  // werdyktem `combination`. Trzy rzeczy naraz były złe: zły powód (radzi poluzować filtry,
+  // choć żaden nie jest winny), sprzeczny ładunek (przy porze CAŁKIEM pustej wychodziło
+  // `visitedNodes: 0`, czyli „przeszukiwanie wyczerpane" bez ani jednego węzła) i koszt powyżej
+  // 10 ms, czyli 500 zamiast obiecanego 422.
   for (const slot of distinctSlots) {
     const needed = slots.filter((entry) => entry === slot).length;
     const remaining = pools[slot].length;
     if (remaining >= needed) {
       continue;
     }
-    const withoutExclusions = poolsWithoutExclusions[slot].length;
-    const withoutLimit = poolsWithoutLimit[slot].length;
-    // Winowajcą jest ten filtr, którego zdjęcie realnie przywraca dania. Gdy żaden nie pomaga,
-    // pula sama nie ma czym obsadzić tej pory — wtedy spadamy do kroku 2, który zgłosi
-    // niemożliwość kaloryczną z osiągalnym maksimum liczonym po pustej porze.
+    // Zbiory przeciwfaktyczne liczone DOPIERO TUTAJ, w gałęzi porażki. Na ścieżce udanej nikt
+    // ich nie czyta, a każdy z nich to pełne przefiltrowanie, pogrupowanie i posortowanie puli.
+    const withoutExclusions = pool.filter(
+      (dish) => dish.prepMinutes <= maxPrepMinutes && dish.mealSlots.includes(slot),
+    ).length;
+    const withoutLimit = pool.filter(
+      (dish) => dish.passesExclusions && dish.mealSlots.includes(slot),
+    ).length;
+
+    // Winowajcą jest ten filtr, którego zdjęcie przywraca WIĘCEJ dań. Remis idzie na wykluczenia,
+    // bo są pod pełną kontrolą użytkownika, a limit czasu bywa podyktowany jego dniem.
     if (withoutExclusions > remaining && withoutExclusions >= withoutLimit) {
       return { ok: false, failure: { reason: 'exclusions', slot, remaining, withoutExclusions } };
     }
@@ -437,6 +471,23 @@ export function generatePlan(input: GeneratorInput): GeneratorResult {
         },
       };
     }
+    // Żaden filtr nie jest winny — pula sama nie ma czym obsadzić tej pory przy tej liczbie
+    // posiłków. Dźwignią jest liczba posiłków, więc powodem jest `calories`, a osiągalny zbiór
+    // jest PUSTY: skoro nie da się złożyć pełnego dnia, nie istnieje żadna osiągalna suma.
+    // Zero jest tu prawdą, a nie zaokrągleniem — i zawsze leży poniżej dolnej granicy, bo
+    // `ProfileBounds.targetKcal.min` to 1000 kcal.
+    return {
+      ok: false,
+      failure: {
+        reason: 'calories',
+        targetKcal,
+        lowerKcal: lower,
+        upperKcal: upper,
+        achievableMinKcal: 0,
+        achievableMaxKcal: 0,
+        mealsPerDay,
+      },
+    };
   }
 
   // KROK 2 diagnozy: dowiedziona niemożliwość kaloryczna, w czasie stałym, PRZED pętlą.
@@ -474,14 +525,13 @@ export function generatePlan(input: GeneratorInput): GeneratorResult {
   const maxRelaxation = PlanDays;
 
   for (let extra = 0; extra <= maxRelaxation; extra += 1) {
-    const usesLeft = new Map<number, number>();
+    // Klucz to PARA (danie, pora) — patrz `useKey`. Danie należące do dwóch pór dostaje w każdej
+    // z nich własny limit, pochodny od rozmiaru TAMTEJ puli.
+    const usesLeft = new Map<string, number>();
     for (const slot of distinctSlots) {
       const allowance = baseMaxUses(mealsPerDay, slot, pools[slot].length) + extra;
       for (const dish of pools[slot]) {
-        const current = usesLeft.get(dish.id);
-        // Danie bywa w dwóch porach — obowiązuje łagodniejszy z limitów, żeby pora o mniejszej
-        // puli nie zaciskała dania, które gdzie indziej jest w nadmiarze.
-        usesLeft.set(dish.id, current === undefined ? allowance : Math.max(current, allowance));
+        usesLeft.set(usageKey(dish.id, slot), allowance);
       }
     }
 
@@ -501,8 +551,9 @@ export function generatePlan(input: GeneratorInput): GeneratorResult {
         break;
       }
       for (const meal of outcome.meals) {
-        const left = usesLeft.get(meal.dishId);
-        usesLeft.set(meal.dishId, left === undefined ? 0 : left - 1);
+        const key = usageKey(meal.dishId, meal.mealSlot);
+        const left = usesLeft.get(key);
+        usesLeft.set(key, left === undefined ? 0 : left - 1);
       }
       days.push({ dayIndex, meals: outcome.meals, totalKcal: outcome.totalKcal });
     }
