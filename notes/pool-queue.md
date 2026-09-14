@@ -12,7 +12,9 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/pool-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj P6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **P5**. P1-P4 są zrobione (patrz Dziennik).
+Kolejne zadanie do wzięcia: **P6** — ale **nie w tej pętli**. P1–P5 są zrobione (patrz Dziennik),
+a P6 (generator S-04) był z niej jawnie wyłączony. Pętla zatrzymana 14.09.2026 po P5: w dozwolonym
+zakresie nie zostało nic do zrobienia.
 
 ---
 
@@ -53,6 +55,16 @@ migawka z rana, nie przepisuj jej:
 | S-04 | **odblokowane** — jest z czego wybierać i czym liczyć kalorii |
 | Raport wykonalności | `seed/FEASIBILITY.md`: 1600-2400 kcal OK, **2800 na granicy, 3200 nieosiągalne** |
 | Wejście do P5 | nie sama liczba dań, ale **kompozycja kaloryczna** — warunki w `seed/FEASIBILITY.md` |
+
+**Po P5 (14.09, po scaleniu #27) — stan końcowy tej pętli:**
+
+| Co | Stan |
+|---|---|
+| D1 produkcyjna | **58 dań**, 51 składników (wszystkie z `usda_fdc_id`), zero niekompletnych |
+| Plan F-01 | **zero oczekujących pozycji** w obu fazach; zmiana gotowa do archiwizacji |
+| Wykonalność | wszystkie pięć celów osiągalne, także po filtrach — `seed/FEASIBILITY.md` |
+| Wąskie gardło | obiady i kolacje **w limicie 30 minut** (29 → 12 i 33 → 16) |
+| Zostaje do zrobienia | P6 (S-04) oraz dwie pozycje opisane pod wpisem P5 w Dzienniku |
 
 ---
 
@@ -176,7 +188,7 @@ wyszedł z pętli, więc **sito jest jedyną obroną i musi być ostrzejsze niż
 4. `reviewedBy` zapisuje prawdę: `agent (upoważnienie właściciela 14.09.2026)`. Nigdy cudze
    nazwisko.
 
-### P5 — F-01 faza 4: skalowanie puli · duże · **następne do wzięcia**
+### ~~P5 — F-01 faza 4: skalowanie puli~~ · ZROBIONE 14.09 (#27)
 
 Reszta puli do minimów (≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji, ≥ 12 przekąsek), seed
 `--remote`, `seed/FEASIBILITY.md`, opis puli i skryptów w `CLAUDE.md`.
@@ -187,7 +199,7 @@ Tu wracają dwie pozycje odłożone świadomie:
 - **stronicowanie katalogu składników** i debounce wyszukiwarki — ustalenie F6 przeglądu S-03
   fazy 2, odłożone przy 35 składnikach, wraca gdy pula urośnie.
 
-### P6 — S-04: generator planu · NIE ZACZYNAJ przed P4
+### P6 — S-04: generator planu · **odblokowane, ale poza tą pętlą**
 
 Blokuje go **brak puli dań** (P4), a nie decyzje. Treść komunikatu „planu nie da się ułożyć"
 rozstrzyga agent (§4); Workers Paid wraca dopiero po pomiarze CPU z P5 i tylko z liczbą w ręku.
