@@ -233,7 +233,13 @@ CREATE TABLE plan_item (
   dish_id INTEGER NOT NULL REFERENCES dish(id),
   PRIMARY KEY (user_id, day_index, slot_index)
 );
+
+CREATE INDEX idx_plan_item_dish ON plan_item(dish_id);
 ```
+
+Indeks na `dish_id` istnieje, bo odczyt planu z przepisami (faza 3, `getPlanWithRecipes`) złącza
+`plan_item` z `dish` po tej kolumnie, a klucz główny `(user_id, day_index, slot_index)` tego
+złączenia nie obsłuży. Ten sam powód i ten sam precedens co `migrations/0004_dish_ingredient_index.sql`.
 
 Cztery decyzje schematu — do zapisania w nagłówku pliku, jak w `0003` i `0005`:
 
