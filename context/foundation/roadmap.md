@@ -323,7 +323,7 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
 | F-01          | `dish-source-and-seed-pool`  | Wybór źródła przepisów i zseedowanie puli dań              | no                    | Czeka na Otwarte pytania 1 i 2 (decyzja użytkownika)      |
 | S-01          | `account-and-login`          | Konto e-mail + hasło i granica danych użytkownika          | yes                   | Uruchom `/10x-plan account-and-login`                      |
 | S-02          | `profile-and-calorie-target` | Profil użytkownika i wyliczone zapotrzebowanie             | no                    | Po ukończeniu S-01                                         |
-| S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | —                     | **Zrobione** 14.09.2026; do zarchiwizowania                |
+| S-03          | `dietary-preferences`        | Preferencje: wykluczenia, czas gotowania, liczba posiłków  | —                     | **Zrobione** 14.09.2026; zmiana zarchiwizowana             |
 | S-04          | `first-weekly-plan`          | Generator tygodniowego jadłospisu z widokiem przepisu      | no                    | Po F-01, S-02 i S-03                                       |
 | S-05          | `swap-and-reject-dish`       | Wymiana dania i trwałe odrzucenie                          | no                    | Po S-04                                                    |
 | S-06          | `step-by-step-cooking`       | Tryb gotowania krok po kroku                               | no                    | Po F-01 i S-04; wykonalność zależy od Otwartego pytania 2  |
@@ -384,3 +384,6 @@ przez użytkownika). Fundamenty poniżej zakładają obecność tych elementów 
   później edytować, i widzi wynikające z nich dzienne zapotrzebowanie kaloryczne wraz
   z wyjaśnieniem, skąd bierze się ta liczba** — Zarchiwizowane 2026-09-13 →
   `context/archive/2026-09-12-profile-and-calorie-target/`. Lekcja: —.
+- **S-03: użytkownik wskazuje potrawy i składniki, których nie chce jeść, maksymalny czas
+  przygotowania posiłku oraz liczbę posiłków dziennie — i może to później zmienić** —
+  Zarchiwizowane 2026-09-14 → `context/archive/2026-09-13-dietary-preferences/`. Lekcja: —.
