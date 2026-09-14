@@ -106,6 +106,14 @@ rundach tej zmiany.
     `plan.md` §4.1/4.7 i bezpośrednie przeliczenie plików w tym przeglądzie.
   - Blind spot: Nie sprawdzałem każdego wystąpienia „56" w repo poza wymienionymi plikami — jeśli
     jest ich więcej (np. w innych notatkach), ten fix ich nie obejmuje.
-- **Decision**: PENDING
+- **Decision**: NAPRAWIONE 14.09.2026 — trafne i precyzyjne ustalenie. Poprawione **cztery**
+  miejsca, nie dwa wskazane: `seed/REVIEW.md:9` („58 dań"), notatka 4.6 w `plan.md` (29 → 12
+  i 33 → 16), `change.md` („20 → 58 dań", wpis dopisany przez poprzednią rundę przeglądu)
+  oraz opis PR-a. Ostatnie dwa znalazłem dopiero przeczesaniem `grep`-em po „56 dań", „27 obiadów"
+  i „31 kolacji" — bez tego poprawiłbym dokładnie to, co wskazano, i zostawił resztę.
+  Mechanizm był jeden: liczby przeliczane przez skrypt (`FEASIBILITY.md`, `plan.md` §4.1/4.7,
+  `CLAUDE.md`) zaktualizowały się razem z pulą, a te wpisane ręcznie w prozie — nie. Ustalenie
+  słusznie zwraca uwagę, że akurat `seed/REVIEW.md` powstał po to, by być wiarygodny, więc
+  nieaktualna liczba w jego pierwszym zdaniu kosztuje więcej niż gdzie indziej.
 
 <!-- End of report -->

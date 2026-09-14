@@ -6,7 +6,7 @@ nikt nie odczytał go jako gwarancji szerszej, niż jest.
 
 ## Kto przeglądał
 
-Wszystkie 56 dań: `agent (upoważnienie właściciela 14.09.2026)`.
+Wszystkie 58 dań: `agent (upoważnienie właściciela 14.09.2026)`.
 
 Decyzja D14 zakładała pierwotnie, że gramatury przegląda **człowiek**. Właściciel przekazał ten
 przegląd agentowi 14.09.2026, po przedstawieniu kosztu — świadome rozluźnienie, nie skrót agenta.

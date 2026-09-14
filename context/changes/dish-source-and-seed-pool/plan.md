@@ -562,7 +562,7 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 - [x] 4.6 Raport wykonalności oceniony **przez agenta** (upoważnienie z `notes/pool-queue.md` §4).
       Werdykt: pula się broni — każdy z pięciu celów ma trafienia także po odfiltrowaniu limitu
       30 minut i czterech wykluczeń. Wąskie gardło, które **nie zniknęło**: obiady i kolacje
-      w limicie 30 minut (27 → 10 i 31 → 14). To pierwsza rzecz do dołożenia przy dalszym wzroście
+      w limicie 30 minut (29 → 12 i 33 → 16). To pierwsza rzecz do dołożenia przy dalszym wzroście
 - [x] 4.7 Pula policzona na produkcji: **58 dań, 51 składników** (wszystkie z `usda_fdc_id`),
       255 powiązań składnikowych, 227 kroków, 93 przypisania do pór, zero niekompletnych,
       polskie znaki nietknięte

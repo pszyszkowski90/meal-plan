@@ -20,7 +20,7 @@ archived_at: null
   już poprawne liczby. Zero wpływu na dane czy runtime. Ta runda miała dostęp do
   `mcp__github_ci__get_ci_status` i potwierdziła przez niego zieloną bramkę jakości dla tego
   commita, zamiast przybliżać ją statycznie od zera.
-- **Faza 4 (skalowanie puli, 20 → 56 dań) przejrzana (CI) 14.09.2026** (PR #27) —
+- **Faza 4 (skalowanie puli, 20 → 58 dań) przejrzana (CI) 14.09.2026** (PR #27) —
   [reviews/impl-review.md](reviews/impl-review.md). Werdykt WYMAGA UWAGI: 0 krytycznych,
   1 ostrzeżenie, 2 obserwacje. Ustalenie: `seed/REVIEW.md` nigdy nie powstał, choć plan wymienia
   go wprost w Fazie 3 i 4 — substancja (narracja przeglądu gramatur) jest w praktyce pokryta
