@@ -511,20 +511,37 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 - [x] 3.0c Dwa przebiegi importu składników dają ten sam stan bazy
 - [x] 3.0d Zmiana nazwy składnika nie tworzy drugiego wiersza i nie osierocą wykluczeń —
       zero osieroconych, 20 przypisań do grup zachowanych po trzech zmianach nazw
-- [ ] 3.1 Walidator odrzuca zepsute danie z pełną listą błędów i nic nie wgrywa
-- [ ] 3.2 Dwa przebiegi seeda dają ten sam stan bazy
-- [ ] 3.3 Usunięcie składnika z JSON-a usuwa go też z `dish_ingredient` po przeseedowaniu
-- [ ] 3.4 Seed `--remote` odmawia dla dania bez `reviewedBy`
-- [ ] 3.5 Po seedzie `--local` 20 dań, każde z ≥ 1 składnikiem, krokiem i porą posiłku
-- [ ] 3.6 Polskie znaki w bazie nieuszkodzone
-- [ ] 3.7 `npm test`, `npx tsc --noEmit`, `npx expo lint` czyste
-- [ ] 3.8 `git diff --exit-code package-lock.json` — zero nowych zależności
+- [x] 3.1 Walidator odrzuca zepsute danie z pełną listą błędów i nic nie wgrywa — sprawdzone
+      celowo zepsutym plikiem: pięć błędów naraz (nieznany składnik, 0 g, zero kroków, zero pór,
+      czas 200 min) i **żaden SQL nie powstał**, mimo że pozostałe 20 dań było poprawnych
+- [x] 3.2 Dwa przebiegi seeda dają ten sam stan bazy — porównane zrzuty nazw, gramatur, pór
+      i kroków, identyczne co do znaku
+- [x] 3.3 Usunięcie składnika z JSON-a usuwa go też z `dish_ingredient` po przeseedowaniu —
+      brokuł zdjęty z dania „kurczak z ryżem i brokułem”, po ponownym seedzie zostają cztery
+      składniki zamiast pięciu, bez osieroconego wiersza
+- [x] 3.4 Seed `--remote` odmawia dla dania bez `reviewedBy` — sprawdzone usunięciem pola
+      z jednego dania: `--remote` przerywa i nie tworzy SQL-a, a `--local` przechodzi (praca
+      w toku wolno, produkcja nie)
+- [x] 3.5 Po seedzie 20 dań, każde z ≥ 1 składnikiem, krokiem i porą posiłku — lokalnie
+      i na produkcji: 20 dań, 90 składników, 82 kroki, 33 przypisania do pór, zero niekompletnych
+- [x] 3.6 Polskie znaki w bazie nieuszkodzone — nazwy i kroki sprawdzone w obu bazach
+- [x] 3.7 `npm test` 100/100, `npx tsc --noEmit`, `npx expo lint`, `check-conventions` czyste
+- [x] 3.8 `git diff --exit-code package-lock.json` — zero nowych zależności
 
 #### Manual
 
-- [ ] 3.9 Gramatury 20 dań przejrzane (od największej rozbieżności `modelKcalHint`), `reviewedBy` wpisane
-- [ ] 3.10 Trzy dania przeczytane jako przepis — da się z nich ugotować
-- [ ] 3.11 DECYZJA SKALOWANIA podjęta przez właściciela na podstawie raportu pilotowego
+- [x] 3.9 Gramatury 20 dań przejrzane, `reviewedBy` wpisane — przegląd wykonał **agent**
+      (upoważnienie właściciela 14.09.2026), a szeregowanie po rozjeździe `modelKcalHint` działa:
+      największy rozjazd to 10% (jogurt z jabłkiem), przy progu odrzucenia 20%. Żadne danie
+      nie zostało odrzucone i żadnej gramatury nie naginano pod sito
+- [x] 3.10 Trzy dania przeczytane jako przepis — soczewica z warzywami, omlet z serem
+      i szpinakiem, łosoś z ziemniakami: gramatury na jedną porcję są realne (90 g suchej
+      soczewicy, 150 g jaj to trzy sztuki, 150 g łososia to jeden filet), kroki idą w kolejności
+      i nie mają luk
+- [x] 3.11 DECYZJA SKALOWANIA podjęta **przez agenta** (upoważnienie z `notes/pool-queue.md` §4,
+      które rezerwuje eskalację na potrzebę puli rzędu trzykrotnie większej): skalujemy do minimów
+      z planu, ale z **poprawioną kompozycją kaloryczną**. Raport i uzasadnienie:
+      [seed/FEASIBILITY.md](../../../seed/FEASIBILITY.md)
 
 ### Phase 4: Skalowanie puli i pomiar końcowy
 

@@ -1,0 +1,45 @@
+{
+  "slug": "salatka-z-tunczykiem-i-jajkiem",
+  "name": "Sałatka z tuńczykiem i jajkiem",
+  "mealSlots": [
+    "dinner",
+    "lunch"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 400,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "tuńczyk w wodzie, z puszki, odsączony",
+      "grams": 100
+    },
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 100
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 150
+    },
+    {
+      "ingredientName": "papryka czerwona, surowa",
+      "grams": 100
+    },
+    {
+      "ingredientName": "oliwa z oliwek",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Jajka ugotuj na twardo, 9 minut od zagotowania, i ostudź.",
+    "Pomidory i paprykę pokrój w kostkę.",
+    "Jajka obierz i pokrój w ćwiartki.",
+    "Wymieszaj warzywa z odsączonym tuńczykiem, skrop oliwą i dopraw solą.",
+    "Na wierzchu ułóż jajka."
+  ]
+}

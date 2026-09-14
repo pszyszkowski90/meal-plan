@@ -399,3 +399,41 @@ legalny plik z sygnaturą odpadłby z komunikatem o zepsutym układzie kolumn �
 w złe miejsce.
 PR: #24
 Do decyzji: —
+
+### 13:58 UTC — P4b Pilot 20 dań przez cały potok
+Wynik: ok
+Co zrobione: pula dań przestała być pusta — **20 dań na produkcji**, czyli zdjęte wąskie gardło
+całego kamienia M-01. Powstały: `seed/PROMPT.md` (reguły autorskie), 20 plików `seed/dishes/*.json`,
+`scripts/seed-dishes.mjs` i `scripts/check-pool-feasibility.mjs`.
+Sprawdzone celowym zepsuciem, nie z założenia: walidator na zepsutym pliku wypisuje **pięć błędów
+naraz i nie tworzy żadnego SQL-a**, mimo że pozostałe 20 dań jest poprawnych (wszystko albo nic);
+`--remote` odmawia dla dania bez `reviewedBy`, a `--local` to samo danie przepuszcza; usunięcie
+składnika z JSON-a usuwa go też z `dish_ingredient`, bez osieroconego wiersza; drugi przebieg daje
+stan identyczny co do znaku.
+**Najważniejszy wynik to raport wykonalności, i nie jest on pomyślny.** Pula nie sięga górnej
+połowy celów: 3200 kcal jest **nieosiągalne w każdym scenariuszu**, a 2800 kcal wychodzi tylko
+przy sześciu posiłkach i tylko w 2-12% złożeń. Powód jest arytmetyczny: najcięższy możliwy dzień
+to 2791 kcal. Konto testowe ma wyliczony cel **2790 kcal** — dokładnie na tej granicy.
+Przy okazji wyszło, że raport policzony na jednej liczbie posiłków kłamie: ta sama pula daje 0%
+przy trzech posiłkach i 80% przy sześciu dla celu 2400 kcal. Pierwsza wersja skryptu liczyła
+tylko cztery posiłki i odpowiadała „nie da się" na pytanie, na które odpowiedź brzmi „da się,
+ale nie przy czterech". Poprawione — raport liczy 3/4/5/6.
+**Decyzja o fazie 4 (agent, §4 kolejki):** skalujemy do minimów z planu, ale z poprawioną
+kompozycją — co najmniej cztery śniadania > 600 kcal, cztery przekąski > 400 kcal oraz po sześć
+obiadów i kolacji > 700 kcal, część w limicie 30 minut. Nie eskaluję: §4 rezerwuje eskalację na
+potrzebę puli rzędu trzykrotnie większej, a tu liczba dań się broni — zmienia się rozkład gramatur.
+Uzasadnienie i pełny raport: `seed/FEASIBILITY.md`.
+Pułapka do zapamiętania: zapytanie do `wrangler --command` przez powłokę **musi być jedną linią**.
+Znak nowej linii urywa polecenie, a objaw to `wrangler zwrócił 1` z pustym stderr — komunikat,
+który o niczym nie mówi.
+Produkcja: 20 dań, 90 składników, 82 kroki, 33 przypisania do pór, zero niekompletnych, polskie
+znaki nietknięte. Wiersze 3.1-3.11 planu F-01 rozliczone.
+Co zacommitowane: `seed/PROMPT.md`, `seed/FEASIBILITY.md`, `seed/dishes/` (20 plików),
+`scripts/seed-dishes.mjs`, `scripts/check-pool-feasibility.mjs`, `package.json`,
+`context/changes/dish-source-and-seed-pool/plan.md`, `notes/pool-queue.md`
+Werdykt przeglądu: ZATWIERDZONY, 0 krytycznych, 2 obserwacje. F1 (znak nowej linii w nazwie mógłby
+urwać komentarz SQL) naprawione — trafne co do zasady, nie co do dzisiejszego ryzyka, ale ten skrypt
+jest wzorcem dla fazy 4. F2 (`check:pool` nie wymienione w planie z nazwy) przyjęte bez zmian:
+uruchamia skrypt, który plan zamawia w punkcie 5 tej samej fazy.
+PR: #25
+Do decyzji: —

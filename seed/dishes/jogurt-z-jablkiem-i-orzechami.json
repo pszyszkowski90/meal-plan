@@ -1,0 +1,31 @@
+{
+  "slug": "jogurt-z-jablkiem-i-orzechami",
+  "name": "Jogurt z jabłkiem i orzechami",
+  "mealSlots": [
+    "breakfast",
+    "snack"
+  ],
+  "prepMinutes": 6,
+  "modelKcalHint": 290,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jogurt naturalny 2%",
+      "grams": 200
+    },
+    {
+      "ingredientName": "jabłko, surowe",
+      "grams": 120
+    },
+    {
+      "ingredientName": "orzechy włoskie",
+      "grams": 20
+    }
+  ],
+  "steps": [
+    "Jabłko zetrzyj na grubej tarce albo pokrój w kostkę.",
+    "Orzechy posiekaj nożem.",
+    "Wymieszaj jogurt z jabłkiem i posyp orzechami."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "slug": "krewetki-z-makaronem",
+  "name": "Krewetki z makaronem",
+  "mealSlots": [
+    "dinner",
+    "lunch"
+  ],
+  "prepMinutes": 25,
+  "modelKcalHint": 580,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "krewetki, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "makaron pszenny, suchy",
+      "grams": 80
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 120
+    },
+    {
+      "ingredientName": "cebula, surowa",
+      "grams": 40
+    },
+    {
+      "ingredientName": "oliwa z oliwek",
+      "grams": 12
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Makaron ugotuj w osolonej wodzie zgodnie z czasem na opakowaniu.",
+    "Cebulę posiekaj, pomidory pokrój w kostkę.",
+    "Na oliwie zeszklij cebulę, dodaj pomidory i duś 4 minuty.",
+    "Dodaj krewetki i smaż 3 minuty, aż zrobią się różowe.",
+    "Połącz z odcedzonym makaronem i dopraw solą."
+  ]
+}

@@ -9,6 +9,19 @@ archived_at: null
 
 ## Notes
 
+- **Faza 3 (pilot 20 dań) przejrzana (CI) 14.09.2026** (PR #25, commit `928a056`) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
+  2 obserwacje (komentarz SQL nieodporny na znak nowej linii w nazwie dania; wpis `check:pool`
+  w `package.json` nienazwany wprost w planie, ale operacjonalizuje zaplanowany artefakt —
+  klasyfikacja EXTRA, łagodne). Wszystkie kryteria 3.1–3.11 zweryfikowane: dryf planu zerowy
+  (agent dryfu: same MATCH), SQL-escaping i idempotencja seeda sprawdzone statycznie jako poprawne,
+  bramka jakości GitHub Actions zielona (tsc/test/lint/check-conventions/check-lock). Twierdzenia
+  o sprawdzeniach na żywo wobec D1 (walidator, idempotencja, bramka `--remote`) nie dały się
+  odtworzyć w tym sandboxie CI (brak `wrangler`, brak zgody na `node`/`npx` w Bashu) — potwierdzone
+  wyłącznie statycznym czytaniem kodu, nie wykonaniem; PR-body i Dziennik w `notes/pool-queue.md`
+  twierdzą, że wykonano je na żywo przed tym commitem.
+  **Status pozostaje `implementing`, nie `impl_reviewed`** — ten sam powód co po fazie 1 i backfillu:
+  Faza 4 (4.1–4.8) jest wciąż w całości `[ ]` i poza zakresem tego PR-a.
 - **Backfill makr USDA — druga runda przeglądu (CI) 14.09.2026** (PR #24, commit `768984b`) —
   [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
   2 obserwacje. Cztery z pięciu ustaleń pierwszej rundy zweryfikowane jako naprawione czytaniem

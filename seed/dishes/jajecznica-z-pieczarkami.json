@@ -1,0 +1,40 @@
+{
+  "slug": "jajecznica-z-pieczarkami",
+  "name": "Jajecznica z pieczarkami",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 430,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "pieczarki, świeże",
+      "grams": 100
+    },
+    {
+      "ingredientName": "masło",
+      "grams": 10
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    },
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 60
+    }
+  ],
+  "steps": [
+    "Pieczarki oczyść i pokrój w plastry.",
+    "Rozgrzej masło na patelni i podsmaż pieczarki 4 minuty, aż odparują.",
+    "Jajka roztrzep widelcem i wlej na patelnię.",
+    "Smaż na małym ogniu, mieszając, aż jajka się zetną.",
+    "Dopraw solą i podaj z chlebem."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "slug": "kanapka-z-serem",
+  "name": "Kanapka z serem",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 240,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 50
+    },
+    {
+      "ingredientName": "ser gouda",
+      "grams": 30
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 50
+    }
+  ],
+  "steps": [
+    "Ser pokrój w plastry i ułóż na chlebie.",
+    "Na wierzchu ułóż plastry pomidora."
+  ]
+}

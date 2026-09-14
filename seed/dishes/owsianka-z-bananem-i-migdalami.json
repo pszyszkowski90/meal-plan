@@ -1,0 +1,36 @@
+{
+  "slug": "owsianka-z-bananem-i-migdalami",
+  "name": "Owsianka z bananem i migdałami",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 520,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "płatki owsiane, suche",
+      "grams": 60
+    },
+    {
+      "ingredientName": "mleko 2%, płynne",
+      "grams": 200
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "migdały",
+      "grams": 15
+    }
+  ],
+  "steps": [
+    "Mleko zagotuj w rondelku.",
+    "Wsyp płatki owsiane i gotuj na małym ogniu 5 minut, mieszając.",
+    "Zdejmij z ognia i odstaw pod przykryciem na 2 minuty.",
+    "Banana pokrój w plastry, migdały posiekaj.",
+    "Przełóż owsiankę do miski i posyp bananem oraz migdałami."
+  ]
+}
