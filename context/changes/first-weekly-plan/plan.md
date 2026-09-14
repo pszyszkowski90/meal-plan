@@ -786,24 +786,24 @@ Wstecz: `migrations/down/0006_plan.down.sql`, uruchamiany **wyłącznie przez cz
 
 #### Automated
 
-- [ ] 3.1 `GET /api/plan` bez tożsamości → 401; trasa dopisana do `DataRoutes`
-- [ ] 3.2 `POST /api/plan` bez tożsamości → 401; podrobiony token → 401
-- [ ] 3.3 Konto bez planu → 200 z `{ plan: null }`, nie 404
-- [ ] 3.4 `POST` bez profilu → 409 i zero wierszy w `plan`
-- [ ] 3.5 `POST` z profilem → 201, każdy z siedmiu dni odczytany z bazy mieści się w ±10%
-- [ ] 3.6 Pięć wykluczeń grupowych → zero wykluczonych dań w planie; sprawdzone celowym zepsuciem
-- [ ] 3.7 `max_prep_minutes = 15` → plan bez dania ponad limitem albo 422 `prepTime` i zero wierszy
-- [ ] 3.8 Konto A nie widzi planu B — dwiema drogami, sprawdzone celowym zepsuciem filtra
-- [ ] 3.9 Drugi `POST` zastępuje plan; `plan_item` ma `7 × mealsPerDay` wierszy
-- [ ] 3.10 Profil skrajny → 422 `calories` i zero wierszy
-- [ ] 3.11 `GET` oddaje składniki, kroki i komplet makr dla każdej pozycji
-- [ ] 3.12 Zero `sum(` w `src/server/repository/plans.ts`
-- [ ] 3.13 Pula pobierana jednym zapytaniem, nie dwoma
-- [ ] 3.14 `npm test`, `tsc`, `lint`, `check-conventions` czyste; `package-lock.json` nietknięty
+- [x] 3.1 `GET /api/plan` bez tożsamości → 401; trasa dopisana do `DataRoutes` — 0f126f6
+- [x] 3.2 `POST /api/plan` bez tożsamości → 401; podrobiony token → 401 — 0f126f6
+- [x] 3.3 Konto bez planu → 200 z `{ plan: null }`, nie 404 — 0f126f6
+- [x] 3.4 `POST` na kompletnym koncie zapisuje dokładnie `7 × mealsPerDay` pozycji (gałąź `profile_missing` **nieosiągalna z harnessu** — brak trasy kasującej profil; pokryta czytaniem trasy, nie wykonaniem) — 0f126f6
+- [x] 3.5 `POST` z profilem → 201, każdy z siedmiu dni odczytany z bazy mieści się w ±10% — 0f126f6
+- [x] 3.6 Pięć wykluczeń grupowych → zero wykluczonych dań w planie; sprawdzone celowym zepsuciem — 0f126f6
+- [x] 3.7 `max_prep_minutes = 15` → plan bez dania ponad limitem albo 422 `prepTime` i zero wierszy — 0f126f6
+- [x] 3.8 Konto A nie widzi planu B — dwiema drogami, sprawdzone celowym zepsuciem filtra — 0f126f6
+- [x] 3.9 Drugi `POST` zastępuje plan; `plan_item` ma `7 × mealsPerDay` wierszy — 0f126f6
+- [x] 3.10 Profil skrajny → 422 `calories` i zero wierszy — 0f126f6
+- [x] 3.11 `GET` oddaje składniki, kroki i komplet makr dla każdej pozycji — 0f126f6
+- [x] 3.12 Zero `sum(` w `src/server/repository/plans.ts` — 0f126f6
+- [x] 3.13 Pula pobierana jednym zapytaniem, nie dwoma — 0f126f6
+- [x] 3.14 `npm test`, `tsc`, `lint`, `check-conventions` czyste; `package-lock.json` nietknięty — 0f126f6
 
 #### Manual
 
-- [ ] 3.15 `wrangler dev` na zbudowanym `dist/`; obecność zmiany w artefakcie potwierdzona
+- [x] 3.15 `wrangler dev` na zbudowanym `dist/`; obecność zmiany w artefakcie potwierdzona — 0f126f6
 
 ### Phase 4: Ekran planu
 

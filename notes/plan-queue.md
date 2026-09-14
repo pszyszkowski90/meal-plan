@@ -12,7 +12,7 @@ Kolejność jest uszeregowana **kosztem niezrobienia**, nie tematem.
 /loop Wykonuj kolejne zadanie z notes/plan-queue.md. Trzymaj się sekcji Zasady. Po każdym zadaniu dopisz wpis do Dziennika na końcu pliku, otwórz PR, przeczytaj werdykt przeglądu i scal po zielonych bramkach. Nie zaczynaj G6 i nie czekaj na decyzje właściciela z sekcji 4 — pomiń, co zablokowane, i opisz to w Dzienniku.
 ```
 
-Kolejne zadanie do wzięcia: **G3, faza 3** (repozytorium i trasa `/api/plan`).
+Kolejne zadanie do wzięcia: **G3, faza 4** (ekran `/plan`, zakładka i E2E przeglądarkowe).
 
 ---
 
@@ -125,7 +125,7 @@ opisane jako blokujące, które nie blokuje, każe planować obejście problemu,
 
 Przy okazji sprawdź `roadmap.md` §Otwarte pytania — ma tę samą listę i tę samą nieaktualność.
 
-### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 2 z 4**
+### G3 — S-04: generator tygodniowego planu · duże · **sedno paczki** · **w toku: faza 3 z 4**
 
 Pełna ścieżka 10x: `/10x-new first-weekly-plan` → `/10x-research` → `/10x-plan` →
 `/10x-plan-review` → `/10x-implement`. **Nie skracaj jej** — to pierwsza zmiana w tym repo,
@@ -438,4 +438,55 @@ Co zacommitowane: `src/lib/plan-generator.ts`, `src/lib/plan-generator.test.ts`,
 Bramki: `npm test` **136/136** (było 130), `tsc --noEmit`, `expo lint`, `check-conventions` czysto.
 Werdykt przeglądu: przeczytany, wszystkie jedenaście ustaleń ma decyzję.
 PR: #33
+Do decyzji: —
+
+### 19:08 UTC — G3 faza 3: repozytorium i trasa /api/plan
+Wynik: ok
+Co zrobione: `src/server/repository/plans.ts` (cztery funkcje) i `src/app/api/plan+api.ts`
+(`GET`/`POST`), plus `tests/e2e/plan-api.spec.ts`, `tests/e2e/support/d1.ts` i dopisanie
+`/api/plan` do `DataRoutes` oraz testu izolacji planu do `account-isolation.spec.ts`.
+**Pełny zestaw E2E: 56/56** (było 44 przed tą paczką, 45 po fazie 1).
+
+**Trzy rzeczy złapane własnym sprawdzaniem, zanim dotknął ich przegląd:**
+
+1. **Ziarno było losowane DWA RAZY** — raz dla generatora, raz przy zapisie. Kolumna `plan.seed`
+   wyglądałaby na użyteczną i kłamała przy pierwszej próbie odtworzenia zgłoszonego błędu.
+   Teraz jedno `randomUUID()` idzie w oba miejsca.
+2. **Pierwsza wersja kryterium 3.10 była BŁĘDNA.** Żądała `plan_item = 0` po nieudanym
+   generowaniu, czyli zakładała, że konto wchodzi w test bez planu. Nieudane generowanie **nie ma
+   prawa skasować działającego planu** — użytkownik straciłby tydzień pracy produktu za to, że
+   zmienił cel na nieosiągalny. Właściwą własnością jest NIEZMIENNOŚĆ: tyle samo wierszy przed i po.
+3. **Testy liczyły wiersze GLOBALNIE**, a baza jest współdzielona z kontem B z testu izolacji.
+   Czerwieniły się dopiero, gdy do zestawu doszedł test z drugim kontem — czyli z powodu, którego
+   nie ma w kodzie produktu. Wszystkie zapytania zawężone do `user_id` odczytanego z roszczenia
+   `sub` tokenu, czyli DOKŁADNIE tej wartości, której używa `requireUserId`.
+
+**Dwa celowe zepsucia, oba złapane** — każde przez pełny cykl: zepsucie → ubicie `workerd`
+→ `expo export` → potwierdzenie zepsucia W ARTEFAKCIE (`grep` po `dist/server/`) → `wrangler dev`
+→ przebieg testów:
+- zdjęty warunek `NOT EXISTS` wykluczeń grupowych → **3.6 na czerwono**;
+- zdjęty filtr `user_id` z obu `DELETE` w `savePlan` → **3.8 na czerwono**.
+Drugie jest ważniejsze, niż wygląda: `POST` **zastępuje** plan, więc bez tego filtra konto B
+skasowałoby plan konta A **wygenerowaniem własnego**, a A zobaczyłby po prostu „brak planu".
+
+**Napotkane EBUSY przy `expo export`** — dokładnie lekcja z `lessons.md`. `taskkill` na `workerd`
+nie wystarczył, bo `dist/client` trzymał proces `wrangler dev`; ubicie po `CommandLine` przez
+PowerShell załatwiło sprawę. Bez tego build cicho serwowałby STARY artefakt, a zepsucie „przeszłoby
+na zielono" nie dotarłszy do serwera.
+
+**Kryterium 3.4 jest pokryte częściowo i tak zapisane w planie.** Gałąź `profile_missing` (409)
+jest **nieosiągalna z harnessu**: konto testowe ma profil, a repo nie ma trasy kasującej profil
+ani preferencje. Dopisanie takiej trasy wyłącznie po to, żeby test miał co wywołać, powiększałoby
+powierzchnię produktu pod test. Zamiast tego kryterium dowodzi własności osiągalnej — że udany
+`POST` zapisuje dokładnie `7 × mealsPerDay` pozycji — plus niezmiennika całej tabeli: każdy
+nagłówek planu ma tyle pozycji, ile wynika z jego `meals_per_day`.
+
+Co zacommitowane: `src/server/repository/plans.ts`, `src/app/api/plan+api.ts`,
+`tests/e2e/plan-api.spec.ts`, `tests/e2e/support/d1.ts`, `tests/e2e/data-boundary.spec.ts`,
+`tests/e2e/account-isolation.spec.ts`, `context/changes/first-weekly-plan/plan.md`,
+`notes/plan-queue.md`. Stage po ścieżkach. `package-lock.json` nietknięty.
+Bramki: `npm test` 136/136, `tsc --noEmit`, `expo lint`, `check-conventions` (53 pliki),
+`check-lock` — wszystkie czysto. E2E 56/56 przeciw `wrangler dev` na zbudowanym `dist/`.
+Werdykt przeglądu: PR otwarty, werdykt czytany przed scaleniem.
+PR: #34
 Do decyzji: —
