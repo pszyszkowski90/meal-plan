@@ -1,0 +1,35 @@
+{
+  "slug": "serek-wiejski-z-pomidorem",
+  "name": "Serek wiejski z pomidorem",
+  "mealSlots": [
+    "snack",
+    "breakfast"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 230,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "serek wiejski (cottage), 2% tłuszczu",
+      "grams": 150
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 100
+    },
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 40
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Pomidora pokrój w kostkę.",
+    "Wymieszaj serek z pomidorem i dopraw solą.",
+    "Podaj z kromką chleba."
+  ]
+}

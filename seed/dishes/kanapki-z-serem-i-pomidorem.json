@@ -1,0 +1,35 @@
+{
+  "slug": "kanapki-z-serem-i-pomidorem",
+  "name": "Kanapki z serem i pomidorem",
+  "mealSlots": [
+    "breakfast",
+    "snack"
+  ],
+  "prepMinutes": 7,
+  "modelKcalHint": 470,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "chleb pszenny jasny",
+      "grams": 80
+    },
+    {
+      "ingredientName": "ser gouda",
+      "grams": 40
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 80
+    },
+    {
+      "ingredientName": "masło",
+      "grams": 10
+    }
+  ],
+  "steps": [
+    "Chleb posmaruj masłem.",
+    "Ser pokrój w plastry i ułóż na chlebie.",
+    "Pomidora pokrój w plastry i ułóż na serze."
+  ]
+}

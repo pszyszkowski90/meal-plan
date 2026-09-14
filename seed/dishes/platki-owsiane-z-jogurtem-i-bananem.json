@@ -1,0 +1,30 @@
+{
+  "slug": "platki-owsiane-z-jogurtem-i-bananem",
+  "name": "Płatki owsiane z jogurtem i bananem",
+  "mealSlots": [
+    "breakfast"
+  ],
+  "prepMinutes": 8,
+  "modelKcalHint": 400,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "płatki owsiane, suche",
+      "grams": 50
+    },
+    {
+      "ingredientName": "jogurt naturalny 2%",
+      "grams": 150
+    },
+    {
+      "ingredientName": "banan, surowy",
+      "grams": 100
+    }
+  ],
+  "steps": [
+    "Płatki wymieszaj z jogurtem i odstaw na 5 minut, żeby zmiękły.",
+    "Banana rozgnieć widelcem albo pokrój w plastry.",
+    "Wymieszaj wszystko razem."
+  ]
+}

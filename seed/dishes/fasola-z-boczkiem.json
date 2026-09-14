@@ -1,0 +1,41 @@
+{
+  "slug": "fasola-z-boczkiem",
+  "name": "Fasola z boczkiem",
+  "mealSlots": [
+    "dinner",
+    "lunch"
+  ],
+  "prepMinutes": 40,
+  "modelKcalHint": 500,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "fasola biała, sucha",
+      "grams": 80
+    },
+    {
+      "ingredientName": "boczek wędzony, surowy",
+      "grams": 40
+    },
+    {
+      "ingredientName": "cebula, surowa",
+      "grams": 60
+    },
+    {
+      "ingredientName": "pomidor, surowy",
+      "grams": 150
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 2
+    }
+  ],
+  "steps": [
+    "Fasolę namocz przez noc, odlej wodę i gotuj 40 minut.",
+    "Boczek pokrój w kostkę i wytop na suchej patelni.",
+    "Dodaj posiekaną cebulę i smaż 3 minuty.",
+    "Dorzuć pokrojone pomidory i duś 5 minut.",
+    "Połącz z odcedzoną fasolą i dopraw solą."
+  ]
+}

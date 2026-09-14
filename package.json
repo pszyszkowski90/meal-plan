@@ -51,6 +51,8 @@
     "check-lock": "node ./scripts/check-lockfile.js",
     "distill:usda": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON ./scripts/distill-usda.mjs",
     "import:usda": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON ./scripts/import-usda.mjs",
+    "seed:dishes": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON ./scripts/seed-dishes.mjs",
+    "check:pool": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON ./scripts/check-pool-feasibility.mjs",
     "check-conventions": "node ./scripts/check-conventions.js",
     "hooks:install": "git config core.hooksPath hooks"
   },

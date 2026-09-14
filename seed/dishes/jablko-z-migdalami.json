@@ -1,0 +1,25 @@
+{
+  "slug": "jablko-z-migdalami",
+  "name": "Jabłko z migdałami",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 210,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jabłko, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "migdały",
+      "grams": 25
+    }
+  ],
+  "steps": [
+    "Jabłko pokrój w cząstki.",
+    "Podaj z migdałami."
+  ]
+}

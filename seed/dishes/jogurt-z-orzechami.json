@@ -1,0 +1,25 @@
+{
+  "slug": "jogurt-z-orzechami",
+  "name": "Jogurt z orzechami",
+  "mealSlots": [
+    "snack"
+  ],
+  "prepMinutes": 5,
+  "modelKcalHint": 260,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jogurt naturalny 2%",
+      "grams": 180
+    },
+    {
+      "ingredientName": "orzechy włoskie",
+      "grams": 20
+    }
+  ],
+  "steps": [
+    "Orzechy posiekaj nożem.",
+    "Wymieszaj z jogurtem."
+  ]
+}

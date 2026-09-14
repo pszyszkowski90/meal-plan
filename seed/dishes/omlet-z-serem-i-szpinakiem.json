@@ -1,0 +1,40 @@
+{
+  "slug": "omlet-z-serem-i-szpinakiem",
+  "name": "Omlet z serem i szpinakiem",
+  "mealSlots": [
+    "dinner",
+    "breakfast"
+  ],
+  "prepMinutes": 15,
+  "modelKcalHint": 420,
+  "reviewedBy": "agent (upoważnienie właściciela 14.09.2026)",
+  "reviewedAt": "2026-09-14",
+  "ingredients": [
+    {
+      "ingredientName": "jajo kurze, całe, surowe",
+      "grams": 150
+    },
+    {
+      "ingredientName": "ser gouda",
+      "grams": 30
+    },
+    {
+      "ingredientName": "szpinak, surowy",
+      "grams": 80
+    },
+    {
+      "ingredientName": "masło",
+      "grams": 8
+    },
+    {
+      "ingredientName": "sól",
+      "grams": 1
+    }
+  ],
+  "steps": [
+    "Jajka roztrzep z solą.",
+    "Rozgrzej masło na patelni i wlej jajka.",
+    "Gdy spód się zetnie, rozłóż na połowie szpinak i starty ser.",
+    "Złóż omlet na pół i smaż jeszcze minutę pod przykryciem."
+  ]
+}
