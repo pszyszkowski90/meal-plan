@@ -325,3 +325,20 @@ Werdykt przeglądu: recenzent wyłączony na tym PR-ze z założenia (walidacja 
 gałęzi domyślnej) — to udokumentowane zachowanie, nie usterka
 PR: <do uzupełnienia>
 Do decyzji: —
+
+### 12:18 UTC — P3b Archiwizacja S-03
+Wynik: ok
+Co zrobione: `dietary-preferences` przeniesione do `context/archive/2026-09-13-dietary-preferences/`,
+`change.md` ostemplowane (`status: archived`, `archived_at`), element S-03 domknięty w roadmapie
+wpisem w sekcji „Zrobione". Archiwizacja poszła **osobnym PR-em świadomie**: `/10x-archive`
+przenosi razem z folderem raport przeglądu, którego bramka pod ścieżką `context/archive/` już nie
+znajduje — zrobiona razem z pracą oznaczałaby przegląd, który nie ma jak zadziałać.
+Drobiazg do zapamiętania: `git mv` i `mv` z Git Basha odmówiły („Permission denied") na samym
+katalogu, mimo że żaden plik w środku nie był zablokowany; `Move-Item` z PowerShella przeszło
+bez oporu, a git rozpoznał wszystkie sześć plików jako zmianę nazwy, więc historia została.
+Co zacommitowane: `context/archive/2026-09-13-dietary-preferences/` (6 plików, zmiana nazwy),
+`context/foundation/roadmap.md`, `notes/pool-queue.md`
+Werdykt przeglądu: brak raportu i brak planu w `context/changes/` — bramka przepuszcza notką,
+zgodnie z rozróżnieniem wprowadzonym w #21
+PR: <do uzupełnienia>
+Do decyzji: —
