@@ -1,7 +1,7 @@
 ---
 change_id: dish-source-and-seed-pool
 title: Wybór źródła przepisów z makrami i zseedowanie minimalnej puli dań
-status: implementing
+status: impl_reviewed
 created: 2026-09-08
 updated: 2026-09-14
 archived_at: null
@@ -9,6 +9,19 @@ archived_at: null
 
 ## Notes
 
+- **Faza 4 (skalowanie puli, 20 → 56 dań) przejrzana (CI) 14.09.2026** (PR #27) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt WYMAGA UWAGI: 0 krytycznych,
+  1 ostrzeżenie, 2 obserwacje. Ustalenie: `seed/REVIEW.md` nigdy nie powstał, choć plan wymienia
+  go wprost w Fazie 3 i 4 — substancja (narracja przeglądu gramatur) jest w praktyce pokryta
+  Dziennikiem w `notes/pool-queue.md`, ale plik jako taki wciąż nie istnieje. Dwie obserwacje:
+  jeden nowy składnik (`oliwki czarne, z puszki`) nie jest użyty w żadnym daniu — najpewniej
+  ślad po dwóch daniach odrzuconych sitem `modelKcalHint`; i ograniczenie samego przebiegu —
+  bez zgody na `npm`/`npx`/`node -e` w Bashu, kryteria 4.1–4.5 zweryfikowane statycznie
+  (przeliczenie liczby dań per pora, sprawdzenie `reviewedBy`, istnienia składników i
+  niezmiennika Atwatera dla 16 nowych wierszy USDA), nie wykonaniem — ten sam rodzaj
+  ograniczenia co w przeglądach PR #24 i #25 poniżej. **To zamyka plan F-01 w całości**:
+  wszystkie cztery fazy mają teraz `[x]` na każdym kryterium, więc status zmienia się na
+  `impl_reviewed` (poprzednie rundy zostawały przy `implementing`, bo dotyczyły fragmentu planu).
 - **Faza 3 (pilot 20 dań) przejrzana (CI) 14.09.2026** (PR #25, commit `928a056`) —
   [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
   2 obserwacje (komentarz SQL nieodporny na znak nowej linii w nazwie dania; wpis `check:pool`
