@@ -4,9 +4,9 @@
 - **Plan**: `context/changes/first-weekly-plan/plan.md`
 - **Scope**: Full plan (CI review on PR #32) — plan declares four phases; this PR implements **Phase 1 only** (schema), which matches the PR's own stated scope ("Ten PR nie dodaje żadnego kodu czytającego nowe tabele").
 - **Date**: 2026-09-14
-- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34872730578
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34873403468
 - **Verdict**: APPROVED
-- **Findings**: 0 critical, 1 warning, 1 observation
+- **Findings**: 0 critical, 1 warning, 0 observations
 
 ## Verdicts
 
@@ -20,27 +20,24 @@
 | Test Coverage | PASS |
 | Success Criteria | WARNING |
 
+## What changed since the last review (`47172d9`)
+
+One new commit, `dcdb029` — docs-only, no migration or source change:
+
+- `plan.md`'s Phase 1 SQL contract now includes `CREATE INDEX idx_plan_item_dish ON plan_item(dish_id);` plus the justification paragraph, matching `migrations/0006_plan.sql:77` verbatim. This resolves the prior report's **F2** (index present in the migration but absent from the plan's literal contract, OBSERVATION/LOW) — verified by direct comparison below, so it is not re-raised as a finding in this pass.
+- The prior report's F1 and F2 entries got their `Decision` fields filled in (ACKNOWLEDGED / ACCEPTED) with recorded rationale, cross-referencing `notes/plan-queue.md` §4 ("Przeniesione z poprzedniej paczki", F3 of PR #20) for why the CI reviewer's tool permissions are deliberately not widened on this PR.
+
 ## Findings
 
-### F1 — Automated verification commands could not be re-executed in this CI environment
+### F1 — Automated verification commands still can't be re-executed in this CI environment
 
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
 - **Dimension**: Success Criteria
 - **Location**: N/A (review environment, not the PR's code)
-- **Detail**: Phase 1's automated verification (1.1–1.6: `wrangler d1 migrations apply/list --local`, forward/backward migration round-trip, `INSERT` boundary checks on `day_index`/`meal_slot`/`dish_id`, cascade deletes, `npm run check-conventions`) could not be executed by this review — `node_modules` is not installed in this runner and `Bash` tool calls (including plain `node <script>` and `npm ci`) require interactive approval that isn't available in this non-interactive CI session.
-  Where static analysis was possible it corroborates the PR's claims: the `migration-pair` rule in `scripts/check-conventions.js:238-273` was checked by hand via `Glob` — every file in `migrations/*.sql` (6) has a matching `migrations/down/*.down.sql` (6), including the new `0006_plan.sql` ↔ `0006_plan.down.sql` pair. Reading the SQL directly confirms the `CHECK` constraints, `FOREIGN KEY` cascade directions, and the `DELETE FROM d1_migrations` cleanup in the down migration all match the plan's contract (`plan.md:218-270`) and the journal entry in `notes/plan-queue.md` (17:05 UTC entry) describing 14 constraint checks and a round-trip apply/rollback. This is strong circumstantial support, but it is not the same as this review independently running the commands — which is the entire premise the PR itself argues for ("Weryfikacja — wykonaniem, nie odczytem kodu"). The PR's claim that the migration was already applied to production (`migrations list --remote` → "No migrations to apply!") also could not be independently confirmed from this sandbox.
-- **Fix**: Grant this review's CI job the toolchain and `Bash` permissions it needs (`npm ci`, then `npx wrangler d1 migrations apply mealplan --local`, `npm run check-conventions`) so future runs execute rather than statically infer. No code change needed on this PR.
-- **Decision**: ACKNOWLEDGED — deliberately left open, no change on this PR. This is a **known, recorded** limitation, not a new one: `notes/plan-queue.md` §4 („Przeniesione z poprzedniej paczki") carries it as finding F3 of PR #20 and states the reason for leaving it open — extending `--allowedTools` **replaces** the action's default tool set, and the effect cannot be verified on the very PR that introduces the change. Widening the reviewer's permissions is therefore its own change with its own gate, not a side edit to a schema PR. The reviewer is right that static inference is not execution; that gap is covered here by layer 3 (`pre-push`) and layer 4 (the quality gate), both of which did run, plus the 14 constraint checks recorded with their results in the journal.
-
-### F2 — Migration adds an index not present in the plan's literal SQL contract
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — quick decision, fix is obvious and narrowly scoped
-- **Dimension**: Scope Discipline
-- **Location**: migrations/0006_plan.sql:77
-- **Detail**: The plan's SQL contract (`plan.md:218-236`) shows only the two `CREATE TABLE` statements. The committed migration additionally adds `CREATE INDEX idx_plan_item_dish ON plan_item(dish_id);` with a comment justifying it for the future S-07 shopping-list join. This is an unplanned addition not covered by the "Czego NIE robimy" exclusions list, but it's benign and follows the exact precedent set by `migrations/0004_dish_ingredient_index.sql` (an index added ahead of a measured need, justified inline). Not scope creep in any harmful sense — noted for transparency only.
-- **Fix**: None required. Optionally mention the index in the plan's "Wymagane zmiany" contract retroactively so future readers of `plan.md` see it without diffing the SQL.
-- **Decision**: ACCEPTED — plan updated. The finding is fair: the plan's contract showed two `CREATE TABLE` statements and the migration shipped a third object. The index itself stays (precedent `migrations/0004_dish_ingredient_index.sql`, and the read path for the recipe view in phase 3 joins `plan_item` to `dish` on exactly this column), but a contract that omits what shipped is a contract that drifts. `plan.md` §Faza 1 now carries `CREATE INDEX idx_plan_item_dish` in the SQL block with its justification, so the plan and the migration say the same thing.
+- **Detail**: Phase 1's automated verification (1.1–1.6: `wrangler d1 migrations apply/list --local`, forward/backward migration round-trip, `INSERT` boundary checks on `day_index`/`meal_slot`/`dish_id`, cascade deletes, `npm run check-conventions`) again could not be executed by this run — `node_modules` is not installed on this runner, and `npm ci`, plain `node scripts/check-conventions.js`, and `git fetch` all require interactive approval unavailable in this non-interactive session. This is the identical, previously-reported limitation — unchanged since the last review.
+  Static analysis still corroborates the PR's claims: `migrations/*.sql` (6) and `migrations/down/*.down.sql` (6) pair 1:1 by name (checked via `Glob`), including `0006_plan.sql` ↔ `0006_plan.down.sql`. Direct comparison of `migrations/0006_plan.sql` against the plan's SQL contract (`plan.md:218-238`) now shows a byte-for-byte match, including the `CREATE INDEX` statement added in this commit — table definitions, `CHECK` constraints, `FOREIGN KEY` directions (`ON DELETE CASCADE` to `app_user`, no cascade to `dish`), and the primary key all line up. The down-migration drops `plan_item` before `plan` (FK-safe order) and deletes the `d1_migrations` row, matching the plan's contract at `plan.md:267-276`. This is strong circumstantial support but still not execution.
+- **Fix**: Grant this review's CI job `npm ci` + `wrangler`/`Bash` permissions so future runs execute the plan's checks directly. No code change needed on this PR — this is a tooling/`--allowedTools` limitation of the review job, not a defect in the PR.
+- **Decision**: PENDING — mechanically re-raised because this run independently re-confirmed the limitation still holds. Note for the human triaging this: the identical finding was already discussed and deliberately left open in the previous report on this same PR (see `context/changes/first-weekly-plan/reviews/impl-review.md` at commit `dcdb029`, and `notes/plan-queue.md` §4, F3 of PR #20) — re-applying ACKNOWLEDGED here is very likely correct rather than reopening a debate.
 
 <!-- End of report -->
