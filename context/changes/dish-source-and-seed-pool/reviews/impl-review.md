@@ -2,11 +2,11 @@
 # Implementation Review: Weź makra składników z wiersza USDA, nie z pamięci modelu
 
 - **Plan**: `context/changes/dish-source-and-seed-pool/plan.md` (Faza 3, wiersze 3.0a–3.0d — backfill dodany 14.09.2026, po tym jak właściciel przejął cały przegląd gramatur od modelu)
-- **Scope**: Full plan slice covered by this PR (CI review on PR #24) — nie cała Faza 3 (3.1–3.11 nadal `[ ]`) i nie Faza 4
+- **Scope**: Full plan slice covered by this PR (CI re-review on PR #24, HEAD `768984b`) — nie cała Faza 3 (3.1–3.11 nadal `[ ]`) i nie Faza 4
 - **Date**: 2026-09-14
-- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34846485800
+- **CI run**: https://github.com/pszyszkowski90/meal-plan/actions/runs/34847865189
 - **Verdict**: APPROVED
-- **Findings**: 0 critical, 1 warning, 4 observations
+- **Findings**: 0 critical, 0 warnings, 2 observations
 
 ## Verdicts
 
@@ -14,82 +14,108 @@
 |-----------|---------|
 | Plan Adherence | PASS |
 | Scope Discipline | PASS |
-| Safety & Quality | WARNING |
+| Safety & Quality | PASS |
 | Architecture | PASS |
 | Pattern Consistency | PASS |
 | Test Coverage | PASS |
 | Success Criteria | PASS |
 
+## Co się zmieniło od poprzedniego przebiegu (`efc6599`)
+
+Commit `768984b` rozlicza cztery z pięciu ustaleń poprzedniej rundy kodem, piąte świadomym
+odłożeniem. Zweryfikowałem to czytaniem plików źródłowych (`scripts/distill-usda.mjs`,
+`scripts/import-usda.mjs` w całości) i porównaniem ze schematem (`migrations/0003_dish_pool.sql`,
+`migrations/0005_preferences.sql`) oraz eksportami `src/lib/dish-macros.ts` i
+`src/lib/dish-validation.ts`, które oba skrypty importują — nie tylko czytaniem diffu.
+
+- **F1 (odczyty bez osłony) — NAPRAWIONE.** `readJson(file, hint)` w obu skryptach zamienia
+  `ENOENT`/`SyntaxError` na `fail()` z podpowiedzią. Sprawdziłem, że `fail()` kończy proces
+  (`process.exit(1)`), więc brak `return` po `fail(...)` w `catch` jest bezpieczny — sterowanie
+  i tak nigdy nie wraca.
+- **F2 (`csvRows` dzieli po `\n` przed parsowaniem cudzysłowów) — złagodzone komentarzem +
+  drugą linią obrony, nie usunięte.** Komentarz nad parserem (`distill-usda.mjs:26–30`) teraz
+  uczciwie deklaruje zakres („wiersze BEZ znaku nowej linii”), a nowe sprawdzenie liczby pól
+  w `csvRows` złapałoby pole wielowierszowe jako wiersz za krótki. Rozsądny kompromis dla
+  zamrożonego zrzutu SR Legacy 2018-04 — przepisanie parsera na tryb w pełni świadomy cudzysłowów
+  byłoby pracą pod plik, który tego problemu nie ma.
+- **F3 (pozycyjny odczyt kolumn CSV bez walidacji nagłówka) — NAPRAWIONE, i to było
+  najostrzejsze ustalenie.** `csvRows(file, expectedHeader)` sprawdza PREFIKS nagłówka i przerywa
+  `fail()`-em przy niezgodności; `Headers.food` / `Headers.foodNutrient` w kodzie dokładnie
+  odpowiadają pozycjom czytanym dalej (`const [fdcId, , description] = row`,
+  `const [, fdcId, nutrientId, amount] = row`). Rozjazd w `food_nutrient.csv` — jedyny tryb awarii
+  z całej piątki, którego nic wcześniej nie łapało — jest teraz łapany. Przykładowy komunikat
+  z demonstracji w commit message (`kolumna 1: oczekiwano „fdc_id", jest „data_type"`) zgadza się
+  z logiką kodu, jeśli zamienić dwie pierwsze kolumny nagłówka `food.csv`.
+- **F4 (`fail()` bez domyślnego `details`) — NAPRAWIONE.** `function fail(message, details = [])`
+  w `import-usda.mjs`, teraz symetryczne z `distill-usda.mjs`.
+- **F5 (fixture do odtworzenia sita opisu) — ŚWIADOMIE ODŁOŻONE do P5**, z uzasadnieniem
+  (wymagałoby rozszerzenia `npm test` poza `src/lib/*.test.ts`, co jest osobną decyzją o regule
+  repo, nie punktowym fixem). Sito ma teraz drugą, niezależną linię obrony tej samej klasy błędu
+  (nagłówek kolumn), więc ryzyko rezydualne jest niższe niż w poprzedniej rundzie.
+
 ## Findings
 
-### F1 — Brak osłony na odczytach plików wejściowych w obu nowych skryptach
-
-- **Severity**: ⚠️ WARNING
-- **Impact**: 🏃 LOW — mały, punktowy fix; ten sam wzorzec w dwóch miejscach
-- **Dimension**: Safety & Quality
-- **Location**: `scripts/import-usda.mjs:176-177`, `scripts/distill-usda.mjs:116`
-- **Detail**: Oba skrypty mają zbudowaną, spójną konwencję `fail()` z czytelnym komunikatem (np. `distill-usda.mjs:109-114` dla brakującego `.usda/`), ale nie stosują jej do własnych odczytów `seed/ingredients.json` / `seed/usda-subset.json`. `import-usda.mjs:176-177` (`JSON.parse(fs.readFileSync(MappingFile/SubsetFile, 'utf8'))`) i `distill-usda.mjs:116` (to samo dla `MappingFile`) rzucą surowy `ENOENT`/`SyntaxError`, gdy plik nie istnieje albo jest uszkodzony — zamiast podpowiedzi w stylu „uruchom najpierw `npm run distill:usda`", którą reszta obu skryptów konsekwentnie daje.
-- **Fix**: Owiń oba odczyty w try/catch i wywołaj `fail()` z podpowiedzią (dla `import-usda.mjs` — „uruchom `npm run distill:usda`", dla brakującego `seed/ingredients.json` w obu skryptach — że to plik wersjonowany w repo, więc jego brak zwykle znaczy zły katalog roboczy).
-- **Decision**: NAPRAWIONE 14.09.2026 — oba skrypty czytają swoje pliki wejściowe przez wspólne
-  `readJson(file, hint)`, które zamienia `ENOENT`/`SyntaxError` na komunikat w konwencji `fail()`:
-  dla destylatu podpowiada `npm run distill:usda`, dla pliku autorskiego — że jest wersjonowany
-  w repozytorium, więc jego brak zwykle znaczy zły katalog roboczy.
-
-### F2 — `csvRows` dzieli plik na `\n` przed parsowaniem cudzysłowów
+### F6 — Brak pisemnego potwierdzenia happy-path po dodaniu sprawdzenia nagłówka
 
 - **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — nie dotyczy obecnego zbioru danych
+- **Impact**: 🏃 LOW — albo już działa (patrz niżej), albo trywialna poprawka jednej linii
 - **Dimension**: Safety & Quality
-- **Location**: `scripts/distill-usda.mjs:88`
-- **Detail**: `text.split('\n')` dzieli wiersze przed uruchomieniem `parseCsvLine`, więc pole w cudzysłowie zawierające znak nowej linii zostałoby po cichu rozbite na dwa „wiersze" i błędnie sparsowane, zamiast zgłosić błąd. Komentarz nad `parseCsvLine` (linie 26–27) deklaruje obsługę tego, czego używa USDA — dla krótkich, jednowierszowych pól SR Legacy to prawda, ale zapis jest szerszy niż implementacja.
-- **Fix**: Doprecyzuj komentarz do „zakłada pola bez znaku nowej linii" albo, jeśli warto, parsuj cały plik w trybie świadomym cudzysłowów zamiast dzielić z góry po `\n`.
-- **Decision**: NAPRAWIONE 14.09.2026, ale **komentarzem, nie parserem**. Zapis mówi teraz
-  wprost, że obsługiwane są wiersze BEZ znaku nowej linii i że podział idzie przed parsowaniem
-  cudzysłowów. Przepisywanie parsera na tryb w pełni świadomy cudzysłowów byłoby pracą pod
-  hipotetyczny plik: SR Legacy 2018-04 to zamrożony zrzut, w którym takich pól nie ma. Dołożone
-  natomiast **sprawdzenie liczby pól w wierszu** — pole wielowierszowe rozbite przez podział da
-  wiersz krótszy od nagłówka i przerwie destylację, więc ten przypadek przestał być cichy.
-
-### F3 — Pozycyjny odczyt kolumn CSV bez walidacji nagłówka
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🔎 MEDIUM — cichy błąd danych, gdyby założenie kiedyś przestało być prawdziwe
-- **Dimension**: Safety & Quality
-- **Location**: `scripts/distill-usda.mjs:123` (`food.csv`), `scripts/distill-usda.mjs:149` (`food_nutrient.csv`)
-- **Detail**: Obie pętle destrukturyzują wiersz pozycyjnie (`const [fdcId, , description] = row`, `const [, fdcId, nutrientId, amount] = row`) bez sprawdzenia, że nagłówek pliku faktycznie ma taki układ kolumn. Zmiana kolejności kolumn w `food.csv` zostałaby częściowo złapana przez sito opisu (linie 129–143) — inny opis dla tego samego `fdcId` przerwałby destylację. Zmiana kolejności w `food_nutrient.csv` **nie jest łapana przez nic**: skrypt policzyłby wiarygodnie wyglądające, błędne makra, dokładnie ten tryb awarii, przed którym ma chronić cała ta zmiana. Ryzyko jest niskie — SR Legacy 2018-04 to zamrożony, historyczny zrzut, nie API, które się zmienia — ale warte odnotowania jako założenie kontraktu skryptu.
-- **Fix**: Sprawdź pierwszy wiersz obu plików względem oczekiwanej listy nazw kolumn przed konsumpcją wierszy i przerwij `fail()`-em przy niezgodności.
-- **Decision**: NAPRAWIONE 14.09.2026 — `csvRows` przyjmuje oczekiwany nagłówek i przerywa, gdy
-  układ kolumn się nie zgadza; sprawdzany jest PREFIKS, bo USDA dokłada kolumny na końcu i to jest
-  zmiana nieszkodliwa. Sprawdzone celowym zepsuciem — przestawienie dwóch pierwszych kolumn
-  w nagłówku `food.csv` daje:
-  `kolumna 1: oczekiwano „fdc_id", jest „data_type"` i kod wyjścia 1. To ustalenie było najostrzejsze
-  z całej piątki: rozjazd w `food_nutrient.csv` nie był łapany przez NIC, a dałby wiarygodnie
-  wyglądające, błędne makra.
-
-### F4 — `fail()` w `import-usda.mjs` bez domyślnej wartości dla `details`
-
-- **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW
-- **Dimension**: Pattern Consistency
-- **Location**: `scripts/import-usda.mjs:51`
-- **Detail**: `function fail(message, details)` nie ma `= []`, w przeciwieństwie do bliźniaczej funkcji w `distill-usda.mjs:100` (`details = []`). Dziś nieszkodliwe — jedyne wywołanie zawsze przekazuje tablicę (`import-usda.mjs:102`) — ale przyszłe wywołanie bez drugiego argumentu rzuciłoby na `for...of details`.
-- **Fix**: Dodaj `= []` dla spójności z `distill-usda.mjs`.
-- **Decision**: NAPRAWIONE 14.09.2026 — `details = []`, tak jak w bliźniaczej funkcji.
+- **Location**: `scripts/distill-usda.mjs:110-121`
+- **Detail**: `notes/pool-queue.md` i commit message dokumentują, że guard nagłówka był testowany
+  celowym ZEPSUCIEM (przestawienie kolumn → wyjście 1). Nie ma pisemnego potwierdzenia, że **ten
+  sam kod** został też ponownie przepuszczony przez pełny, poprawny zbiór SR Legacy po dodaniu
+  sprawdzenia — tylko dowód sprzed tej zmiany (35/35 z rundy F79a2f6/5ea27e7). `fs.readFileSync(file,
+  'utf8')` nie zdejmuje automatycznie BOM-u; gdyby prawdziwy `food.csv` z USDA miał na początku
+  `﻿`, `header[0]` byłoby `"﻿fdc_id"` i legalny plik odpadłby na kolumnie 1 dokładnie tym
+  samym torem co plik faktycznie zepsuty. Nie mogłem tego wykonać sam — `.usda/` jest
+  gitignorowane i nieobecne w tym checkout CI, a to uruchomienie nie ma zgody na wykonywanie
+  `node`/`npm` (tylko odczyt i operacje `git`). Poszlaka przemawiająca ZA tym, że działa: przykładowy
+  komunikat błędu w opisie PR-a i commit message wygląda na wyjście z realnego uruchomienia wobec
+  prawdziwego pliku, nie na ręcznie spreparowany tekst.
+- **Fix**: Jednozdaniowa notatka w `notes/pool-queue.md` (albo w komentarzu nad `csvRows`)
+  potwierdzająca, że `npm run distill:usda` przeszedł na pełnym zbiorze **po** dodaniu sprawdzenia
+  nagłówka, rozwiałaby to od ręki. Jeśli kiedyś okaże się, że nie przechodzi z powodu BOM-u,
+  poprawka to `header[0]?.replace(/^﻿/, '')` przy parsowaniu pierwszego wiersza.
+  - Strength: Tani do zweryfikowania (dowolny przebieg `distill:usda` to rozstrzyga), a jeśli
+    problem realny, poprawka jest jednolinijkowa i nie zmienia kontraktu funkcji.
+  - Tradeoff: Brak — czysto dokumentacyjne albo trywialny fix.
+  - Confidence: LOW, że problem faktycznie występuje — SR Legacy 2018-04 to zrzut rządowy, część
+    takich eksportów ma BOM, część nie, i nie mam sposobu sprawdzić z tego środowiska.
+  - Blind spot: Nie widziałem prawdziwego pliku `food.csv` (gitignorowany, niepobrany w tym
+    checkout) ani wyniku żadnego uruchomienia po fixie — to ustalenie jest wnioskowaniem z kodu,
+    nie obserwacją uruchomienia.
+- **Decision**: PENDING
 
 ### F5 — Odtworzenie demonstracji sita opisu (3.0b) wymaga pełnego pliku USDA
 
 - **Severity**: 👁 OBSERVATION
-- **Impact**: 🏃 LOW — kompromis zaakceptowany już przez plan
-- **Dimension**: Test Coverage
+- **Impact**: 🏃 LOW — tarcie przy przyszłej weryfikacji, nie defekt
+- **Dimension**: Safety & Quality
 - **Location**: N/A (proces weryfikacji, nie kod)
-- **Detail**: Kod sita (`distill-usda.mjs:129-143`) jest realny i inspekcjonowalny, a idempotencja importu (3.0c) jest w pełni odtwarzalna z samych zacommitowanych plików. Ale ponowne wywołanie konkretnej demonstracji z PR (celowe zepsucie `169251`→`169252`) wymaga rozpakowanego 38 MB zbioru USDA, który pobrał tylko autor — `seed/README.md` dokumentuje kroki pobrania (publiczne, bez klucza), ale nie ma fixture'a pozwalającego odtworzyć to bez pełnego pobrania. Plan świadomie akceptuje, że ten plik jest pobierany przez człowieka i gitignorowany — to nie jest naruszenie, tylko tarcie przy przyszłej weryfikacji.
-- **Fix**: Brak wymaganego — do rozważenia w przyszłości: mały fixture CSV (kilka wierszy) wyłącznie do testu regresyjnego sita opisu, bez pełnego zbioru USDA.
-- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, **odłożone świadomie**. Fixture wymagałby
-  rozszerzenia `npm test` poza `src/lib/*.test.ts`, a to jest reguła repo z własnym uzasadnieniem
-  (runner Node bez zależności, wyłącznie moduły czyste) — zmiana jej przy okazji naprawy
-  obserwacji byłaby większą decyzją niż samo ustalenie. Sito opisu ma teraz w sobie drugie,
-  niezależne sprawdzenie tej samej klasy (nagłówek kolumn), a oba są udokumentowane wraz
-  z komendą do odtworzenia w `seed/README.md`. Wraca razem z P5, gdy potok urośnie o dania
-  i pojawi się więcej niż jeden powód na test skryptów.
+- **Detail**: Kod sita (`distill-usda.mjs:129-143` w poprzedniej numeracji linii) jest realny
+  i inspekcjonowalny, a idempotencja importu (3.0c) jest w pełni odtwarzalna z samych
+  zacommitowanych plików. Ponowne wywołanie konkretnej demonstracji z PR (celowe zepsucie
+  `169251`→`169252`) nadal wymaga rozpakowanego 38 MB zbioru USDA, którego repo nie trzyma.
+- **Fix**: Brak wymaganego teraz — do rozważenia w P5, gdy `npm test` może rozszerzyć się poza
+  `src/lib/`.
+- **Decision**: PRZYJĘTE DO WIADOMOŚCI 14.09.2026, odłożone świadomie do P5 — zdecydowane w
+  commit `768984b`, konsekwentnie z poprzednią rundą. Sito ma teraz drugą, niezależną linię
+  obrony tej samej klasy błędu (nagłówek kolumn, F3), co obniża ryzyko rezydualne, na które ten
+  fixture by patrzył.
+
+## Ograniczenie tego przebiegu
+
+To uruchomienie CI nie miało zgody na wykonywanie `node`/`npm`/dowolnych poleceń poza `git`
+(status/diff/log/show/add/commit) i skryptem push — potwierdzone empirycznie (odmowa zarówno
+w tej sesji, jak i w subagencie). W efekcie **nie odtworzyłem** `npx tsc --noEmit`, `npm test`,
+`npx expo lint` ani `npm run check-conventions` w tym przebiegu; opieram się na: (a) statycznym
+czytaniu obu skryptów w całości i porównaniu z realnym schematem D1 i eksportami `src/lib/`, które
+importują, (b) fakcie, że `scripts/check-conventions.js:180` jawnie ogranicza swoje reguły
+per-plik do `.ts`/`.tsx` pod `src/` — `scripts/*.mjs` nie podlega żadnej z nich — i (c)
+samozgłoszonych wynikach z opisu PR-a (100/100 testów, `tsc`/`lint`/`check-conventions` czyste),
+których nie mogłem zweryfikować niezależnie w tej sesji. Żaden plik pod `src/lib/` nie zmienił się
+w tym PR-ze, więc zestaw testów jednostkowych jest strukturalnie nieporuszony przez ten diff.
+Jeśli chcesz, żebym w przyszłości uruchamiał te polecenia sam, rozszerz `--allowedTools` o
+`Bash(node:*)` / `Bash(npm run *:*)` dla tego workflow.
 
 <!-- End of report -->

@@ -9,10 +9,20 @@ archived_at: null
 
 ## Notes
 
-- **Backfill makr USDA przejrzany 14.09.2026** (PR #24) —
-  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 1 ostrzeżenie,
-  4 obserwacje. Zakres to tylko wiersze 3.0a–3.0d fazy 3 (osiem błędnych makr z pamięci modelu
-  zastąpionych wierszami USDA); 3.1–3.11 nadal `[ ]`.
+- **Backfill makr USDA — druga runda przeglądu (CI) 14.09.2026** (PR #24, commit `768984b`) —
+  [reviews/impl-review.md](reviews/impl-review.md). Werdykt APPROVED: 0 krytycznych, 0 ostrzeżeń,
+  2 obserwacje. Cztery z pięciu ustaleń pierwszej rundy zweryfikowane jako naprawione czytaniem
+  kodu (nie tylko diffu) — sprawdzenie nagłówka kolumn CSV, osłona odczytów, domyślne `details`;
+  piąte (fixture testu sita) świadomie odłożone do P5. Jedno nowe ustalenie: **F6 (OCZEKUJE)** —
+  brak pisemnego potwierdzenia, że pełny, poprawny zbiór USDA przeszedł przez nowy guard nagłówka
+  (możliwy, niesprawdzony w tym środowisku problem z BOM-em; `.usda/` gitignorowane, nieobecne
+  w CI). Ten przebieg nie miał zgody na `node`/`npm` w Bashu, więc `tsc`/`test`/`lint`/
+  `check-conventions` nie zostały odtworzone niezależnie — patrz „Ograniczenie tego przebiegu"
+  w raporcie.
+- **Backfill makr USDA przejrzany 14.09.2026** (PR #24, pierwsza runda) —
+  poprzednia treść raportu zastąpiona powyższym (ten sam plik, git history ma poprzednią wersję).
+  Zakres to tylko wiersze 3.0a–3.0d fazy 3 (osiem błędnych makr z pamięci modelu zastąpionych
+  wierszami USDA); 3.1–3.11 nadal `[ ]`.
 - **Faza 1 przejrzana 13.09.2026** — [reviews/impl-review-phase-1.md](reviews/impl-review-phase-1.md).
   Werdykt WYMAGA UWAGI: 0 krytycznych, 2 ostrzeżenia, 2 obserwacje. Weszła na produkcję **bez
   przeglądu** i to był jedyny taki przypadek w tym repo; przegląd nadrobiony po fakcie.
