@@ -202,8 +202,10 @@ Nie dodawaj własnego hashowania ani tabel sesji.
 ## Komendy i weryfikacja
 
 Skrypty (`start`, `android`, `ios`, `web`, `lint`, `test`, `check-lock`, `check-conventions`,
-`hooks:install`) są w [package.json](package.json); lint to
-`expo lint` z flat configiem w [eslint.config.js](eslint.config.js).
+`distill:usda`, `import:usda`, `hooks:install`) są w [package.json](package.json); lint to
+`expo lint` z flat configiem w [eslint.config.js](eslint.config.js). Potok składników — skąd
+biorą się makra i dlaczego nazwa składnika jest jego tożsamością — opisuje
+[seed/README.md](seed/README.md).
 
 - `npx tsc --noEmit` — sprawdzenie typów; **pierwsze z dwóch**, drugim jest `npm test`. Nie jest
   skryptem npm.

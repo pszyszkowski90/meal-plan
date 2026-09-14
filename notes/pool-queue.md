@@ -356,3 +356,46 @@ Werdykt przeglądu: brak raportu i brak planu w `context/changes/` — bramka pr
 zgodnie z rozróżnieniem wprowadzonym w #21; recenzent potwierdził to samodzielnie
 PR: #22
 Do decyzji: —
+
+### 12:56 UTC — P4a Backfill USDA: makra składników z wiersza, nie z pamięci
+Wynik: ok
+Co zrobione: pierwsza robota z P4 — weryfikacja 35 składników wobec USDA. **Osiem z nich nie
+zgadzało się z żadnym wierszem**: boczek 541→393 kcal (białko 37→13,7 g), tuńczyk 116→86,
+serek 103→81, krewetki 85→71 (białko 20,1→13,6), papryka 31→26, kurczak 120→108, soczewica
+1,1→2,17 g tłuszczu. Wszystkie osiem **przeszło sito Atwatera**, bo były wewnętrznie spójne —
+sito łapie błędy rzędu ×10, nie liczby wymyślone konsekwentnie. Potok: zbiorczy plik SR Legacy
+(6 MB, bez klucza) → `scripts/distill-usda.mjs` → wersjonowany `seed/usda-subset.json` →
+`scripts/import-usda.mjs` → SQL. `scripts/seed-ingredients.mjs` **usunięty**: trzymał makra
+w kodzie, więc jego kolejne uruchomienie po cichu przywracałoby błędne wartości.
+Trzy nazwy doprowadzone do tego, co opisuje wiersz USDA (twaróg → serek wiejski, bo twarogu
+w USDA nie ma); zmiana nazwy idzie osobnym UPDATE przed wstawieniem, inaczej powstałby drugi
+wiersz, a wykluczenia zostałyby przy starym.
+**Zabezpieczenie, które się obroniło:** destylacja przerywa, gdy opis USDA nie zgadza się
+z zapisanym w mapowaniu. Sprawdzone celowo: `169251` to pieczarki SUROWE, `169252` — GOTOWANE.
+Literówka w jednej cyfrze podmienia produkt, a sito Atwatera tego nie widzi.
+**Pułapka do zapamiętania:** `npm run x > plik.sql` wkleja do pliku nagłówek npm i wywraca SQL
+na `near ">": syntax error`. Przy `2>/dev/null` wygląda to na udany przebieg — mój pierwszy
+test idempotencji był przez to bezwartościowy i trzeba go było powtórzyć. Potrzebne `--silent`.
+Produkcja zaktualizowana (`--remote`): 35/35 z `usda_fdc_id`, zero osieroconych wykluczeń,
+20 przypisań do grup zachowanych.
+Co zacommitowane: `seed/ingredients.json`, `seed/usda-subset.json`, `seed/README.md`,
+`scripts/distill-usda.mjs`, `scripts/import-usda.mjs`, usunięty `scripts/seed-ingredients.mjs`,
+`package.json`, `.gitignore`, `CLAUDE.md`, `notes/pool-queue.md`
+Werdykt przeglądu: ZATWIERDZONY, 0 krytycznych, 1 ostrzeżenie + 4 obserwacje. Cztery naprawione
+(osłona odczytów, doprecyzowany kontrakt parsera, **sprawdzenie nagłówka kolumn CSV**, domyślne
+`details`), piąta — fixture do testu sita — odłożona z powodem do P5. Najostrzejsza była F3:
+przestawienie kolumn w `food_nutrient.csv` nie było łapane przez NIC i dałoby wiarygodnie
+wyglądające, błędne makra. Guard sprawdzony celowym zepsuciem nagłówka.
+**Sprostowanie do wpisu P3a:** twierdziłem tam, że agent przeglądu „nie ma zgody na `git commit`".
+To nieprawda — log tego przebiegu pokazuje `ALLOWED_TOOLS` z `Bash(git add:*)`, `Bash(git commit:*)`
+i skryptem push. Agent raport **zacommitował**, a bramka go przeczytała i zablokowała scalenie na
+pięciu otwartych ustaleniach — dokładnie tak, jak miała. Na PR #20 raportu nie było z innego,
+nieustalonego powodu; blokowane są tam wyłącznie polecenia spoza tej listy (`npm test`, `gh`).
+Druga runda przeglądu (po naprawach) dorzuciła F6: brak pisemnego dowodu, że destylacja przeszła
+na PEŁNYM zbiorze **po** dodaniu sprawdzenia nagłówka, plus hipoteza o BOM. Dowód uzupełniony —
+trzy przebiegi, za każdym „35 składników", destylat bajt w bajt ten sam; BOM-u w SR Legacy 2018-04
+**nie ma** (`head -c 16 | xxd` → `"fdc_id"`). BOM i tak jest teraz zdejmowany jawnie, bo bez tego
+legalny plik z sygnaturą odpadłby z komunikatem o zepsutym układzie kolumn — czyli wskazującym
+w złe miejsce.
+PR: #24
+Do decyzji: —

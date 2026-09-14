@@ -499,6 +499,18 @@ i wpis z `d1_migrations`. Seed nie jest migracją.
 
 #### Automated
 
+> **Wiersze 3.0a–3.0d dopisane 14.09.2026**, po tym jak właściciel przekazał agentowi cały
+> przegląd gramatur (`notes/pool-queue.md` §4). Człowiek wyszedł z pętli, więc sito zostało
+> jedyną obroną i musiało stwardnieć: makra składnika mają pochodzić z wiersza USDA, a nie
+> z pamięci modelu. Pierwotny plan tego nie wymagał, bo zakładał przegląd przez człowieka.
+
+- [x] 3.0a Każdy składnik ma `usda_fdc_id` i makra z destylatu USDA — 35/35 lokalnie i na
+      produkcji; osiem wierszy miało wcześniej makra niezgodne z jakimkolwiek wierszem USDA
+- [x] 3.0b Destylacja odrzuca `fdcId`, którego opis nie zgadza się z mapowaniem — sprawdzone
+      celowym zepsuciem (`169251` pieczarki surowe → `169252` gotowane)
+- [x] 3.0c Dwa przebiegi importu składników dają ten sam stan bazy
+- [x] 3.0d Zmiana nazwy składnika nie tworzy drugiego wiersza i nie osierocą wykluczeń —
+      zero osieroconych, 20 przypisań do grup zachowanych po trzech zmianach nazw
 - [ ] 3.1 Walidator odrzuca zepsute danie z pełną listą błędów i nic nie wgrywa
 - [ ] 3.2 Dwa przebiegi seeda dają ten sam stan bazy
 - [ ] 3.3 Usunięcie składnika z JSON-a usuwa go też z `dish_ingredient` po przeseedowaniu

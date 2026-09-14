@@ -1,0 +1,339 @@
+{
+  "source": {
+    "dataset": "USDA FoodData Central — SR Legacy",
+    "release": "2018-04",
+    "archive": "FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+    "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+    "licence": "domena publiczna (CC0) — USDA nie wymaga klucza ani atrybucji"
+  },
+  "groups": [
+    {
+      "slug": "grzyby",
+      "name": "grzyby"
+    },
+    {
+      "slug": "orzechy",
+      "name": "orzechy"
+    },
+    {
+      "slug": "nabial",
+      "name": "nabiał"
+    },
+    {
+      "slug": "ryby",
+      "name": "ryby"
+    },
+    {
+      "slug": "owoce-morza",
+      "name": "owoce morza"
+    },
+    {
+      "slug": "straczki",
+      "name": "strączki"
+    },
+    {
+      "slug": "gluten",
+      "name": "gluten"
+    },
+    {
+      "slug": "wieprzowina",
+      "name": "wieprzowina"
+    }
+  ],
+  "ingredients": [
+    {
+      "name": "pieczarki, świeże",
+      "fdcId": 169251,
+      "usdaDescription": "Mushrooms, white, raw",
+      "category": "warzywa",
+      "groups": [
+        "grzyby"
+      ]
+    },
+    {
+      "name": "boczniaki, świeże",
+      "fdcId": 168580,
+      "usdaDescription": "Mushrooms, oyster, raw",
+      "category": "warzywa",
+      "groups": [
+        "grzyby"
+      ]
+    },
+    {
+      "name": "brokuł, surowy",
+      "fdcId": 170379,
+      "usdaDescription": "Broccoli, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "marchew, surowa",
+      "fdcId": 170393,
+      "usdaDescription": "Carrots, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "pomidor, surowy",
+      "fdcId": 170457,
+      "usdaDescription": "Tomatoes, red, ripe, raw, year round average",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "cebula, surowa",
+      "fdcId": 170000,
+      "usdaDescription": "Onions, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "papryka czerwona, surowa",
+      "fdcId": 170108,
+      "usdaDescription": "Peppers, sweet, red, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "szpinak, surowy",
+      "fdcId": 168462,
+      "usdaDescription": "Spinach, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "ziemniaki, surowe",
+      "fdcId": 170026,
+      "usdaDescription": "Potatoes, flesh and skin, raw",
+      "category": "warzywa",
+      "groups": []
+    },
+    {
+      "name": "jabłko, surowe",
+      "fdcId": 171688,
+      "usdaDescription": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
+      "category": "owoce",
+      "groups": []
+    },
+    {
+      "name": "banan, surowy",
+      "fdcId": 173944,
+      "usdaDescription": "Bananas, raw",
+      "category": "owoce",
+      "groups": []
+    },
+    {
+      "name": "pierś z kurczaka, surowa",
+      "fdcId": 171509,
+      "usdaDescription": "Chicken, broilers or fryers, breast, skinless, boneless, meat only, with added solution, raw",
+      "category": "mieso",
+      "groups": []
+    },
+    {
+      "name": "schab wieprzowy, surowy",
+      "fdcId": 168230,
+      "usdaDescription": "Pork, fresh, loin, whole, separable lean only, raw",
+      "category": "mieso",
+      "groups": [
+        "wieprzowina"
+      ]
+    },
+    {
+      "name": "boczek wędzony, surowy",
+      "fdcId": 168277,
+      "usdaDescription": "Pork, cured, bacon, unprepared",
+      "category": "mieso",
+      "groups": [
+        "wieprzowina"
+      ],
+      "previousNames": [
+        "boczek wędzony"
+      ]
+    },
+    {
+      "name": "łosoś atlantycki, surowy",
+      "fdcId": 175167,
+      "usdaDescription": "Fish, salmon, Atlantic, farmed, raw",
+      "category": "ryby",
+      "groups": [
+        "ryby"
+      ]
+    },
+    {
+      "name": "dorsz atlantycki, surowy",
+      "fdcId": 171955,
+      "usdaDescription": "Fish, cod, Atlantic, raw",
+      "category": "ryby",
+      "groups": [
+        "ryby"
+      ]
+    },
+    {
+      "name": "tuńczyk w wodzie, z puszki, odsączony",
+      "fdcId": 173709,
+      "usdaDescription": "Fish, tuna, light, canned in water, drained solids (Includes foods for USDA's Food Distribution Program)",
+      "category": "ryby",
+      "groups": [
+        "ryby"
+      ],
+      "previousNames": [
+        "tuńczyk w wodzie, z puszki"
+      ]
+    },
+    {
+      "name": "krewetki, surowe",
+      "fdcId": 174210,
+      "usdaDescription": "Crustaceans, shrimp, mixed species, raw (may contain additives to retain moisture)",
+      "category": "ryby",
+      "groups": [
+        "owoce-morza"
+      ]
+    },
+    {
+      "name": "mleko 2%, płynne",
+      "fdcId": 171267,
+      "usdaDescription": "Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D",
+      "category": "nabial",
+      "groups": [
+        "nabial"
+      ]
+    },
+    {
+      "name": "jogurt naturalny 2%",
+      "fdcId": 170886,
+      "usdaDescription": "Yogurt, plain, low fat",
+      "category": "nabial",
+      "groups": [
+        "nabial"
+      ]
+    },
+    {
+      "name": "ser gouda",
+      "fdcId": 171241,
+      "usdaDescription": "Cheese, gouda",
+      "category": "nabial",
+      "groups": [
+        "nabial"
+      ]
+    },
+    {
+      "name": "serek wiejski (cottage), 2% tłuszczu",
+      "fdcId": 172182,
+      "usdaDescription": "Cheese, cottage, lowfat, 2% milkfat",
+      "category": "nabial",
+      "groups": [
+        "nabial"
+      ],
+      "previousNames": [
+        "twaróg półtłusty"
+      ]
+    },
+    {
+      "name": "jajo kurze, całe, surowe",
+      "fdcId": 171287,
+      "usdaDescription": "Egg, whole, raw, fresh",
+      "category": "jaja",
+      "groups": []
+    },
+    {
+      "name": "chleb pszenny jasny",
+      "fdcId": 174924,
+      "usdaDescription": "Bread, white, commercially prepared (includes soft bread crumbs)",
+      "category": "pieczywo",
+      "groups": [
+        "gluten"
+      ]
+    },
+    {
+      "name": "ryż biały, suchy",
+      "fdcId": 168877,
+      "usdaDescription": "Rice, white, long-grain, regular, raw, enriched",
+      "category": "suche",
+      "groups": []
+    },
+    {
+      "name": "makaron pszenny, suchy",
+      "fdcId": 169736,
+      "usdaDescription": "Pasta, dry, enriched",
+      "category": "suche",
+      "groups": [
+        "gluten"
+      ]
+    },
+    {
+      "name": "płatki owsiane, suche",
+      "fdcId": 173904,
+      "usdaDescription": "Cereals, oats, regular and quick, not fortified, dry",
+      "category": "suche",
+      "groups": []
+    },
+    {
+      "name": "soczewica czerwona, sucha",
+      "fdcId": 174284,
+      "usdaDescription": "Lentils, pink or red, raw",
+      "category": "suche",
+      "groups": [
+        "straczki"
+      ]
+    },
+    {
+      "name": "ciecierzyca, sucha",
+      "fdcId": 173756,
+      "usdaDescription": "Chickpeas (garbanzo beans, bengal gram), mature seeds, raw",
+      "category": "suche",
+      "groups": [
+        "straczki"
+      ]
+    },
+    {
+      "name": "fasola biała, sucha",
+      "fdcId": 175202,
+      "usdaDescription": "Beans, white, mature seeds, raw",
+      "category": "suche",
+      "groups": [
+        "straczki"
+      ]
+    },
+    {
+      "name": "migdały",
+      "fdcId": 170567,
+      "usdaDescription": "Nuts, almonds",
+      "category": "suche",
+      "groups": [
+        "orzechy"
+      ]
+    },
+    {
+      "name": "orzechy włoskie",
+      "fdcId": 170187,
+      "usdaDescription": "Nuts, walnuts, english",
+      "category": "suche",
+      "groups": [
+        "orzechy"
+      ]
+    },
+    {
+      "name": "oliwa z oliwek",
+      "fdcId": 171413,
+      "usdaDescription": "Oil, olive, salad or cooking",
+      "category": "tluszcze",
+      "groups": []
+    },
+    {
+      "name": "masło",
+      "fdcId": 173410,
+      "usdaDescription": "Butter, salted",
+      "category": "tluszcze",
+      "groups": [
+        "nabial"
+      ]
+    },
+    {
+      "name": "sól",
+      "fdcId": 173468,
+      "usdaDescription": "Salt, table",
+      "category": "przyprawy",
+      "groups": []
+    }
+  ]
+}

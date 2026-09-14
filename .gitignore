@@ -49,3 +49,8 @@ example
 
 # Artefakty narzędzi testowych (zrzuty DOM zapisują zawartość pól haseł)
 .playwright-mcp/
+
+# Zbiorczy plik USDA — 38 MB po rozpakowaniu, z czego 36 MB to jedna tabela. Pobiera go człowiek
+# raz (instrukcja w scripts/distill-usda.mjs), a do repozytorium trafia wyłącznie destylat:
+# seed/usda-subset.json, 35 wierszy.
+.usda/
