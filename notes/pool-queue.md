@@ -108,8 +108,9 @@ git show origin/<galaz>:context/changes/<id>/reviews/impl-review.md | grep -E "V
   Test: konto B zapisuje własne wykluczenia i **nie widzi** wykluczeń konta A ani ich nie nadpisuje.
   To samo konto zamyka przy okazji **2.9 z S-02** (`BLOCKED-MANUAL` od tamtej zmiany)
   i **fazę 3 z `test-plan.md`** — najwyższy zwrot z całego P3.
-- **2.9 Expo Go** i **2.10 czytelność przy 20 wpisach** — **należą do właściciela**, patrz §4.
-  Nie zgaduj ich wyniku i nie odhaczaj.
+- **2.9 Expo Go** i **2.10 czytelność przy 20 wpisach** — **spróbuj sam**, patrz §4. Odhacz
+  wyłącznie z dowodem (zrzut), a nie z założenia; oddaj właścicielowi dopiero, gdy emulator
+  nie wstanie.
 - Po tym: `/10x-archive` dla `dietary-preferences`, statusy w `roadmap.md` (S-03 → `done`,
   F-01 → `implementing`) i `test-plan.md` §3 (faza 4 działa, nie jest `not started`).
 
@@ -135,10 +136,11 @@ Do zbudowania od zera — **jedenaście kryteriów, zero odhaczonych**:
 idempotentny po tożsamości wiersza, a **sito Atwatera importuje z `src/lib/`, zamiast je
 przepisywać**. Trzymaj się tego: skrypt z kopią progu zasieje dania, których walidator nie przyjmie.
 
-**Podział pracy jest tu nieoczywisty i wiążący:** agent buduje potok i generuje kandydatów,
-ale **przegląd gramatur dwudziestu dań należy do właściciela** (§4). To jest sedno decyzji D14 —
-model autoryzuje przepisy, człowiek przegląda gramatury. Agent, który wpisze sobie `reviewedBy`,
-znosi cały mechanizm.
+**Podział pracy:** agent buduje potok, generuje kandydatów i **odsiewa maszynowo** — Atwater,
+próg na porcję, gęstość energetyczna plus nowe sito wiarygodności per składnik — po czym sortuje
+dania po podejrzliwości. Do człowieka idą **tylko pozycje odstające**, nie wszystkie dwadzieścia
+(§4). Niezmienne zostaje jedno: **agent nie wpisuje `reviewedBy` za człowieka**, bo to bramka
+przed seedem na produkcję, a nie formalność.
 
 ### P5 — F-01 faza 4: skalowanie puli · duże
 
@@ -151,9 +153,10 @@ Tu wracają dwie pozycje odłożone świadomie:
 - **stronicowanie katalogu składników** i debounce wyszukiwarki — ustalenie F6 przeglądu S-03
   fazy 2, odłożone przy 35 składnikach, wraca gdy pula urośnie.
 
-### P6 — S-04: generator planu · NIE ZACZYNAJ
+### P6 — S-04: generator planu · NIE ZACZYNAJ przed P4
 
-Blokują go **dwie decyzje właściciela** (§4), a nie kod.
+Blokuje go **brak puli dań** (P4), a nie decyzje. Treść komunikatu „planu nie da się ułożyć"
+rozstrzyga agent (§4); Workers Paid wraca dopiero po pomiarze CPU z P5 i tylko z liczbą w ręku.
 
 ---
 
@@ -161,9 +164,10 @@ Blokują go **dwie decyzje właściciela** (§4), a nie kod.
 
 - **Nie implementuj S-04 przed zamknięciem P4.** Blokada z `CLAUDE.md` obowiązuje.
 - **Nie seeduj dań `--remote` bez `reviewedBy`.** Bramka w `seed-dishes.mjs` ma odmawiać.
-- **Nie wpisuj sobie `reviewedBy`** — przegląd gramatur robi człowiek, inaczej D14 przestaje
-  cokolwiek znaczyć.
-- **Nie odhaczaj 2.9 ani 2.10** — to osąd właściciela, nie wynik testu.
+- **Nie wpisuj `reviewedBy` za człowieka** — to bramka przed seedem na produkcję. Odsiew
+  maszynowy owszem, podpis nie.
+- **Nie odhaczaj 2.9 ani 2.10 bez dowodu** — zrzut albo nic.
+- **Nie rozluźniaj D14** (wariant (b) z §4) bez wyraźnej zgody właściciela.
 - **Nie stempluj statusów przed zamknięciem ustaleń.** Dokładnie tak powstał dług z P1.
 - **Nie rób `10x get`** — synchronizuje `.claude/skills/` i kasuje resztę.
 - **Nie ruszaj ustawień repozytorium** ani nie dodawaj współpracowników.
@@ -171,29 +175,44 @@ Blokują go **dwie decyzje właściciela** (§4), a nie kod.
 
 ---
 
-## 4. Co należy do właściciela
+## 4. Co agent rozstrzyga sam, a co należy do właściciela
 
-Agent tego nie zrobi: wymaga urządzenia, osądu albo decyzji o koszcie. Pomiń i odnotuj
-w Dzienniku, zamiast zgadywać.
+**Domyślnie rozstrzyga agent.** Ta sekcja miała wcześniej sześć pozycji „do decyzji właściciela"
+i to była pomyłka: pięć z nich było zwykłą pracą, którą da się wykonać i cofnąć. Zostaje jedna
+realna decyzja i jedno pytanie o kompromis.
 
-### Blokery decyzyjne
+> **Sprostowanie numeracji.** W PRD jest **pięć** Open Questions. Komunikat „planu nie da się
+> ułożyć" to **pytanie 3**, nie 4. „Workers Paid" **nie jest** Open Question — to pozycja
+> w rejestrze ryzyk w `infrastructure.md`. Wcześniejsza wersja tego pliku powtarzała błędną
+> numerację za inną sesją.
 
-| Decyzja | Co blokuje | Czego potrzeba |
-|---|---|---|
-| **Otwarte pytanie 4 PRD** — próg i **treść komunikatu**, gdy planu nie da się ułożyć w ±10% | S-04 (P6) | brzmienia komunikatu; kierunek jest w US-01 |
-| **Otwarte pytanie 6** — przejście na Workers Paid | **wdrożenie** S-04, nie planowanie | decyzja o koszcie: plan darmowy daje 10 ms CPU na żądanie |
-| **Decyzja skalowania puli** | F-01 faza 4 (P5) | podejmowana **po** raporcie pilotowym z P4 |
+### Agent rozstrzyga sam i tylko odnotowuje w Dzienniku
 
-### Zadania ręczne
+| Rzecz | Dlaczego to nie jest decyzja właściciela |
+|---|---|
+| **Treść i próg komunikatu „planu nie da się ułożyć"** (PRD, pytanie 3) | Kształt jest już rozstrzygnięty w `CLAUDE.md`: komunikat nazywa, **którego z trzech ograniczeń** nie da się spełnić, i nie wraca żaden plan częściowy. Brakuje słów i liczby — jedno i drugie jest odwracalne (string i stała). Napisz, pokaż w Dzienniku, idź dalej. |
+| **Skalowanie puli po pilocie** | Minima są już w planie (≥ 12 śniadań, ≥ 18 obiadów, ≥ 18 kolacji, ≥ 12 przekąsek), a raport wykonalności odpowiada, czy się bronią. Eskaluj **wyłącznie**, gdy z raportu wyjdzie potrzeba rzędu trzykrotnie większej puli — to już niespodzianka kosztowa, nie parametr. |
+| **2.10 — czytelność listy przy 20 wpisach** | Wygeneruj 20 wpisów, zrób zrzut, obejrzyj go i zapisz werdykt z dowodem. Osąd wizualny na podstawie zrzutu jest w zasięgu agenta. |
+| **2.9 — Expo Go** | Spróbuj emulatora (obraz API 35, **nie** 36.1; wymaga firmowego DNS). Jeśli wstanie — sprawdź zakładkę, ikonę i wyszukiwarkę, zrób zrzut. Dopiero gdy emulator nie wstanie, oddaj to właścicielowi z opisem błędu. |
+| **Przegląd gramatur — część maszynowa** | D14 chodzi o wyłapanie tego, co model zmyśli (300 g oliwy w porcji), a nie o rytuał. Część sit już istnieje: Atwater, próg na porcję, gęstość energetyczna. Dołóż **sito wiarygodności per składnik** i posortuj dania po podejrzliwości. Do człowieka idą wtedy tylko pozycje odstające, nie wszystkie dwadzieścia. |
 
-- **Przegląd gramatur 20 dań** z P4, od największej rozbieżności `modelKcalHint`, plus
-  przeczytanie trzech przepisów jak przepisu. Dopiero po nim wpisuje się `reviewedBy`.
-- **2.9 — Expo Go**: zakładka Preferencje z ikoną, wyszukiwarka używalna jedną ręką. Emulator
-  Androida działa na obrazie API 35 (nie 36.1) i wymaga firmowego DNS.
-- **2.10** — czy lista wykluczeń jest czytelna przy 20 pozycjach.
-- **Ustawienia repozytorium**, gdyby kiedykolwiek były potrzebne.
+### Naprawdę należy do właściciela
 
----
+1. **Workers Paid, 5 USD/mc.** To jego pieniądze. **Nie jest to jednak bloker „na zapas":**
+   najpierw **zmierz** realne CPU generatora (P5). `infrastructure.md` ostrzega, że przekroczenie
+   10 ms **zabija wywołanie**, a nie spowalnia — więc gdy pomiar pokaże przekroczenie, przedstaw
+   liczbę i zapytaj. Nie wcześniej.
+
+2. **Podpis pod gramaturami — i tylko pod tym, co wystaje.** `reviewedBy` jest bramką przed
+   seedem na produkcję, więc **agent nigdy nie wpisuje tam cudzego nazwiska** — to fałszowanie
+   zapisu, nie skrót. Do wyboru:
+   - **(a, rekomendowane)** właściciel ogląda kilka dań odstających po sicie i podpisuje je;
+     mechanizm D14 zostaje nietknięty, koszt to minuty;
+   - **(b)** świadome rozluźnienie D14: `reviewedBy` przyjmuje wartość automatyczną, gdy wszystkie
+     sita przechodzą i danie nie jest odstające. **Tego nie wprowadzaj bez wyraźnej zgody** —
+     osłabia decyzję, która ma w repo uzasadnienie.
+
+3. **Ustawienia repozytorium** — gdyby kiedykolwiek były potrzebne.
 
 ## 5. Dziennik
 
