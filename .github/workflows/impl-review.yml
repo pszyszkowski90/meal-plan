@@ -150,13 +150,36 @@ jobs:
             exit 1
           fi
           echo "Raport: $RAPORT (z gałęzi $GALAZ)"
-          if grep -qi 'Werdykt.*ODRZUCONY\|Verdict.*REJECTED' "$RAPORT_TRESC"; then
+          # Blokuje OTWARTE USTALENIA, nie historyczny napis w nagłówku.
+          #
+          # Werdykt jest MIGAWKĄ z chwili przeglądu i zostaje w raporcie na zawsze — także wtedy,
+          # gdy wszystkie ustalenia zostały już naprawione. Bramka pilnująca samego napisu
+          # blokowałaby więc każdy późniejszy PR dotykający tego raportu, łącznie z tym, który
+          # ustalenia zamyka. To nie jest hipoteza: dokładnie tak zachowała się pierwsza wersja
+          # tej naprawy na raporcie `dietary-preferences` (14.09.2026).
+          #
+          # Sygnałem niedokończonej roboty jest POLE `Decision`/`Decyzja` o wartości PENDING —
+          # tak agent oznacza ustalenie, o którym nikt jeszcze nie zdecydował.
+          OTWARTE=$(grep -ciE '^- [*][*](Decision|Decyzja)[*][*]: *(PENDING|OCZEKUJE)' "$RAPORT_TRESC" || true)
+          ROZLICZONE=$(grep -ciE '^- [*][*](Decision|Decyzja)[*][*]:' "$RAPORT_TRESC" || true)
+          ODRZUCONY=$(grep -ciE 'Werdykt.*ODRZUCONY|Verdict.*REJECTED' "$RAPORT_TRESC" || true)
+
+          echo "Werdykt odrzucający: $ODRZUCONY | ustaleń z decyzją: $ROZLICZONE | otwartych: $OTWARTE"
+
+          # Świeży raport odrzucający ma wszystkie decyzje PENDING, więc łapie go pierwszy warunek.
+          # Drugi jest siatką bezpieczeństwa na raport odrzucający BEZ ani jednego pola `Decision`:
+          # wtedy nie ma czego rozliczać i nie wolno przepuścić.
+          if [ "$OTWARTE" -gt 0 ] || { [ "$ODRZUCONY" -gt 0 ] && [ "$ROZLICZONE" -eq 0 ]; }; then
             if printf '%s' "$ETYKIETY" | grep -q 'impl-review-override'; then
-              echo "::warning title=Werdykt ODRZUCONY, pominięty etykietą::Etykieta impl-review-override jest ustawiona."
+              echo "::warning title=Otwarte ustalenia, pominięte etykietą::Etykieta impl-review-override jest ustawiona."
               exit 0
             fi
-            echo "::error title=Przegląd odrzucił zmianę::Werdykt ODRZUCONY w $RAPORT. Przeczytaj ustalenia albo dodaj etykietę impl-review-override."
+            echo "::error title=Przegląd ma otwarte ustalenia::$RAPORT — $OTWARTE ustaleń bez decyzji. Rozlicz je albo dodaj etykietę impl-review-override."
             exit 1
           fi
 
-          echo "Werdykt nie jest odrzucający."
+          if [ "$ODRZUCONY" -gt 0 ]; then
+            echo "::notice title=Werdykt odrzucający, ustalenia rozliczone::$RAPORT ma $ROZLICZONE decyzji i zero otwartych."
+          fi
+
+          echo "Brak otwartych ustaleń."
